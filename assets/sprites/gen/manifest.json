@@ -1,0 +1,384 @@
+{
+ "blaze": {
+  "run": [
+   {
+    "file": "blaze_run_0.png",
+    "w": 112,
+    "h": 129,
+    "ax": 0.478
+   },
+   {
+    "file": "blaze_run_1.png",
+    "w": 106,
+    "h": 127,
+    "ax": 0.427
+   },
+   {
+    "file": "blaze_run_2.png",
+    "w": 107,
+    "h": 128,
+    "ax": 0.494
+   },
+   {
+    "file": "blaze_run_3.png",
+    "w": 110,
+    "h": 128,
+    "ax": 0.477
+   },
+   {
+    "file": "blaze_run_4.png",
+    "w": 109,
+    "h": 127,
+    "ax": 0.411
+   },
+   {
+    "file": "blaze_run_5.png",
+    "w": 107,
+    "h": 128,
+    "ax": 0.48
+   }
+  ],
+  "idle": [
+   {
+    "file": "blaze_idle_0.png",
+    "w": 130,
+    "h": 128,
+    "ax": 0.514
+   }
+  ],
+  "jump": [
+   {
+    "file": "blaze_jump_0.png",
+    "w": 143,
+    "h": 154,
+    "ax": 0.449
+   }
+  ],
+  "ball": [
+   {
+    "file": "blaze_ball_0.png",
+    "w": 107,
+    "h": 107,
+    "ax": 0.48
+   }
+  ],
+  "crouch": [
+   {
+    "file": "blaze_crouch_0.png",
+    "w": 163,
+    "h": 84,
+    "ax": 0.603
+   }
+  ],
+  "dash": [
+   {
+    "file": "blaze_dash_0.png",
+    "w": 170,
+    "h": 120,
+    "ax": 0.52
+   }
+  ],
+  "down": [
+   {
+    "file": "blaze_down_0.png",
+    "w": 182,
+    "h": 70,
+    "ax": 0.5
+   }
+  ],
+  "skill": [
+   {
+    "file": "blaze_skill_0.png",
+    "w": 168,
+    "h": 128,
+    "ax": 0.333
+   }
+  ]
+ },
+ "gulp": {
+  "run": [
+   {
+    "file": "gulp_run_0.png",
+    "w": 90,
+    "h": 127,
+    "ax": 0.556
+   },
+   {
+    "file": "gulp_run_1.png",
+    "w": 92,
+    "h": 128,
+    "ax": 0.451
+   },
+   {
+    "file": "gulp_run_2.png",
+    "w": 88,
+    "h": 128,
+    "ax": 0.441
+   },
+   {
+    "file": "gulp_run_3.png",
+    "w": 94,
+    "h": 127,
+    "ax": 0.574
+   },
+   {
+    "file": "gulp_run_4.png",
+    "w": 89,
+    "h": 128,
+    "ax": 0.472
+   },
+   {
+    "file": "gulp_run_5.png",
+    "w": 87,
+    "h": 128,
+    "ax": 0.475
+   }
+  ],
+  "idle": [
+   {
+    "file": "gulp_idle_0.png",
+    "w": 95,
+    "h": 128,
+    "ax": 0.484
+   }
+  ],
+  "jump": [
+   {
+    "file": "gulp_jump_0.png",
+    "w": 103,
+    "h": 136,
+    "ax": 0.504
+   }
+  ],
+  "ball": [
+   {
+    "file": "gulp_ball_0.png",
+    "w": 77,
+    "h": 83,
+    "ax": 0.484
+   }
+  ],
+  "crouch": [
+   {
+    "file": "gulp_crouch_0.png",
+    "w": 141,
+    "h": 56,
+    "ax": 0.661
+   }
+  ],
+  "dash": [
+   {
+    "file": "gulp_dash_0.png",
+    "w": 157,
+    "h": 114,
+    "ax": 0.43
+   }
+  ],
+  "down": [
+   {
+    "file": "gulp_down_0.png",
+    "w": 164,
+    "h": 58,
+    "ax": 0.502
+   }
+  ],
+  "skill": [
+   {
+    "file": "gulp_skill_0.png",
+    "w": 121,
+    "h": 128,
+    "ax": 0.503
+   }
+  ]
+ },
+ "runner": {
+  "run": [
+   {
+    "file": "runner_run_0.png",
+    "w": 93,
+    "h": 111,
+    "ax": 0.457
+   },
+   {
+    "file": "runner_run_1.png",
+    "w": 88,
+    "h": 112,
+    "ax": 0.542
+   },
+   {
+    "file": "runner_run_2.png",
+    "w": 93,
+    "h": 111,
+    "ax": 0.439
+   },
+   {
+    "file": "runner_run_3.png",
+    "w": 85,
+    "h": 112,
+    "ax": 0.48
+   }
+  ]
+ },
+ "bat": {
+  "fly": [
+   {
+    "file": "bat_fly_0.png",
+    "w": 120,
+    "h": 96,
+    "ax": 0.36
+   },
+   {
+    "file": "bat_fly_1.png",
+    "w": 118,
+    "h": 96,
+    "ax": 0.354
+   }
+  ]
+ },
+ "rat": {
+  "idle": [
+   {
+    "file": "rat_idle_0.png",
+    "w": 128,
+    "h": 92,
+    "ax": 0.57
+   }
+  ],
+  "fire": [
+   {
+    "file": "rat_fire_0.png",
+    "w": 149,
+    "h": 92,
+    "ax": 0.632
+   }
+  ]
+ },
+ "turret": {
+  "body": [
+   {
+    "file": "turret_body_0.png",
+    "w": 53,
+    "h": 76,
+    "ax": 0.499
+   }
+  ]
+ },
+ "fortress": {
+  "body": [
+   {
+    "file": "fortress_body_0.png",
+    "w": 358,
+    "h": 700,
+    "ax": 0.499
+   }
+  ]
+ },
+ "ratking": {
+  "body": [
+   {
+    "file": "ratking_body_0.png",
+    "w": 302,
+    "h": 320,
+    "ax": 0.5
+   }
+  ]
+ },
+ "gun": {
+  "blaze": [
+   {
+    "file": "gun_blaze_0.png",
+    "w": 37,
+    "h": 26,
+    "ax": 0.254
+   }
+  ],
+  "gulp": [
+   {
+    "file": "gun_gulp_0.png",
+    "w": 36,
+    "h": 26,
+    "ax": 0.278
+   }
+  ]
+ },
+ "item": {
+  "can": [
+   {
+    "file": "item_can_0.png",
+    "w": 79,
+    "h": 50,
+    "ax": 0.579
+   }
+  ],
+  "S": [
+   {
+    "file": "item_S_0.png",
+    "w": 48,
+    "h": 48,
+    "ax": 0.498
+   }
+  ],
+  "M": [
+   {
+    "file": "item_M_0.png",
+    "w": 48,
+    "h": 48,
+    "ax": 0.498
+   }
+  ],
+  "L": [
+   {
+    "file": "item_L_0.png",
+    "w": 49,
+    "h": 49,
+    "ax": 0.5
+   }
+  ],
+  "F": [
+   {
+    "file": "item_F_0.png",
+    "w": 49,
+    "h": 49,
+    "ax": 0.498
+   }
+  ],
+  "R": [
+   {
+    "file": "item_R_0.png",
+    "w": 49,
+    "h": 49,
+    "ax": 0.5
+   }
+  ],
+  "B": [
+   {
+    "file": "item_B_0.png",
+    "w": 49,
+    "h": 49,
+    "ax": 0.5
+   }
+  ]
+ },
+ "layers": {
+  "bg_far": {
+   "file": "bg_far.jpg",
+   "w": 1440,
+   "h": 720
+  },
+  "bg_mid": {
+   "file": "bg_mid.png",
+   "w": 1110,
+   "h": 300
+  },
+  "ground": {
+   "file": "ground.png",
+   "w": 256,
+   "h": 256
+  },
+  "title": {
+   "file": "title.jpg",
+   "w": 1279,
+   "h": 720
+  }
+ }
+}
