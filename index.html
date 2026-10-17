@@ -236,6 +236,11 @@
     .title-wrap { grid-template-columns: 1fr 1fr; padding: 2cqh 3cqw; }
     .legend { display: none; }
   }
+  .rotate-hint { display: none; margin: 0; color: var(--yellow); font-weight: 900; text-align: center; padding: 1em 16px; }
+  @media (orientation: portrait) and (pointer: coarse) {
+    #app { align-content: center; gap: 0; }
+    .rotate-hint { display: block; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .hero img { animation: none !important; }
   }
@@ -383,6 +388,7 @@
     <div id="toast" hidden></div>
     <div id="loading">載入緊…</div>
   </div>
+  <p class="rotate-hint">打橫部手機玩，畫面會大好多</p>
 </div>
 
 <script type="module" src="src/main.js"></script>
