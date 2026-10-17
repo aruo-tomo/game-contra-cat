@@ -111,6 +111,31 @@ window.addEventListener('blur', () => held.clear());
 const isDown = (profile, action) => (bindings[profile][action] || []).some((c) => held.has(c));
 const isPressed = (profile, action) => (bindings[profile][action] || []).some((c) => held.has(c) || tapped.has(c));
 
+// True if a key bound to this action was pressed since the last frame (used for keyboard drop-in).
+export const tappedAction = (profile, action) => (bindings[profile][action] || []).some((c) => tapped.has(c));
+
+// Keys used by profiles that can be active at the same time must not overlap.
+const PARTNERS = { pc: ['classic2'], classic1: ['classic2'], classic2: ['pc', 'classic1'] };
+export function bindingConflicts(profile) {
+  const out = {};
+  const mine = bindings[profile];
+  for (const [action, codes] of Object.entries(mine)) {
+    for (const code of codes) {
+      for (const [a2, c2] of Object.entries(mine)) {
+        if (a2 !== action && c2.includes(code)) out[action] = `同「${ACTION_LABELS[a2]}」用咗同一個鍵`;
+      }
+      for (const other of PARTNERS[profile]) {
+        for (const [a2, c2] of Object.entries(bindings[other])) {
+          if (c2.includes(code) && !(action === 'pause' && a2 === 'pause')) {
+            out[action] = `同「${PROFILE_LABELS[other]}・${ACTION_LABELS[a2]}」撞鍵（${keyName(code)}）`;
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+
 // Call at the end of every frame.
 export function endInputFrame() {
   tapped.clear();

@@ -325,6 +325,250 @@
    }
   ]
  },
+ "bullet": {
+  "N": [
+   {
+    "file": "bullet_N_0.png",
+    "w": 73,
+    "h": 48,
+    "ax": 0.526
+   }
+  ],
+  "S": [
+   {
+    "file": "bullet_S_0.png",
+    "w": 74,
+    "h": 54,
+    "ax": 0.5
+   }
+  ],
+  "M": [
+   {
+    "file": "bullet_M_0.png",
+    "w": 71,
+    "h": 33,
+    "ax": 0.471
+   }
+  ],
+  "L": [
+   {
+    "file": "bullet_L_0.png",
+    "w": 114,
+    "h": 34,
+    "ax": 0.485
+   }
+  ],
+  "F": [
+   {
+    "file": "bullet_F_0.png",
+    "w": 86,
+    "h": 55,
+    "ax": 0.555
+   }
+  ],
+  "spit": [
+   {
+    "file": "bullet_spit_0.png",
+    "w": 82,
+    "h": 37,
+    "ax": 0.523
+   }
+  ],
+  "enemy": [
+   {
+    "file": "bullet_enemy_0.png",
+    "w": 75,
+    "h": 64,
+    "ax": 0.546
+   }
+  ]
+ },
+ "muzzle": {
+  "fire": [
+   {
+    "file": "muzzle_fire_0.png",
+    "w": 33,
+    "h": 36,
+    "ax": 0.31
+   },
+   {
+    "file": "muzzle_fire_1.png",
+    "w": 66,
+    "h": 72,
+    "ax": 0.42
+   },
+   {
+    "file": "muzzle_fire_2.png",
+    "w": 84,
+    "h": 58,
+    "ax": 0.411
+   },
+   {
+    "file": "muzzle_fire_3.png",
+    "w": 67,
+    "h": 47,
+    "ax": 0.469
+   }
+  ]
+ },
+ "impact": {
+  "hit": [
+   {
+    "file": "impact_hit_0.png",
+    "w": 33,
+    "h": 33,
+    "ax": 0.438
+   },
+   {
+    "file": "impact_hit_1.png",
+    "w": 55,
+    "h": 56,
+    "ax": 0.488
+   },
+   {
+    "file": "impact_hit_2.png",
+    "w": 32,
+    "h": 31,
+    "ax": 0.735
+   },
+   {
+    "file": "impact_hit_3.png",
+    "w": 32,
+    "h": 22,
+    "ax": 0.54
+   }
+  ]
+ },
+ "explosion": {
+  "boom": [
+   {
+    "file": "explosion_boom_0.png",
+    "w": 71,
+    "h": 82,
+    "ax": 0.568
+   },
+   {
+    "file": "explosion_boom_1.png",
+    "w": 89,
+    "h": 98,
+    "ax": 0.519
+   },
+   {
+    "file": "explosion_boom_2.png",
+    "w": 119,
+    "h": 128,
+    "ax": 0.482
+   },
+   {
+    "file": "explosion_boom_3.png",
+    "w": 102,
+    "h": 114,
+    "ax": 0.478
+   },
+   {
+    "file": "explosion_boom_4.png",
+    "w": 100,
+    "h": 103,
+    "ax": 0.508
+   },
+   {
+    "file": "explosion_boom_5.png",
+    "w": 60,
+    "h": 72,
+    "ax": 0.538
+   }
+  ]
+ },
+ "freed_runner": {
+  "daze": [
+   {
+    "file": "freed_runner_daze_0.png",
+    "w": 75,
+    "h": 110,
+    "ax": 0.434
+   }
+  ],
+  "happy": [
+   {
+    "file": "freed_runner_happy_0.png",
+    "w": 70,
+    "h": 92,
+    "ax": 0.507
+   }
+  ]
+ },
+ "freed_bat": {
+  "daze": [
+   {
+    "file": "freed_bat_daze_0.png",
+    "w": 115,
+    "h": 110,
+    "ax": 0.417
+   }
+  ],
+  "happy": [
+   {
+    "file": "freed_bat_happy_0.png",
+    "w": 107,
+    "h": 105,
+    "ax": 0.428
+   }
+  ]
+ },
+ "freed_ghost": {
+  "daze": [
+   {
+    "file": "freed_ghost_daze_0.png",
+    "w": 163,
+    "h": 110,
+    "ax": 0.44
+   }
+  ],
+  "happy": [
+   {
+    "file": "freed_ghost_happy_0.png",
+    "w": 120,
+    "h": 107,
+    "ax": 0.476
+   }
+  ]
+ },
+ "freed_elite": {
+  "daze": [
+   {
+    "file": "freed_elite_daze_0.png",
+    "w": 229,
+    "h": 220,
+    "ax": 0.531
+   }
+  ],
+  "happy": [
+   {
+    "file": "freed_elite_happy_0.png",
+    "w": 226,
+    "h": 216,
+    "ax": 0.533
+   }
+  ]
+ },
+ "soul": {
+  "blaze": [
+   {
+    "file": "soul_blaze_0.png",
+    "w": 96,
+    "h": 110,
+    "ax": 0.409
+   }
+  ],
+  "gulp": [
+   {
+    "file": "soul_gulp_0.png",
+    "w": 94,
+    "h": 109,
+    "ax": 0.595
+   }
+  ]
+ },
  "runner": {
   "run": [
    {
@@ -511,6 +755,11 @@
   },
   "title": {
    "file": "title.jpg",
+   "w": 1279,
+   "h": 720
+  },
+  "cover_bg": {
+   "file": "cover_bg.jpg",
    "w": 1279,
    "h": 720
   }
