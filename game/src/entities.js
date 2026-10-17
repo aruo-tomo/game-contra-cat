@@ -743,14 +743,24 @@ class Enemy {
     drawFrame(ctx, f, this.cx, this.y + this.h + (o.dy || 0), scale, { ...o, flash: this.flash > 0 });
     return true;
   }
-  // pulsing red glow at a muzzle shortly before this enemy fires
+  // small glint at the muzzle tip shortly before this enemy fires: grows and flickers, ink outlined
   warn(ctx, x, y) {
     if (this.cool > 0.35 || !this.game.onScreen(this)) return;
     const k = 1 - this.cool / 0.35;
+    if (k < 0.8 && Math.floor(this.t * 20) % 2) return;
+    const r = 2.5 + k * 3.5;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(this.t * 6);
     ctx.beginPath();
-    ctx.arc(x, y, 3 + k * 6 + Math.sin(this.t * 40) * 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(232,86,75,${0.35 + k * 0.5})`;
-    ctx.fill();
+    for (let i = 0; i < 8; i++) {
+      const rr = i % 2 ? r * 0.38 : r;
+      const a = (i / 8) * Math.PI * 2;
+      ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    ctx.closePath();
+    ink(ctx, k > 0.8 ? C.cream : C.yellow, 1.4);
+    ctx.restore();
   }
   drawSprite(ctx, name, h, opts = {}) {
     const img = this.game.img[name];
@@ -797,6 +807,8 @@ export class Runner extends Enemy {
 }
 
 // Red Mouse rifle soldier
+// rifle tip on the generated rat frame (x from centre towards facing, y from the top of the hitbox)
+const RAT_MUZZLE = { x: 36, y: 19 };
 export class Rat extends Enemy {
   constructor(game, x, groundY) {
     super(game, x, groundY - 40, 24, 40, 2);
@@ -818,14 +830,16 @@ export class Rat extends Enemy {
       this.cool = 1.7 + Math.random() * 0.8;
       const a = Math.atan2(p.cy - (this.y + 18), p.cx - this.cx);
       const q = Math.round(a / (Math.PI / 4)) * (Math.PI / 4); // 8 directions like the original
-      enemyShot(this.game, this.cx + Math.cos(q) * 16, this.y + 18 + Math.sin(q) * 16, q);
+      // level shots leave the rifle's muzzle; angled ones from the chest
+      if (Math.abs(Math.sin(q)) < 0.1) enemyShot(this.game, this.cx + this.facing * RAT_MUZZLE.x, this.y + RAT_MUZZLE.y, q);
+      else enemyShot(this.game, this.cx + Math.cos(q) * 16, this.y + 18 + Math.sin(q) * 16, q);
       this.aimA = q;
       this.fireT = 0.18;
     }
   }
   draw(ctx) {
     if (this.drawGen(ctx, 'rat', this.fireT > 0 ? 'fire' : 'idle', 0, 46 / 92, { flip: -this.facing, dy: 1 })) {
-      this.warn(ctx, this.cx + this.facing * 26, this.y + 20);
+      this.warn(ctx, this.cx + this.facing * RAT_MUZZLE.x, this.y + RAT_MUZZLE.y);
       return;
     }
     const p = this.game.nearestPlayer(this);

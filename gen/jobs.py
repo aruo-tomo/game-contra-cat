@@ -165,3 +165,38 @@ JOBS4 = [
          "One character, centered, tall portrait framing from the knees up: " + GULP.replace("(it holds no weapon)", "") +
          "Brave but slightly nervous action pose holding a chunky coral-red toy blaster with a paw print, belly mouth open, slight three-quarter view facing left."),
 ]
+
+# --- pass 5: heroes really holding their guns; one gun per weapon ---
+# The heroes are drawn with EMPTY gripping paws; the game draws the current weapon behind the
+# body with its handle under the paws (grip points are measured per frame in gen/grips.json).
+GRIP = ("Both front paws are held together out in front of the chest, clenched into small fists exactly as if firmly gripping the "
+        "handle of a pistol — but the paws hold NOTHING: no gun, no weapon, no object at all, just the two empty clenched paws, clearly visible. ")
+
+def grip_jobs(key, desc, ref):
+    desc = desc.replace("front paws free (it holds no weapon). ", "")
+    return [
+        dict(name=f"{key}_grip", refs=[ref], prompt=STYLE + BG + sheet(6) + desc + GRIP +
+             "Frames, left to right: 1) standing ready, gripping paws pointing straight FORWARD at shoulder height; "
+             "2) standing, arms and gripping paws pointing diagonally UP-FORWARD at 45 degrees; "
+             "3) standing, arms and gripping paws pointing straight UP above the head; "
+             "4) standing, arms and gripping paws pointing diagonally DOWN-FORWARD at 45 degrees; "
+             "5) crouching very low and flat, gripping paws pointing straight FORWARD; "
+             "6) mid-jump with legs tucked up, gripping paws pointing straight FORWARD."),
+        dict(name=f"{key}_griprun", refs=[ref], prompt=STYLE + BG + sheet(6) + desc + GRIP +
+             "Frames: a 6-frame running cycle, legs alternating clearly, slight body bob, while both arms stay steady and stretched "
+             "FORWARD at shoulder height with the empty gripping paws (like running while aiming a pistol)."),
+    ]
+
+JOBS5 = (
+    grip_jobs("blaze", BLAZE, "refs/cat01.png")
+    + grip_jobs("gulp", GULP, "refs/cat02.png")
+    + [
+        dict(name="weapons", refs=["refs/cat01.png", "refs/cat02.png"], prompt=STYLE + BG + row(4) +
+             "Four chunky cartoon toy guns for cat commandos, all pointing RIGHT, perfectly horizontal side view, each with a pistol-grip "
+             "handle under its rear half, all drawn at the same scale: "
+             "1) a stubby wide hairball shotgun with three short fat barrels side by side and a fluffy red pom-pom on top (coral red with yellow trim); "
+             "2) a chunky cat-litter machine gun with a round drum magazine underneath and a long grey-green perforated barrel; "
+             "3) a sleek long laser-pointer rifle, cream body with a red lens glowing at the tip and a small scope; "
+             "4) a catnip flamethrower with a round mustard-yellow fuel tank on top, a flared nozzle and little green catnip leaves painted on it."),
+    ]
+)

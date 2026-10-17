@@ -88,6 +88,20 @@ const setupRat = () => {
   await sleep(150);
   r = await page.evaluate(() => ({ aim: __game.players[0].aim, auto: __game.players[0].autoTarget }));
   check('auto-aim off: aims straight ahead', !r.auto && Math.abs(r.aim.y) < 0.01, JSON.stringify(r));
+
+  // a rat firing level leaves its rifle tip, not its chest
+  r = await page.evaluate(() => {
+    const g = __game; const p = g.players[0];
+    g.enemies = []; g.ebullets = []; p.inv = 999;
+    g.spawn({ t: 'rat', at: p.x + 240, y: 300 });
+    const rat = g.enemies[g.enemies.length - 1];
+    rat.y = p.y + p.h * 0.45 - 18; rat.vy = 0; rat.update = function () {}; // pin it level with P1
+    rat.cool = 0;
+    Object.getPrototypeOf(rat).update.call(rat, 0.001);
+    const b = g.ebullets[g.ebullets.length - 1];
+    return b ? { dx: Math.round(rat.cx - b.x), fireT: rat.fireT > 0 } : null;
+  });
+  check('rat level shot leaves the rifle muzzle', r && r.dx >= 30, JSON.stringify(r));
   check('no console errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await page.close();
 
