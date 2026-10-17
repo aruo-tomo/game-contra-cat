@@ -474,8 +474,43 @@
     </div>
   </section>
 
+  <section id="polish">
+    <h2><span class="no">09</span>打磨更新（第一關）</h2>
+    <p>呢一輪冇加新關，專心改第一關嘅手感、演出同平衡。</p>
+    <div class="table">
+      <table>
+        <thead><tr><th>範疇</th><th>改動</th></tr></thead>
+        <tbody>
+          <tr><td><b>手感</b></td><td>跑出平台邊 0.1 秒內仍然跳得（coyote time）；落地前 0.12 秒撳跳都會生效（跳掣緩衝）；重擊時停格（hit-stop）；鏡頭向前望多少少</td></tr>
+          <tr><td><b>敵人</b></td><td>赤鼠兵同砲台開火前，槍口會閃紅光預警；中彈時整隻閃白</td></tr>
+          <tr><td><b>演出</b></td><td>開場兩隻貓由天跌落嚟；Boss 出場前有 WARNING 橫額同警報聲；倒下時向後翻滾飛走</td></tr>
+          <tr><td><b>結算</b></td><td>過關後，解放咗嘅貓會排隊遊行；顯示分數、解放數、用時、倒下次數，按四個目標評 S／A／B／C 級，並記錄最佳成績</td></tr>
+          <tr><td><b>選項</b></td><td>音樂同音效分開調音量；畫面震動開關；瞄準輔助分關、標準、強三級。全部記喺瀏覽器</td></tr>
+          <tr><td><b>手機</b></td><td>浮動搖桿：手指撳落邊度，搖桿就喺嗰度出現；打直手機時提示打橫玩</td></tr>
+          <tr><td><b>音樂</b></td><td>關卡同 Boss 音樂加長到 64 拍；加開場、過關、Game Over 短音樂</td></tr>
+          <tr><td><b>平衡</b></td><td>用自動通關機械人實測：單人約 87 秒、雙人約 74 秒打通。按結果加強中 Boss（64／雙人 96 血）同雙人要塞，坑邊唔再出步兵</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sheet">
+      <h3>新增素材（Codex 生成）</h3>
+      <div class="strip poses">
+        <figure class="pose"><img src="img/gen/blaze_aimup_0.png" alt="火斑 向上瞄" loading="lazy"><figcaption>火斑 向上瞄</figcaption></figure><figure class="pose"><img src="img/gen/blaze_aimdiag_0.png" alt="火斑 斜上瞄" loading="lazy"><figcaption>火斑 斜上瞄</figcaption></figure><figure class="pose"><img src="img/gen/blaze_hurt_0.png" alt="火斑 受傷" loading="lazy"><figcaption>火斑 受傷</figcaption></figure>
+        <figure class="pose"><img src="img/gen/gulp_aimup_0.png" alt="大口 向上瞄" loading="lazy"><figcaption>大口 向上瞄</figcaption></figure><figure class="pose"><img src="img/gen/gulp_aimdiag_0.png" alt="大口 斜上瞄" loading="lazy"><figcaption>大口 斜上瞄</figcaption></figure><figure class="pose"><img src="img/gen/gulp_hurt_0.png" alt="大口 受傷" loading="lazy"><figcaption>大口 受傷</figcaption></figure>
+      </div>
+      <div class="strip poses">
+        <figure class="pose"><img src="img/gen/ghost_float_0.png" alt="幽靈貓 1" loading="lazy"><figcaption>幽靈貓 1</figcaption></figure><figure class="pose"><img src="img/gen/ghost_float_1.png" alt="幽靈貓 2" loading="lazy"><figcaption>幽靈貓 2</figcaption></figure>
+        <figure class="pose"><img src="img/gen/elite_idle_0.png" alt="三眼肥白貓 待機" loading="lazy"><figcaption>三眼肥白貓 待機</figcaption></figure><figure class="pose"><img src="img/gen/elite_jump_0.png" alt="三眼肥白貓 跳" loading="lazy"><figcaption>三眼肥白貓 跳</figcaption></figure><figure class="pose"><img src="img/gen/elite_fire_0.png" alt="三眼肥白貓 發射" loading="lazy"><figcaption>三眼肥白貓 發射</figcaption></figure>
+      </div>
+      <div class="strip poses">
+        <figure class="pose"><img src="img/gen/fx_muzzle_0.png" alt="槍口火光" loading="lazy"><figcaption>槍口火光</figcaption></figure><figure class="pose"><img src="img/gen/fx_spark_0.png" alt="命中火花" loading="lazy"><figcaption>命中火花</figcaption></figure>
+        <figure class="pose"><img src="img/gen/fx_boom_0.png" alt="爆炸 1" loading="lazy"><figcaption>爆炸 1</figcaption></figure><figure class="pose"><img src="img/gen/fx_boom_1.png" alt="爆炸 2" loading="lazy"><figcaption>爆炸 2</figcaption></figure><figure class="pose"><img src="img/gen/fx_boom_2.png" alt="爆炸 3" loading="lazy"><figcaption>爆炸 3</figcaption></figure><figure class="pose"><img src="img/gen/fx_boom_3.png" alt="爆炸 4" loading="lazy"><figcaption>爆炸 4</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
   <section id="status">
-    <h2><span class="no">09</span>製作進度</h2>
+    <h2><span class="no">10</span>製作進度</h2>
     <div class="status">
       <div class="col">
         <h3><span class="dot" style="background:var(--green)"></span>已完成</h3>
@@ -491,15 +526,14 @@
         <h3><span class="dot" style="background:var(--yellow)"></span>留意</h3>
         <ul>
           <li>Codex 登入只存喺雲端 container，回收之後要重新登入先生成到新圖</li>
-          <li>幽靈貓同三眼肥白貓仲用緊原圖單張，靠程式做浮動同跳躍</li>
+          <li>程式同素材存喺 GitHub repo <code>aruo-tomo/game-contra-cat</code>（要開咗 Claude GitHub App 權限先推得上去）</li>
         </ul>
       </div>
       <div class="col">
         <h3><span class="dot" style="background:var(--red)"></span>下一步</h3>
         <ul>
-          <li>補瞄準姿勢（向上、斜上）同受傷格</li>
           <li>做第二關：寵物醫院走廊</li>
-          <li>試玩調手感：衝刺距離、瞄準輔助角度、敵人密度</li>
+          <li>真人試玩，回饋手感同難度</li>
         </ul>
       </div>
     </div>
