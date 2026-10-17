@@ -17,6 +17,9 @@ export const CHARS = [
 export const SKILL_COST = 50;
 const BEAM_DMG = 8; // Blaze's third-eye beam, to every enemy along it
 const SWALLOW_R = 110; // Gulp's belly mouth reach
+// grip frames by aim angle in the hero's own facing space (0 = straight ahead, negative = up)
+const GRIP_DIRS = [['gripfwd', 0], ['gripdiag', -Math.PI / 4], ['gripup', -Math.PI / 2], ['gripdown', Math.PI / 4]];
+const GUN_SIZE = { N: 1.35 }; // the starting blasters were cut out smaller than the pickup guns
 
 export const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
@@ -270,8 +273,11 @@ export class Player {
   fire() {
     const g = this.game;
     const a = Math.atan2(this.aim.y, this.aim.x);
-    const ox = this.cx + Math.cos(a) * 22;
-    const oy = this.cy + Math.sin(a) * 22;
+    // shots leave the muzzle of the gun in the paws (or a point in front of the chest without grip art)
+    const mz = this.muzzle();
+    const ox = mz ? mz.x : this.cx + Math.cos(a) * 22;
+    const oy = mz ? mz.y : this.cy + Math.sin(a) * 22;
+    this.lastMuzzle = mz;
     const w = this.weapon;
     const shots = [];
     const mk = (ang, o) => ({ x: ox, y: oy, vx: Math.cos(ang) * o.speed, vy: Math.sin(ang) * o.speed, t: 0, owner: this, ...o });
@@ -482,12 +488,90 @@ export class Player {
     if (this.hurtT > 0) return { f: frame(key, 'hurt') };
     if (this.dashT > 0) return { f: frame(key, 'dash') };
     if (this.spin) return { f: frame(key, 'ball'), anchor: 'center' };
+    const grip = this.gripPose();
+    if (grip) return grip;
     if (!this.onGround) return { f: frame(key, 'jump') };
     if (this.crouch) return { f: frame(key, 'crouch') };
     if (Math.abs(this.vx) > 20) return { f: frame(key, 'run', this.anim * 13) };
     if (this.aim.y < -0.85) return { f: frame(key, 'aimup') || frame(key, 'idle') };
     if (this.aim.y < -0.35) return { f: frame(key, 'aimdiag') || frame(key, 'idle') };
     return { f: frame(key, 'idle'), breathe: true };
+  }
+
+  // aim angle in facing space, clamped to the front half (the hero turns to face what it aims at)
+  localAim() {
+    return Math.atan2(this.aim.y, Math.max(0, this.aim.x * this.facing));
+  }
+
+  // Empty-pawed grip frame for the current aim and state, holding the current weapon; null without the art.
+  gripPose() {
+    const key = this.char.id;
+    const la = this.localAim();
+    let [anim] = GRIP_DIRS.reduce((best, d) => (Math.abs(d[1] - la) < Math.abs(best[1] - la) ? d : best));
+    let i = 0;
+    let breathe = false;
+    if (!this.onGround) {
+      if (anim === 'gripfwd') anim = 'gripjump';
+    } else if (this.crouch) {
+      anim = 'gripcrouch';
+    } else if (Math.abs(this.vx) > 20 && anim === 'gripfwd') {
+      anim = 'griprun';
+      i = this.anim * 13;
+    } else {
+      breathe = anim === 'gripfwd';
+    }
+    const f = frame(key, anim, i);
+    return f && f.gx != null ? { f, gun: true, breathe } : null;
+  }
+
+  gunFrame() {
+    const t = this.weapon.type;
+    return frame('gun', t === 'N' ? this.char.id : t) || frame('gun', this.char.id);
+  }
+
+  // where the paws of a grip frame are in the world
+  pawPoint(f, scale, bottom) {
+    return {
+      x: this.cx + this.facing * (f.gx - f.ax) * f.w * scale,
+      y: bottom - (1 - f.gy) * f.h * scale,
+    };
+  }
+
+  heldGun() {
+    const pose = this.pose();
+    const gun = this.gunFrame();
+    if (!pose.gun || !gun || gun.hx == null) return null;
+    const scale = HERO_SCALE * this.char.size;
+    const bob = pose.breathe ? Math.sin(this.game.t * 3) * 0.6 : 0;
+    const paw = this.pawPoint(pose.f, scale, this.y + this.h + 1 + bob);
+    return { gun, paw, gs: scale * (GUN_SIZE[this.weapon.type] || 1), la: this.localAim() };
+  }
+
+  // muzzle tip of the gun in the paws, in world space
+  muzzle() {
+    const h = this.heldGun();
+    if (!h) return null;
+    const { gun, paw, gs, la } = h;
+    const mx = (gun.mx - gun.hx) * gun.w * gs;
+    const my = (gun.my - gun.hy) * gun.h * gs;
+    return {
+      x: paw.x + this.facing * (mx * Math.cos(la) - my * Math.sin(la)),
+      y: paw.y + mx * Math.sin(la) + my * Math.cos(la),
+    };
+  }
+
+  // the current weapon with its handle in the paws, drawn before (behind) the body so the paws wrap it
+  drawHeldGun(ctx) {
+    const h = this.heldGun();
+    if (!h) return;
+    const { gun, paw, gs, la } = h;
+    ctx.save();
+    ctx.translate(paw.x, paw.y);
+    ctx.scale(this.facing, 1);
+    ctx.rotate(la);
+    ctx.translate(-(this.recoil || 0) * 3, 0); // kick back on each shot
+    ctx.drawImage(gun.img, -gun.hx * gun.w * gs, -gun.hy * gun.h * gs, gun.w * gs, gun.h * gs);
+    ctx.restore();
   }
 
   draw(ctx) {
@@ -537,11 +621,15 @@ export class Player {
 
     ctx.save();
     if (this.inv > 0 && this.catnip <= 0 && Math.floor(g.t * 18) % 2) ctx.globalAlpha = 0.45;
+    // with grip art the gun is held in the paws (and put away for rolls, hurt, dash, skills);
+    // otherwise the old floating gun arm
+    const hasGrip = !!frame(this.char.id, 'gripfwd');
     const gun = frame('gun', this.char.id);
-    const showGun = !this.spin && !(this.char.id === 'gulp' && this.skillT > 0);
+    const showGun = !hasGrip && !this.spin && !(this.char.id === 'gulp' && this.skillT > 0);
     const ang = Math.atan2(this.aim.y, this.aim.x);
     // the gun sits behind the body when aiming backwards over the shoulder
     const gunBehind = Math.sign(Math.cos(ang)) !== this.facing;
+    if (hasGrip && pose.gun) this.drawHeldGun(ctx);
     if (showGun && gunBehind) this.drawGunArm(ctx, gun, ang);
     if (pose.anchor === 'center') {
       drawFrame(ctx, pose.f, this.cx, this.y + this.h - 22, scale, { flip: this.facing, anchor: 'center', rot: this.spin * Math.PI * 2 * this.facing });
