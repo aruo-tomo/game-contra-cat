@@ -134,6 +134,9 @@ for hero in ("blaze", "gulp"):
 for hero in ("blaze", "gulp"):
     # arms raised make these frames taller than the 128px standing pose
     sheet(f"{hero}_aim", 3, [(hero, "aimup"), (hero, "aimdiag"), (hero, "hurt")], 1, 140)
+    # empty paws clenched round an invisible pistol grip; the game draws the current weapon in them
+    sheet(f"{hero}_grip", 6, [(hero, a) for a in ("gripfwd", "gripdiag", "gripup", "gripdown", "gripcrouch", "gripjump")], 0, HERO_H)
+    sheet(f"{hero}_griprun", 6, [(hero, "griprun")] * 6, "median", HERO_H, merge=6)  # tails nearly touch
 
 sheet("ghost", 2, [("ghost", "float")] * 2, "median", 108)
 sheet("elite", 3, [("elite", "idle"), ("elite", "jump"), ("elite", "fire")], 0, 224)
@@ -155,6 +158,8 @@ sheet("turret", 1, [("turret", "body")], 0, 76)
 sheet("fortress", 1, [("fortress", "body")], 0, 700)
 sheet("ratking", 1, [("ratking", "body")], 0, 320)
 sheet("guns", 2, [("gun", "blaze"), ("gun", "gulp")], 0, 26)
+# one gun per pickup weapon (N keeps gun_blaze / gun_gulp), all drawn at one scale on the sheet
+sheet("weapons", 4, [("gun", k) for k in ("S", "M", "L", "F")], "median", 40)
 sheet("items", 7, [("item", k) for k in ("can", "S", "M", "L", "F", "R", "B")], 1, 48)
 
 # opaque layers
@@ -195,6 +200,14 @@ for k in ("blaze", "gulp"):
         im = im.resize((round(im.width * 520 / im.height), 520), Image.LANCZOS)
         im.save(OUT / f"select_{k}.png", optimize=True)
         print(f"select_{k}", im.size)
+
+# hand-checked grip / muzzle points (normalised to each frame), measured by tools/measure_grips.py
+grips_path = GEN / "grips.json"
+if grips_path.exists():
+    for key, anims in json.loads(grips_path.read_text()).items():
+        for anim, pts in anims.items():
+            for entry, pt in zip(manifest.get(key, {}).get(anim, []), pts):
+                entry.update(pt)
 
 (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1))
 print("manifest keys:", list(manifest))
