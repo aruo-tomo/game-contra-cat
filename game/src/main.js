@@ -3,6 +3,7 @@ import { initAudio, sfx, startMusic, stopMusic, setMuted, isMuted, setVolumes } 
 import {
   MouseKeyboardCtl, ClassicKeyboardCtl, GamepadCtl, TouchCtl, bindMouse, pollPads, connectedPads, endInputFrame,
   onKonami, getBindings, setBinding, resetBindings, captureNextKey, keyName, ACTION_LABELS, PROFILE_LABELS,
+  tappedAction, bindingConflicts,
 } from './input.js';
 import { setupTouch } from './touch.js';
 import { loadSprites } from './sprites.js';
@@ -86,7 +87,8 @@ class Game {
   }
 
   addPlayer(idx, ctl) {
-    const p = new Player(this, idx, ctl);
+    const chars = (this.opts && this.opts.chars) || [0, 1];
+    const p = new Player(this, idx, ctl, chars[idx]);
     this.players[idx] = p;
     if (this.state === 'play') this.text(p.cx, 120, `P${idx + 1} 加入！`, C.green);
     return p;
@@ -221,7 +223,7 @@ class Game {
     if (by && by.energy != null) by.energy = Math.min(100, by.energy + 8);
     if (e instanceof Capsule) {
       this.items.push(new Item(this, e.cx - 11, e.cy - 11, e.item));
-      this.effects.push(new FxAnim('boom', e.cx, e.cy, 0.35, 0.35));
+      this.effects.push(new FxAnim('explosion', 'boom', e.cx, e.cy, 0.4, 0.35));
       sfx.boom(false);
       return;
     }
@@ -229,12 +231,10 @@ class Game {
       this.freed++;
       const h = e instanceof Elite ? 100 : 48;
       this.effects.push(new FreedCat(this, e.cat, e.cx, e.y + e.h, h));
-      this.puff(e.cx, e.cy, 6, [C.cream, C.pink]);
       this.text(e.cx, e.y - 6, FREED_LINES[this.freed % FREED_LINES.length], C.greenDk);
       sfx.meow();
     } else {
-      this.puff(e.cx, e.cy, e.kind === 'core' ? 20 : 6, [C.red, C.yellow, C.cream]);
-      this.effects.push(new FxAnim('boom', e.cx, e.cy, e.kind === 'core' ? 0.7 : 0.45, e.kind === 'core' ? 1.1 : e.kind ? 0.7 : 0.5));
+      this.effects.push(new FxAnim('explosion', 'boom', e.cx, e.cy, e.kind === 'core' ? 0.8 : 0.55, e.kind === 'core' ? 1.4 : e.kind ? 0.85 : 0.5));
       this.freeze(e.kind === 'core' ? 0.3 : e.kind || e instanceof Turret ? 0.07 : 0);
       sfx.boom(e.kind != null);
       if (e.villain && !e.kind) { this.text(e.cx, e.y - 6, '吱！', C.ink); sfx.squeak(); }
@@ -285,10 +285,8 @@ class Game {
     const sprites = ['cat05', 'cat04', 'cat06', 'cat03'];
     const n = Math.min(14, Math.max(4, this.freed));
     for (let i = 0; i < n; i++) {
-      const f = new FreedCat(this, sprites[i % sprites.length], this.cam.x - 30 - i * 40, 300, i % 4 === 3 ? 70 : 42);
-      f.vx = 150;
-      f.vy = -200 - (i % 3) * 60;
-      f.life = 6;
+      const f = new FreedCat(this, sprites[i % sprites.length], this.cam.x - 30 - i * 40, 300, i % 4 === 3 ? 80 : 44, { happy: true, dir: 1, life: 6 });
+      f.t = -i * 0.05;
       this.effects.push(f);
     }
   }
@@ -322,10 +320,15 @@ class Game {
     }
     this.time += dt;
 
-    // a second gamepad can drop in at any time
+    // a second player can drop in at any time: a free gamepad, or (mouse mode) the P2 keyboard keys
     if (!this.players[1]) {
       for (const i of joined) {
         if (!this.usesPad(i)) { this.addPlayer(1, new GamepadCtl(i)); break; }
+      }
+      const pcKeys = Object.values(getBindings().pc).flat();
+      const p2Join = (getBindings().classic2.jump || []).some((c) => !pcKeys.includes(c));
+      if (!this.players[1] && this.opts.mode === 'pc' && p2Join && tappedAction('classic2', 'jump')) {
+        this.addPlayer(1, new ClassicKeyboardCtl('classic2'));
       }
     }
 
@@ -375,7 +378,7 @@ class Game {
 
     updateBridges(this.level, this.alivePlayers(), dt, (seg) => {
       sfx.bridge();
-      this.puff(seg.x + 20, seg.y, 5, [C.yellow, C.red]);
+      this.effects.push(new FxAnim('explosion', 'boom', seg.x + 20, seg.y, 0.45, 0.4));
       for (let i = 0; i < 3; i++) this.effects.push(new Debris(seg.x + 20, seg.y));
     });
 
@@ -426,7 +429,7 @@ class Game {
         }
         if (b.owner) b.owner.energy = Math.min(100, b.owner.energy + 1);
         e.damage(b.dmg, b.owner);
-        this.effects.push(new FxAnim('spark', b.x, b.y, 0.08, 0.45, Math.random() * 6));
+        this.effects.push(new FxAnim('impact', 'hit', b.x, b.y, 0.16, 0.36, { rot: Math.random() * 6 }));
         if (b.dead) break;
       }
     }
@@ -439,6 +442,7 @@ class Game {
         if (p.catnip > 0) { b.dead = true; continue; }
         if (p.inv > 0 || p.dashT > 0) continue;
         b.dead = true;
+        this.effects.push(new FxAnim('impact', 'hit', b.x, b.y, 0.18, 0.45, { rot: Math.random() * 6 }));
         p.hurt();
       }
       for (const e of this.enemies) {
@@ -522,7 +526,8 @@ class Game {
           ctx.fillStyle = C.ink;
           ctx.font = '700 10px "Noto Sans HK", sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('P2：第二個手掣撳 A 隨時加入', x + 88, y + 19);
+          const k = keyName((getBindings().classic2.jump || [])[0]);
+          ctx.fillText(`P2 加入：手掣撳 A，或者撳 ${k}`, x + 88, y + 19);
         }
         continue;
       }
@@ -681,7 +686,7 @@ function showScreen(name) {
   if (first && !isTouch) first.focus({ preventScroll: true });
 }
 
-const prefs = { mode: isTouch ? 'touch' : 'pc', difficulty: 'nine', konami: false };
+const prefs = { mode: options.mode || (isTouch ? 'touch' : 'pc'), difficulty: 'nine', konami: false, char: options.char === 1 ? 1 : 0 };
 
 function toast(text) {
   const t = $('toast');
@@ -691,7 +696,27 @@ function toast(text) {
   toast.timer = setTimeout(() => { t.hidden = true; }, 2600);
 }
 
+const MODE_LABELS = { pc: '滑鼠＋鍵盤', classic: '經典鍵盤', touch: '觸控' };
+
+function renderPicks() {
+  for (const b of document.querySelectorAll('.pick')) {
+    const mine = Number(b.dataset.char) === prefs.char;
+    b.setAttribute('aria-checked', String(mine));
+    b.querySelector('.pick-badge').textContent = mine ? 'P1' : 'P2';
+  }
+  const best = loadBest();
+  $('titleBest').textContent = best ? `最高紀錄 ${String(best.score).padStart(6, '0')}・${best.rank} 級` : '';
+}
+document.querySelectorAll('.pick').forEach((b) => b.addEventListener('click', () => {
+  prefs.char = Number(b.dataset.char);
+  options.char = prefs.char;
+  saveOptions();
+  renderPicks();
+  sfx.meow();
+}));
+
 function renderSegments() {
+  renderPicks();
   for (const b of document.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b.dataset.mode === prefs.mode));
   for (const b of document.querySelectorAll('[data-diff]')) b.setAttribute('aria-pressed', String(b.dataset.diff === prefs.difficulty));
   for (const el of document.querySelectorAll('[data-legend]')) el.hidden = el.dataset.legend !== prefs.mode;
@@ -706,13 +731,15 @@ function startGame(players, padIndex = null) {
   else if (prefs.mode === 'touch') ctls.push(new TouchCtl());
   else ctls.push(new MouseKeyboardCtl());
   if (players > 1) {
+    const pad = connectedPads().find((i) => i !== padIndex);
     if (prefs.mode === 'classic' && padIndex == null) ctls.push(new ClassicKeyboardCtl('classic2'));
-    else {
-      const pad = connectedPads().find((i) => i !== padIndex);
-      if (pad != null) ctls.push(new GamepadCtl(pad));
-    }
+    else if (pad != null) ctls.push(new GamepadCtl(pad));
+    // no second pad: P2 shares the keyboard with its own keys
+    else if (prefs.mode !== 'touch') ctls.push(new ClassicKeyboardCtl('classic2'));
   }
-  game.start({ ctls, mode: prefs.mode, difficulty: prefs.difficulty, konami: prefs.konami });
+  // P1 plays the chosen cat; P2 always gets the other one
+  const chars = [prefs.char, 1 - prefs.char];
+  game.start({ ctls, chars, mode: prefs.mode, difficulty: prefs.difficulty, konami: prefs.konami });
   prefs.konami = false;
   showScreen(null);
 }
@@ -732,6 +759,7 @@ function resumeGame() {
 function toTitle() {
   stopMusic();
   game.state = 'title';
+  renderPicks();
   showScreen('title');
 }
 
@@ -771,6 +799,24 @@ function renderSettings() {
   }
   $('bindList').innerHTML = rows.join('');
   $('bindTitle').textContent = PROFILE_LABELS[settingsProfile];
+  // say when this key set is actually used, and flag clashes
+  const scope = {
+    pc: ['pc', '「滑鼠＋鍵盤」模式嘅 P1 用'],
+    classic1: ['classic', '「經典鍵盤」模式嘅 P1 用'],
+    classic2: [null, '「經典鍵盤」模式嘅 P2 用；「滑鼠＋鍵盤」雙人而又冇第二個手掣時，P2 亦用呢組'],
+  }[settingsProfile];
+  const active = settingsProfile === 'classic2' ? prefs.mode !== 'touch' : prefs.mode === scope[0];
+  $('bindScope').innerHTML = `呢組鍵：${scope[1]}。${active ? '' : `<b>你而家揀咗「${MODE_LABELS[prefs.mode]}」，所以呢組鍵暫時唔會用到。</b>`}`;
+  $('bindScope').classList.toggle('warn', !active);
+  const clash = bindingConflicts(settingsProfile);
+  for (const [action, msg] of Object.entries(clash)) {
+    const row = $(`bind-${settingsProfile}-${action}`);
+    if (!row) continue;
+    row.classList.add('clash');
+    const small = row.parentElement.querySelector('small');
+    small.textContent = '⚠ ' + msg;
+    small.classList.add('clash-msg');
+  }
 }
 
 $('bindList').addEventListener('click', (e) => {
@@ -795,7 +841,17 @@ $('btnReset').addEventListener('click', () => {
 });
 $('btnSettingsDone').addEventListener('click', () => showScreen(game.state === 'paused' ? 'pause' : 'title'));
 
-document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { prefs.mode = b.dataset.mode; renderSegments(); }));
+document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+  prefs.mode = b.dataset.mode;
+  options.mode = prefs.mode;
+  saveOptions();
+  renderSegments();
+  if (!$('settings').hidden) {
+    // editing keys for the mode you just picked is the likely next step
+    settingsProfile = prefs.mode === 'classic' ? 'classic1' : 'pc';
+    renderSettings();
+  }
+}));
 document.querySelectorAll('[data-diff]').forEach((b) => b.addEventListener('click', () => { prefs.difficulty = b.dataset.diff; renderSegments(); }));
 $('btn1p').addEventListener('click', () => startGame(1));
 $('btn2p').addEventListener('click', () => startGame(2));
@@ -856,7 +912,8 @@ function frame(now) {
     // pause from a pad's Start button
     for (const p of game.players) if (p && p.input && p.input.pause && p.ctl.kind === 'pad') pauseGame();
   }
-  endInputFrame();
+  // keep taps made during a hit-stop so they are handled once the game resumes
+  if (!(game.hitStop > 0)) endInputFrame();
   game.draw();
   requestAnimationFrame(frame);
 }

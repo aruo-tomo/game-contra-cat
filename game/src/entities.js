@@ -2,7 +2,7 @@
 
 import { C, ink, ellipse, rrect, drawRat, drawGun, drawHeart, drawBadge, WEAPON_INFO } from './art.js';
 import { sfx } from './audio.js';
-import { frame, drawFrame } from './sprites.js';
+import { SPR, frame, drawFrame } from './sprites.js';
 
 export const GRAVITY = 1500;
 const RUN = 155;
@@ -59,11 +59,12 @@ export function moveBody(e, dt, level, gravity = true) {
 // ======================= PLAYER =======================
 
 export class Player {
-  constructor(game, idx, ctl) {
+  // idx = player slot (P1/P2); charIdx = which cat (0 火斑, 1 大口)
+  constructor(game, idx, ctl, charIdx = idx) {
     this.game = game;
     this.idx = idx;
     this.ctl = ctl;
-    this.char = CHARS[idx];
+    this.char = CHARS[charIdx];
     this.w = 26;
     this.h = 46;
     this.x = game.cam.x + 80 + idx * 40;
@@ -136,6 +137,7 @@ export class Player {
     this.anim += dt;
     this.inv = Math.max(0, this.inv - dt);
     this.hurtT = Math.max(0, this.hurtT - dt);
+    this.recoil = Math.max(0, (this.recoil || 0) - dt * 14);
     this.catnip = Math.max(0, this.catnip - dt);
     this.dashCd = Math.max(0, this.dashCd - dt);
     this.dropT = Math.max(0, this.dropT - dt);
@@ -195,7 +197,9 @@ export class Player {
         sfx.jump(true);
       }
     }
-    if (!c.jumpHeld && this.jumps === 1 && this.vy < -220) this.vy = -220;
+    // variable jump height: releasing early cuts the rise, but only after a minimum hop
+    this.jumpT = this.jumps === 1 ? (this.jumpT || 0) + dt : 0;
+    if (!c.jumpHeld && this.jumps === 1 && this.jumpT > 0.1 && this.vy < -260) this.vy = -260;
     this.dropping = this.dropT > 0;
 
     moveBody(this, dt, g.level, this.dashT <= 0);
@@ -272,7 +276,9 @@ export class Player {
       }
     }
     g.bullets.push(...shots);
-    g.effects.push(new FxAnim('muzzle', ox, oy, 0.07, 0.6, a));
+    const big = w.type === 'L' || w.type === 'F' || w.type === 'S';
+    g.effects.push(new FxAnim('muzzle', 'fire', ox, oy, big ? 0.12 : 0.08, big ? 0.36 : 0.28, { rot: a, anchor: 'left' }));
+    this.recoil = 1;
     this.cool = cool * this.rate;
     sfx.shoot(w.type);
   }
@@ -355,9 +361,7 @@ export class Player {
 
   loseLife() {
     const g = this.game;
-    g.puff(this.cx, this.cy, 8, [this.char.gun, C.cream]);
-    const ko = frame(this.char.id, 'down');
-    if (ko && this.y < 420) g.effects.push(new KnockedOut(ko, this.cx, this.y + this.h, this.facing, HERO_SCALE * this.char.size));
+    g.effects.push(new KnockedOut(g, this.char.id, this.cx, Math.min(300, this.y + this.h), this.facing, HERO_SCALE * this.char.size));
     g.deaths = (g.deaths || 0) + 1;
     this.lives--;
     if (this.weapon.lvl > 1) this.weapon.lvl = 1;
@@ -521,6 +525,7 @@ export class Player {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(ang);
+    ctx.translate(-(this.recoil || 0) * 4, 0); // kick back on each shot
     if (Math.cos(ang) < 0) ctx.scale(1, -1); // keep the gun upright when aiming left
     ctx.drawImage(gun.img, -4, (-gun.h * s) / 2, gun.w * s, gun.h * s);
     ctx.restore();
@@ -609,7 +614,35 @@ export function updateBullet(b, dt) {
   if (b.gravity) b.vy += b.gravity * dt;
 }
 
+// logical size of each projectile sprite (height, or length for the laser) and where its head sits
+const BULLET_SIZE = { N: 13, S: 14, M: 10, L: 48, F: 21, spit: 15, enemy: 16 };
+const BULLET_HEAD = { N: 0.7, S: 0.7, M: 0.72, L: 0.88, F: 0.68, spit: 0.78, enemy: 0.55 };
+const BULLET_GLOW = { L: 'rgba(255,80,70,0.35)', F: 'rgba(255,170,40,0.35)', enemy: 'rgba(232,60,60,0.3)', S: 'rgba(232,86,75,0.18)' };
+
 export function drawBullet(ctx, b) {
+  const kind = b.kind;
+  const f = frame('bullet', kind);
+  if (!f) return drawBulletLegacy(ctx, b);
+  const ang = Math.atan2(b.vy, b.vx);
+  const size = BULLET_SIZE[kind] || 12;
+  let scale = kind === 'L' ? size / f.w : size / f.h;
+  if (kind === 'enemy') scale *= 1 + Math.sin(b.t * 25) * 0.08;
+  if (b.kind === 'spit') scale *= 1.1;
+  const glow = BULLET_GLOW[kind];
+  if (glow) {
+    const r = kind === 'L' ? 16 : size * 0.9;
+    const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
+    g.addColorStop(0, glow);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  drawFrame(ctx, f, b.x, b.y, scale, { anchor: 'center', rot: ang, ax: BULLET_HEAD[kind] ?? 0.5 });
+}
+
+function drawBulletLegacy(ctx, b) {
   ctx.save();
   ctx.translate(b.x, b.y);
   switch (b.kind) {
@@ -1020,7 +1053,8 @@ export class BossWall extends Enemy {
     const g = this.game;
     if (this.dying > 0) {
       this.dying -= dt;
-      if (Math.random() < 0.4) g.puff(this.x + Math.random() * 120, Math.random() * 300, 6, [C.red, C.yellow, C.cream]);
+      // chain of explosions across the collapsing tower
+      if (Math.random() < 0.18) g.effects.push(new FxAnim('explosion', 'boom', this.x + Math.random() * 150, 20 + Math.random() * 280, 0.55, 0.6 + Math.random() * 0.5));
       if (Math.random() < 0.08) sfx.boom(true);
       if (this.dying <= 0) { this.dead = true; g.stageClear(); }
       return;
@@ -1249,67 +1283,134 @@ export class FloatText {
   }
 }
 
-// A rescued cat snaps out of the mind control and hops away happily
+const FREED_ART = { cat05: 'freed_runner', cat04: 'freed_bat', cat06: 'freed_ghost', cat03: 'freed_elite' };
+
+// A rescued cat: shakes off the mind control in a puff of smoke, then hops away happily.
 export class FreedCat {
-  constructor(game, sprite, x, y, h) {
-    Object.assign(this, { game, sprite, x, y, h, vx: -70 - Math.random() * 60, vy: -320, t: 0, dead: false });
+  constructor(game, sprite, x, y, h, o = {}) {
+    Object.assign(this, { game, sprite, x, y, h, t: 0, dead: false, life: o.life ?? 2.6 });
+    this.key = FREED_ART[sprite];
+    this.daze = o.happy ? 0 : 0.5;
+    this.dir = o.dir ?? (Math.random() < 0.5 ? -1 : 1);
+    this.vx = 0;
+    this.vy = 0;
+    if (!o.happy) game.effects.push(new FxAnim('explosion', 'boom', x, y - h * 0.5, 0.45, (h / 128) * 1.1, { from: 3 }));
   }
   update(dt) {
     this.t += dt;
+    if (this.t < this.daze) return;
+    if (!this.hopping) {
+      this.hopping = true;
+      this.vx = this.dir * (70 + Math.random() * 50);
+      this.vy = -300;
+    }
     this.vy += 900 * dt;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
-    const life = this.life ?? 2.5;
-    if (this.y > 300 && this.vy > 0 && this.t < life) { this.y = 300; this.vy = -300; }
-    if (this.t > life) this.dead = true;
+    if (this.y > 300 && this.vy > 0 && this.t < this.life) { this.y = 300; this.vy = -280; }
+    if (this.t > this.life) this.dead = true;
   }
   draw(ctx) {
-    const img = this.game.img[this.sprite];
-    const w = (img.width * this.h) / img.height;
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, ((this.life ?? 2.5) - this.t) * 1.5);
-    ctx.translate(this.x, this.y);
-    ctx.rotate(Math.sin(this.t * 10) * 0.15);
-    if ('filter' in ctx) ctx.filter = 'saturate(0.5) brightness(1.15)';
-    ctx.drawImage(img, -w / 2, -this.h, w, this.h);
-    ctx.restore();
-    if (this.t < 1.6) drawHeart(ctx, this.x + 14, this.y - this.h - 8 - this.t * 20, 12, C.pink);
+    const f = this.key && frame(this.key, this.t < this.daze ? 'daze' : 'happy');
+    const alpha = Math.min(1, (this.life - this.t) * 1.5);
+    if (f) {
+      const jitter = this.t < this.daze ? Math.sin(this.t * 70) * 1.5 : 0;
+      const ref = this.key === 'freed_elite' ? 220 : 110;
+      drawFrame(ctx, f, this.x + jitter, this.y, this.h / ref, { flip: this.dir, alpha });
+    } else {
+      const img = this.game.img[this.sprite];
+      const w = (img.width * this.h) / img.height;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(img, this.x - w / 2, this.y - this.h, w, this.h);
+      ctx.restore();
+    }
+    if (this.t > this.daze && this.t < this.daze + 1.4) {
+      ctx.globalAlpha = alpha;
+      drawHeart(ctx, this.x + this.dir * 10, this.y - this.h - 6 - (this.t - this.daze) * 22, 11, C.pink);
+      ctx.globalAlpha = 1;
+    }
   }
 }
 
-// One-shot sprite animation from the generated fx sheet (muzzle flash, hit spark, explosion).
+// One-shot sprite animation (muzzle flash, impact, explosion). anchor 'left' puts the
+// frame's left edge at (x, y), used for muzzle flashes leaving the gun.
 export class FxAnim {
-  constructor(anim, x, y, dur, scale, rot = 0) {
-    Object.assign(this, { anim, x, y, dur, scale, rot, t: 0, dead: false });
+  constructor(key, anim, x, y, dur, scale, o = {}) {
+    Object.assign(this, { key, anim, x, y, dur, scale, rot: o.rot || 0, anchor: o.anchor, from: o.from || 0, t: 0, dead: false });
   }
   update(dt) {
     this.t += dt;
     if (this.t >= this.dur) this.dead = true;
   }
   draw(ctx) {
-    const list = frame('fx', this.anim) ? (this.anim === 'boom' ? 4 : 1) : 0;
-    if (!list) return;
-    const f = frame('fx', this.anim, Math.min(list - 1, Math.floor((this.t / this.dur) * list)));
-    if (f) drawFrame(ctx, f, this.x, this.y, this.scale, { anchor: 'center', rot: this.rot });
+    const list = SPR.frames[this.key] && SPR.frames[this.key][this.anim];
+    if (!list || !list.length) return;
+    const n = list.length - this.from;
+    const f = frame(this.key, this.anim, this.from + Math.min(n - 1, Math.floor((this.t / this.dur) * n)));
+    if (f) drawFrame(ctx, f, this.x, this.y, this.scale, { anchor: 'center', rot: this.rot, ax: this.anchor === 'left' ? 0 : 0.5 });
   }
 }
 
-// A defeated hero tumbles backwards off screen before respawning.
+// A defeated hero: lies dazed for a moment while one of its nine lives floats up to heaven.
 export class KnockedOut {
-  constructor(f, x, y, facing, scale) {
-    Object.assign(this, { f, x, y, facing, scale, vx: -facing * 120, vy: -380, rot: 0, t: 0, dead: false });
+  constructor(game, hero, x, y, facing, scale) {
+    Object.assign(this, { game, hero, x, y, facing, scale, t: 0, dead: false });
+    this.body = frame(hero, 'down');
+    this.soul = frame('soul', hero);
   }
   update(dt) {
     this.t += dt;
-    this.vy += 1100 * dt;
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
-    this.rot -= this.facing * dt * 5;
-    if (this.t > 1.1) this.dead = true;
+    if (this.t > 2) this.dead = true;
   }
   draw(ctx) {
-    drawFrame(ctx, this.f, this.x, this.y, this.scale, { flip: this.facing, rot: this.rot, alpha: Math.min(1, (1.1 - this.t) * 2) });
+    const t = this.t;
+    if (this.body && t < 1 && (t < 0.6 || Math.floor(t * 16) % 2)) {
+      drawFrame(ctx, this.body, this.x, this.y, this.scale, { flip: this.facing });
+      // dizzy stars circling the head
+      for (let i = 0; i < 3; i++) {
+        const a = t * 7 + (i * Math.PI * 2) / 3;
+        drawStar(ctx, this.x + this.facing * 14 + Math.cos(a) * 12, this.y - 26 + Math.sin(a) * 4, 4);
+      }
+    }
+    if (this.soul && t > 0.25) {
+      const k = t - 0.25;
+      const alpha = Math.min(1, k * 3) * Math.max(0, 1 - k / 1.75);
+      const sx = this.x + Math.sin(k * 4) * 8;
+      const sy = this.y - 34 - k * 70;
+      const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, 40);
+      glow.addColorStop(0, `rgba(255,236,170,${0.7 * alpha})`);
+      glow.addColorStop(1, 'rgba(255,236,170,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 40, 0, Math.PI * 2);
+      ctx.fill();
+      drawFrame(ctx, this.soul, sx, sy + 30, 60 / 110, { alpha });
+      if (k < 1.2) {
+        ctx.globalAlpha = Math.max(0, 1 - k / 1.2);
+        ctx.font = '400 18px Bungee, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 5;
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = C.ink;
+        ctx.strokeText('-1 命', this.x + 34, this.y - 50 - k * 30);
+        ctx.fillStyle = C.yellow;
+        ctx.fillText('-1 命', this.x + 34, this.y - 50 - k * 30);
+        ctx.globalAlpha = 1;
+      }
+    }
   }
+}
+
+function drawStar(ctx, x, y, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const rr = i % 2 ? r * 0.45 : r;
+    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  ctx.closePath();
+  ink(ctx, C.yellow, 1.2);
 }
 
 export class Debris {

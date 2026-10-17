@@ -28,9 +28,12 @@ const check = (name, ok, info = '') => results.push(`${ok ? 'PASS' : 'FAIL'} ${n
   await sleep(1200);
   await page.evaluate(() => { const p = __game.players[0]; p.y = 300 - p.h - 14; p.vy = 250; p.onGround = false; p.jumps = 2; p.jumped = true; p.airT = 0.5; });
   await page.keyboard.press('Space');
-  await sleep(250);
-  r = await page.evaluate(() => { const p = __game.players[0]; return { y: Math.round(p.y), vy: Math.round(p.vy), jumps: p.jumps }; });
-  check('jump buffer fires on landing', r.jumps === 1 && r.y < 300 - 46 - 5, JSON.stringify(r));
+  let minY = 999;
+  for (let i = 0; i < 15; i++) { await sleep(20); minY = Math.min(minY, await page.evaluate(() => __game.players[0].y)); }
+  r = await page.evaluate(() => ({ jumps: __game.players[0].jumps }));
+  r.minY = Math.round(minY);
+  // ground top is 300 and the cat is 46 tall: rising clearly above 254 means it jumped after landing
+  check('jump buffer fires on landing', r.minY < 254 - 15, JSON.stringify(r));
 
   // aim poses follow the mouse
   await sleep(1200);
@@ -106,6 +109,23 @@ const check = (name, ok, info = '') => results.push(`${ok ? 'PASS' : 'FAIL'} ${n
   check('options persist', r.shakeOff === 'true' && r.strong === 'true' && r.music === '30', JSON.stringify(r));
   const best = await page.evaluate(() => localStorage.getItem('contracat.best.v1'));
   check('best result saved', !!best, best || '');
+  // character select: P1 picks Gulp, P2 gets Blaze
+  await page.click('#btnSettingsDone');
+  await page.click('.pick[data-char="1"]');
+  await page.click('#btn2p');
+  await sleep(400);
+  r = await page.evaluate(() => __game.players.map((p) => p && p.char.id));
+  check('character select (P1 Gulp, P2 Blaze)', r[0] === 'gulp' && r[1] === 'blaze', JSON.stringify(r));
+  // the choice is remembered for next time
+  await page.reload();
+  await page.waitForFunction(() => window.__game);
+  r = await page.evaluate(() => document.querySelector('.pick[data-char="1"]').getAttribute('aria-checked'));
+  check('character choice remembered', r === 'true', r);
+  await page.click('.pick[data-char="0"]');
+
+  // new projectile / effect sprites are in use
+  await page.click('#btn1p');
+  await sleep(2400);
   check('no console errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await page.close();
 

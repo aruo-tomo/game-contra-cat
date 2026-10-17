@@ -15,6 +15,7 @@
     --green: #7E9A8C;
     --green-dk: #5C786A;
     --muted: #5E584E;
+    --night: #121422;
     --display: "Noto Sans HK", "PingFang HK", "Microsoft JhengHei", sans-serif;
     --latin: Bungee, "Arial Black", sans-serif;
     color-scheme: dark;
@@ -70,52 +71,105 @@
   h2 { font-size: 1.8em; font-weight: 900; }
   p { margin: 0; line-height: 1.5; }
 
-  /* title */
-  #title { background: transparent; padding: 0; place-items: stretch; }
-  .title-wrap {
-    display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    gap: 3cqw;
-    padding: 4cqh 4cqw;
-    align-items: center;
+  /* title / cover: full-bleed night alley, logo top-left, start buttons bottom-left, character cards right */
+  #title { background: var(--night); padding: 0; place-items: stretch; overflow: hidden; }
+  .cover {
+    position: absolute; inset: 0; display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "logo select" "start select" "bar bar";
+    gap: 2cqh 3cqw; padding: 5cqh 4cqw 0;
+    color: var(--paper);
+  }
+  .cover-bg {
+    position: absolute; inset: -3%; z-index: 0;
+    background: url("assets/sprites/gen/cover_bg.jpg") center / cover no-repeat, var(--night);
+    animation: drift 40s ease-in-out infinite alternate;
+  }
+  .cover::before {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
     background:
-      radial-gradient(circle at 18% 30%, rgba(242,179,61,0.35) 0 14%, transparent 15%),
-      var(--paper);
-    min-height: 100%;
+      linear-gradient(90deg, rgba(18,20,34,0.88) 0%, rgba(18,20,34,0.55) 38%, rgba(18,20,34,0) 62%),
+      linear-gradient(0deg, rgba(18,20,34,0.9) 0%, rgba(18,20,34,0) 22%);
   }
-  .logo { display: grid; gap: 0.4em; }
-  .logo .kicker { font-family: var(--latin); font-size: 0.85em; letter-spacing: 0.12em; color: var(--red); }
-  .logo h1 {
-    font-size: clamp(40px, 15cqh, 120px);
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    color: var(--yellow);
-    -webkit-text-stroke: 0.06em var(--ink);
-    paint-order: stroke fill;
-    text-shadow: 0.06em 0.06em 0 var(--ink);
-    transform: rotate(-3deg);
-    transform-origin: left center;
-  }
-  .logo .sub { font-weight: 700; color: var(--muted); }
-  .keyart { margin: 0.4em 0 0; position: relative; max-width: 30em; }
-  .keyart img {
-    display: block; width: 100%; max-height: 42cqh; object-fit: cover; border: 3px solid var(--ink); border-radius: 12px;
-    box-shadow: 5px 5px 0 var(--ink); transform: rotate(-1deg);
-  }
-  .keyart figcaption { position: absolute; left: 0.6em; bottom: -0.8em; display: flex; gap: 0.4em; }
-  .heroes { display: flex; align-items: flex-end; gap: 1.2em; margin-top: 0.4em; }
-  .hero { display: grid; justify-items: center; gap: 0.3em; }
-  .hero img { height: clamp(60px, 26cqh, 210px); width: auto; filter: drop-shadow(4px 4px 0 rgba(30,30,30,0.25)); }
-  .hero:first-child img { animation: bob 1.4s ease-in-out infinite; }
-  .hero:last-child img { animation: bob 1.4s ease-in-out 0.7s infinite; }
-  .tag {
-    font-size: 0.8em; font-weight: 900; padding: 0.15em 0.6em;
-    border: 2px solid var(--ink); border-radius: 999px; background: var(--paper);
-  }
-  .tag.p1 { background: #F6D6CF; }
-  .tag.p2 { background: #D5E1DA; }
-  @keyframes bob { 50% { transform: translateY(-6%); } }
+  .cover > *:not(.cover-bg) { position: relative; z-index: 1; min-width: 0; }
+  @keyframes drift { from { transform: scale(1.04) translateX(-1.5%); } to { transform: scale(1.08) translateX(1.5%); } }
 
+  .cover-logo { grid-area: logo; display: grid; justify-items: start; gap: 1cqh; }
+  .logo-mark {
+    margin: 0; display: flex; gap: 0.02em; line-height: 1;
+    font-size: clamp(44px, 21cqh, 168px); font-weight: 900; color: var(--yellow);
+    -webkit-text-stroke: 0.07em var(--ink); paint-order: stroke fill;
+    text-shadow: 0.05em 0.05em 0 var(--red), 0.09em 0.09em 0 var(--ink);
+  }
+  .logo-mark span { display: inline-block; animation: pop 0.5s cubic-bezier(.2, 1.6, .4, 1) both; }
+  .logo-mark span:nth-child(1) { transform: rotate(-6deg); animation-delay: 0.05s; }
+  .logo-mark span:nth-child(2) { transform: rotate(3deg) translateY(0.06em); animation-delay: 0.15s; }
+  .logo-mark span:nth-child(3) { transform: rotate(-2deg); animation-delay: 0.25s; }
+  @keyframes pop { from { opacity: 0; scale: 0.4; } }
+  .logo-en {
+    margin: 0; font: 400 clamp(12px, 4.2cqh, 32px) var(--latin); letter-spacing: 0.18em;
+    background: var(--red); color: var(--paper); padding: 0.15em 0.6em 0.1em; border: 3px solid var(--ink);
+    transform: skew(-8deg) rotate(-2deg); box-shadow: 4px 4px 0 var(--ink);
+  }
+  .logo-tag { margin: 0.6cqh 0 0; font-weight: 700; font-size: clamp(11px, 2.6cqh, 18px); color: #E7E1D3; max-width: 22em; }
+
+  .cover-start { grid-area: start; align-self: end; display: grid; justify-items: start; gap: 1.6cqh; padding-bottom: 2cqh; }
+  .start {
+    font: 900 clamp(15px, 4.6cqh, 34px) var(--display); color: var(--ink); cursor: pointer;
+    min-width: 11em; text-align: left; padding: 0.3em 0.9em 0.35em 0.7em; display: grid; line-height: 1.1;
+    background: var(--yellow); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 5px 5px 0 var(--ink);
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .start small { font: 400 0.42em var(--latin); letter-spacing: 0.14em; opacity: 0.75; }
+  .start.alt { background: var(--paper); }
+  .start:hover, .start:focus-visible { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 8px 8px 0 var(--ink); outline: none; }
+  .start:hover::after, .start:focus-visible::after { content: "▶"; position: absolute; left: -1.1em; color: var(--yellow); -webkit-text-stroke: 2px var(--ink); }
+  .start { position: relative; }
+  .press { margin: 0; font: 400 clamp(9px, 2cqh, 14px) var(--latin); letter-spacing: 0.12em; color: var(--yellow); animation: blink 1.4s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+
+  .cover-select { grid-area: select; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr); gap: 3.4cqh 2cqw; align-self: stretch; padding-bottom: 2cqh; }
+  .sel-title { grid-column: 1 / -1; margin: 0; font-weight: 900; font-size: clamp(12px, 3cqh, 20px); display: flex; gap: 0.8em; align-items: baseline; }
+  .sel-title span { font-weight: 700; font-size: 0.75em; color: #CFC8B8; }
+  .pick {
+    position: relative; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto auto; justify-items: center;
+    padding: 1.2cqh 0.8cqw 1.4cqh; cursor: pointer; color: var(--ink); text-align: center; font: inherit;
+    border: 3px solid var(--ink); border-radius: 16px; box-shadow: 6px 6px 0 var(--ink);
+    background: radial-gradient(circle at 50% 38%, rgba(255,255,255,0.55) 0 30%, transparent 31%), var(--pick-bg);
+    transition: transform 0.15s, filter 0.15s, box-shadow 0.15s;
+    filter: saturate(0.55) brightness(0.8);
+  }
+  .pick[data-char="0"] { --pick-bg: #F3C3B8; }
+  .pick[data-char="1"] { --pick-bg: #C9DACF; }
+  .pick img { width: 100%; height: 100%; min-height: 0; object-fit: contain; object-position: bottom; filter: drop-shadow(3px 3px 0 rgba(30,30,30,0.35)); }
+  .pick-name { font-weight: 900; font-size: clamp(13px, 3.4cqh, 24px); margin-top: 0.4cqh; }
+  .pick-skill { font-weight: 700; font-size: clamp(9px, 2.1cqh, 14px); color: var(--muted); }
+  .pick-badge {
+    position: absolute; top: -0.9em; left: 50%; translate: -50% 0; font: 400 clamp(10px, 2.6cqh, 18px) var(--latin);
+    padding: 0.1em 0.7em; border: 3px solid var(--ink); border-radius: 999px; background: var(--paper);
+  }
+  .pick[aria-checked="true"] { filter: none; transform: translateY(-1.2cqh) rotate(-1.5deg); box-shadow: 8px 10px 0 var(--ink), 0 0 0 4px var(--yellow); }
+  .pick[aria-checked="true"] .pick-badge { background: var(--yellow); }
+  .pick[aria-checked="true"] img { animation: hop 1.1s ease-in-out infinite; }
+  .pick:hover { filter: none; }
+  .pick:focus-visible { outline: 3px solid var(--red); outline-offset: 4px; }
+  @keyframes hop { 50% { transform: translateY(-3%); } }
+
+  .cover-bar {
+    grid-area: bar; margin: 0 -4cqw; padding: 1.4cqh 4cqw 1.8cqh; display: flex; flex-wrap: wrap; gap: 1cqh 1.4cqw; align-items: center;
+    background: rgba(18,20,34,0.82); border-top: 3px solid var(--ink); font-size: clamp(10px, 2.2cqh, 15px);
+  }
+  .cover-bar .seg { border-color: var(--paper); }
+  .cover-bar .seg button { background: transparent; color: var(--paper); padding: 0.3em 0.8em; white-space: nowrap; }
+  .cover-bar .seg button + button { border-left-color: var(--paper); }
+  .cover-bar .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
+  .bar-btn {
+    font: inherit; font-weight: 900; white-space: nowrap; padding: 0.3em 1em; border-radius: 10px; cursor: pointer;
+    background: var(--paper); color: var(--ink); border: 2px solid var(--paper);
+  }
+  .best { margin-left: auto; font-weight: 700; color: var(--yellow); font-variant-numeric: tabular-nums; }
+  .bar-label { font-weight: 900; color: #CFC8B8; font-size: 0.85em; }
   .menu { display: grid; gap: 0.7em; }
   .row { display: flex; gap: 0.6em; flex-wrap: wrap; }
   .btn {
@@ -183,6 +237,11 @@
   }
   .key.fixed { cursor: default; background: var(--paper-dk); box-shadow: none; }
   .key.listening { background: var(--yellow); }
+  .key.clash { border-color: var(--red); background: #F8D9D4; }
+  .clash-msg { color: #B93C33 !important; font-weight: 700; }
+  .scope { font-size: 0.82em; margin: -0.4em 0 0; color: var(--muted); }
+  .scope.warn { color: #B93C33; }
+  .scope b { font-weight: 900; }
 
   /* overlays */
   .hud-btn {
@@ -232,9 +291,9 @@
   .tbtn-big { width: 16cqh; height: 16cqh; background: rgba(242,179,61,0.85); }
   .tbtn.on { background: var(--red); color: var(--paper); }
 
-  @container (max-height: 320px) {
-    .title-wrap { grid-template-columns: 1fr 1fr; padding: 2cqh 3cqw; }
-    .legend { display: none; }
+  @container (max-height: 360px) {
+    .logo-tag, .press, .pick-skill, .sel-title span { display: none; }
+    .cover { padding-top: 3cqh; }
   }
   .rotate-hint { display: none; margin: 0; color: var(--yellow); font-weight: 900; text-align: center; padding: 1em 16px; }
   @media (orientation: portrait) and (pointer: coarse) {
@@ -242,7 +301,7 @@
     .rotate-hint { display: block; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .hero img { animation: none !important; }
+    .cover-bg, .logo-mark span, .pick img, .press { animation: none !important; }
   }
 </style>
 
@@ -254,54 +313,47 @@
     <button type="button" class="hud-btn" id="btnPause">暫停</button>
 
     <section id="title" class="screen" hidden>
-      <div class="title-wrap">
-        <div class="logo">
-          <span class="kicker">MEOW-TRA · STAGE 1</span>
-          <h1>喵斗羅</h1>
-          <p class="sub">赤鼠帝國洗腦咗全城隻貓。兩隻怪貓突擊隊出動，打醒佢哋！</p>
-          <figure class="keyart">
-            <img src="assets/sprites/gen/title.jpg" alt="火斑同大口背對背拎住玩具槍，後巷入面有幾隻赤鼠兵">
-            <figcaption><span class="tag p1">P1 火斑 Blaze</span><span class="tag p2">P2 大口 Gulp</span></figcaption>
-          </figure>
+      <div class="cover">
+        <div class="cover-bg" aria-hidden="true"></div>
+        <div class="cover-logo">
+          <h1 class="logo-mark" aria-label="喵斗羅"><span>喵</span><span>斗</span><span>羅</span></h1>
+          <p class="logo-en">MEOW-TRA</p>
+          <p class="logo-tag">赤鼠帝國洗腦咗全城隻貓。兩隻怪貓突擊隊出動，打醒佢哋！</p>
         </div>
-        <div class="menu">
-          <div class="row">
-            <button type="button" class="btn" id="btn1p">單人出擊</button>
-            <button type="button" class="btn red" id="btn2p">雙人合作</button>
+        <div class="cover-start">
+          <button type="button" class="start" id="btn1p"><small>1 PLAYER</small>單人出擊</button>
+          <button type="button" class="start alt" id="btn2p"><small>2 PLAYERS</small>雙人合作</button>
+          <p class="press">PRESS Ⓐ ON GAMEPAD TO START</p>
+        </div>
+        <div class="cover-select" role="radiogroup" aria-label="揀角色">
+          <p class="sel-title">揀角色 <span>雙人合作時，P2 用另一隻</span></p>
+          <button type="button" class="pick" role="radio" data-char="0" aria-checked="true">
+            <img src="assets/sprites/gen/select_blaze.png" alt="">
+            <span class="pick-name">火斑 Blaze</span>
+            <span class="pick-skill">專屬技：三眼鎖定，子彈自動追敵</span>
+            <span class="pick-badge">P1</span>
+          </button>
+          <button type="button" class="pick" role="radio" data-char="1" aria-checked="false">
+            <img src="assets/sprites/gen/select_gulp.png" alt="">
+            <span class="pick-name">大口 Gulp</span>
+            <span class="pick-skill">專屬技：肚口吞彈，吞完噴返出去</span>
+            <span class="pick-badge">P2</span>
+          </button>
+        </div>
+        <div class="cover-bar">
+          <span class="bar-label">操作</span>
+          <div class="seg" role="group" aria-label="操作方式">
+            <button type="button" data-mode="pc">滑鼠＋鍵盤</button>
+            <button type="button" data-mode="classic">經典鍵盤</button>
+            <button type="button" data-mode="touch">觸控</button>
           </div>
-          <div class="field">
-            <span class="label">操作方式</span>
-            <div class="seg" role="group" aria-label="操作方式">
-              <button type="button" data-mode="pc">滑鼠＋鍵盤</button>
-              <button type="button" data-mode="classic">經典鍵盤</button>
-              <button type="button" data-mode="touch">觸控</button>
-            </div>
+          <span class="bar-label">難度</span>
+          <div class="seg" role="group" aria-label="難度">
+            <button type="button" data-diff="nine">九命貓</button>
+            <button type="button" data-diff="classic">經典</button>
           </div>
-          <div class="field">
-            <span class="label">難度</span>
-            <div class="seg" role="group" aria-label="難度">
-              <button type="button" data-diff="nine">九命貓：3 格血、9 條命</button>
-              <button type="button" data-diff="classic">經典：一擊即死、3 條命</button>
-            </div>
-          </div>
-          <div class="legend" data-legend="pc">
-            <b>P1</b> <kbd>A</kbd><kbd>D</kbd> 行　<kbd>S</kbd> 伏低　<kbd>Space</kbd> 跳（空中再撳＝二段跳）<br>
-            滑鼠瞄準，<b>按住左鍵</b>連射　<kbd>左 Shift</kbd> 閃避衝刺　<b>右鍵</b>／<kbd>E</kbd> 專屬技<br>
-            <b>P2</b> 用手掣：左搖桿行、右搖桿推出去就射、<kbd>A</kbd> 跳、<kbd>RB</kbd> 衝刺、<kbd>LB</kbd> 專屬技
-          </div>
-          <div class="legend" data-legend="classic" hidden>
-            同一張鍵盤兩個人玩。冇滑鼠：方向鍵決定瞄準方向，有敵人就自動連射；按住「鎖定」企定只轉方向。<br>
-            <b>P1</b> <kbd>WASD</kbd> 行　<kbd>J</kbd> 跳　<kbd>K</kbd> 衝刺　<kbd>L</kbd> 鎖定　<kbd>I</kbd> 專屬技<br>
-            <b>P2</b> <kbd>←↑→↓</kbd> 行　數字鍵 <kbd>1</kbd> 跳　<kbd>2</kbd> 衝刺　<kbd>3</kbd> 鎖定　<kbd>5</kbd> 專屬技
-          </div>
-          <div class="legend" data-legend="touch" hidden>
-            左邊搖桿行（向下＝伏低），右邊搖桿推去邊就射去邊。<br>
-            <b>跳</b>（空中再撳＝二段跳）、<b>衝</b> 閃避衝刺、<b>技</b> 專屬技。接手掣可以加入 P2。
-          </div>
-          <div class="row">
-            <button type="button" class="btn alt" id="btnSettings">鍵位設定</button>
-          </div>
-          <p class="fine">手掣撳 A 直接開始。遊戲中第二個手掣撳 A 隨時加入。標題畫面輸入 上上下下左右左右＋跳，有驚喜。</p>
+          <button type="button" class="bar-btn" id="btnSettings">設定同操作說明</button>
+          <span class="best" id="titleBest"></span>
         </div>
       </div>
     </section>
@@ -356,8 +408,27 @@
       <div class="card">
         <h2>設定</h2>
         <div class="opts">
+          <div class="opt"><span>操作方式</span>
+            <div class="seg" role="group" aria-label="操作方式">
+              <button type="button" data-mode="pc">滑鼠＋鍵盤</button><button type="button" data-mode="classic">經典鍵盤</button><button type="button" data-mode="touch">觸控</button>
+            </div>
+          </div>
           <label class="opt" for="optMusic"><span>音樂音量</span><input type="range" id="optMusic" min="0" max="100" step="5"></label>
           <label class="opt" for="optSfx"><span>音效音量</span><input type="range" id="optSfx" min="0" max="100" step="5"></label>
+          <div class="legend" data-legend="pc">
+            <b>P1</b> <kbd>A</kbd><kbd>D</kbd> 行　<kbd>S</kbd> 伏低　<kbd>Space</kbd> 跳（空中再撳＝二段跳）<br>
+            滑鼠瞄準，<b>按住左鍵</b>連射　<kbd>左 Shift</kbd> 閃避衝刺　<b>右鍵</b>／<kbd>E</kbd> 專屬技<br>
+            <b>P2</b> 用手掣（右搖桿推出去就射），或者用鍵盤 <kbd>←↑→↓</kbd> 行、數字鍵 <kbd>1</kbd> 跳，見到敵人自動射
+          </div>
+          <div class="legend" data-legend="classic" hidden>
+            同一張鍵盤兩個人玩。冇滑鼠：方向鍵決定瞄準方向，有敵人就自動連射；按住「鎖定」企定只轉方向。<br>
+            <b>P1</b> <kbd>WASD</kbd> 行　<kbd>J</kbd> 跳　<kbd>K</kbd> 衝刺　<kbd>L</kbd> 鎖定　<kbd>I</kbd> 專屬技<br>
+            <b>P2</b> <kbd>←↑→↓</kbd> 行　數字鍵 <kbd>1</kbd> 跳　<kbd>2</kbd> 衝刺　<kbd>3</kbd> 鎖定　<kbd>5</kbd> 專屬技
+          </div>
+          <div class="legend" data-legend="touch" hidden>
+            左邊搖桿行（向下＝伏低），右邊搖桿推去邊就射去邊。<br>
+            <b>跳</b>（空中再撳＝二段跳）、<b>衝</b> 閃避衝刺、<b>技</b> 專屬技。接手掣可以加入 P2。
+          </div>
           <div class="opt"><span>畫面震動</span>
             <div class="seg" role="group" aria-label="畫面震動">
               <button type="button" data-shake="on">開</button><button type="button" data-shake="off">關</button>
@@ -376,6 +447,7 @@
           <button type="button" role="tab" data-profile="classic2">經典 P2</button>
         </div>
         <p class="label" id="bindTitle"></p>
+        <p class="scope" id="bindScope"></p>
         <div id="bindList"></div>
         <p class="fine">撳個掣再撳新嘅鍵就改到。手掣同觸控用固定配置。</p>
         <div class="row">

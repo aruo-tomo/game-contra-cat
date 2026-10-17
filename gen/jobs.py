@@ -112,3 +112,56 @@ JOBS2 = [
          "then a 4-frame cartoon explosion sequence of the same explosion growing and fading: 3) small red and yellow fireball; "
          "4) big round red, yellow and cream fireball with black outline; 5) breaking up into puffy cream smoke clouds; 6) a few small fading smoke puffs."),
 ]
+
+# --- pass 3: projectiles, shooting effects, defeat effects ---
+def row(n):
+    return (f"Layout: exactly {n} separate items in ONE horizontal row across a landscape canvas, evenly spaced with wide empty gaps, "
+            "nothing touching, each item roughly the same size. ")
+
+FREED = ("Frames, left to right: 1) snapping out of mind control: dazed, shaking its head, spiral eyes clearing, a puff of dust; "
+         "2) freed and happy: a calm, cute, smiling normal cat sitting contentedly, small pink heart above its head. ")
+
+JOBS3 = [
+    dict(name="bullets", refs=["refs/sheet.png"], prompt=STYLE + BG + row(7) +
+         "Game projectile sprites, each flying to the RIGHT, side view, bold and juicy with a short motion tail behind: "
+         "1) a fluffy mustard-yellow hairball bullet; 2) a fluffy coral-red hairball bullet; 3) a chunky grey cat-litter pellet with speed lines; "
+         "4) a long glowing red laser-pointer bolt with a white hot core; 5) a yellow-orange catnip fireball with a flame tail and a green catnip leaf inside; "
+         "6) a pink slimy spit glob; 7) an enemy energy orb: glowing crimson ball with a dark red rim and small sparks."),
+    dict(name="muzzle", refs=["refs/sheet.png"], prompt=STYLE + BG + row(4) +
+         "A 4-frame muzzle flash animation, pointing RIGHT, from a gun barrel tip on the left side of each item: "
+         "1) small bright white-yellow spark; 2) big star-shaped yellow and white blast with red edges; 3) wide cone of flame and sparks; 4) fading wisps of smoke."),
+    dict(name="impact", refs=["refs/sheet.png"], prompt=STYLE + BG + row(4) +
+         "A 4-frame bullet impact animation: 1) small white flash; 2) yellow star burst with shards flying out; 3) ring of sparks; 4) tiny fading smoke puffs."),
+    dict(name="explosion", refs=["refs/sheet.png"], prompt=STYLE + BG + row(6) +
+         "A 6-frame cartoon explosion sequence of ONE explosion over time: 1) bright white-yellow flash; 2) growing red and yellow fireball; "
+         "3) biggest fireball with black outlines and flying debris bits; 4) fireball breaking into orange and cream smoke; "
+         "5) big puffy cream smoke clouds; 6) a few small fading smoke puffs."),
+    dict(name="freed_runner", refs=["refs/cat05.png"], prompt=STYLE + BG + sheet(2, "RIGHT") +
+         "Character: the red cat from the reference (tall pointy ears, red body, cream belly, red and yellow striped tail), but no longer screaming. " + FREED),
+    dict(name="freed_bat", refs=["refs/cat04.png"], prompt=STYLE + BG + sheet(2, "RIGHT") +
+         "Character: the grey-green cat with red and yellow bat wings from the reference, no longer fierce. " + FREED),
+    dict(name="freed_ghost", refs=["refs/cat06.png"], prompt=STYLE + BG + sheet(2, "RIGHT") +
+         "Character: the white ghost cat from the reference turning back into a fluffy white cat as the ghost sheet slips off. " + FREED),
+    dict(name="freed_elite", refs=["refs/cat03.png"], prompt=STYLE + BG + sheet(2, "RIGHT") +
+         "Character: the huge fat fluffy white three-eyed cat from the reference, no longer menacing. " + FREED),
+    dict(name="soul", refs=["refs/cat01.png", "refs/cat02.png"], prompt=STYLE + BG + row(2) +
+         "Cute cartoon 'lost one of nine lives' spirits, floating upward peacefully with eyes closed and a soft smile, slightly translucent pale versions "
+         "with a small golden halo and tiny white angel wings: 1) the red three-eyed spotted cat from the first reference; "
+         "2) the grey-green tabby with a mouth on its belly from the second reference."),
+]
+
+# --- pass 4: title screen redesign ---
+JOBS4 = [
+    dict(name="cover_bg", refs=["refs/sheet.png"], prompt=STYLE +
+         "Wide cinematic 16:9 title-screen background for a side-scrolling action game, landscape canvas, NO characters in the middle and NO text: "
+         "a back alley at night seen from street level, a huge glowing mustard-yellow full moon on the right third, layered rooftops and water tanks "
+         "in grey-green silhouettes, red Red-Mouse-army flags with a black rat emblem on poles, wooden fences, trash cans, a few lit windows. "
+         "Small grey rats in red bandanas peek from the very edges (trash can lid bottom-right, a window top-right). "
+         "The left 45% of the image is calmer and darker (deep ink-blue night sky with a few stars) so a logo and menu can sit there."),
+    dict(name="select_blaze", refs=["refs/cat01.png"], prompt=STYLE + BG +
+         "One character, centered, tall portrait framing from the knees up: " + BLAZE.replace("(it holds no weapon)", "") +
+         "Heroic action pose holding a chunky mustard-yellow toy blaster with red trim, grinning confidently, slight three-quarter view facing right."),
+    dict(name="select_gulp", refs=["refs/cat02.png"], prompt=STYLE + BG +
+         "One character, centered, tall portrait framing from the knees up: " + GULP.replace("(it holds no weapon)", "") +
+         "Brave but slightly nervous action pose holding a chunky coral-red toy blaster with a paw print, belly mouth open, slight three-quarter view facing left."),
+]

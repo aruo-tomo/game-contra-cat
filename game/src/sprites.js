@@ -61,7 +61,7 @@ export function drawFrame(ctx, f, x, y, scale, o = {}) {
   if (o.rot) ctx.rotate(o.rot);
   ctx.scale(o.flip || 1, 1);
   if (o.alpha != null) ctx.globalAlpha *= o.alpha;
-  const left = -w * (f.ax ?? 0.5);
+  const left = -w * (o.ax ?? f.ax ?? 0.5);
   const top = o.anchor === 'center' ? -h / 2 : -h;
   ctx.drawImage(f.img, left, top, w, h);
   if (o.flash) {

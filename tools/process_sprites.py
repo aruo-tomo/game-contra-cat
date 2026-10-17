@@ -75,6 +75,28 @@ def foot_anchor(img):
     return round(float((cols.min() + cols.max()) / 2 / a.shape[1]), 3)
 
 
+def strip_barrel(img):
+    """Muzzle-flash frames were drawn coming out of a grey-green gun barrel; cut the barrel off
+    so only the flash is left (its left edge then sits at the muzzle). Scan from the left and
+    cut where barrel-coloured pixels stop appearing."""
+    a = np.asarray(img).astype(np.int32)
+    rgb, alpha = a[..., :3], a[..., 3] > 0
+    barrel = alpha & (np.abs(rgb - np.array([110, 138, 126])).sum(-1) < 70)
+    counts = barrel.sum(0)
+    seen, cut, gap = False, 0, 0
+    for x, c in enumerate(counts):
+        if c >= 3:
+            seen, gap, cut = True, 0, x
+        elif seen:
+            gap += 1
+            if gap >= 3:
+                break
+    if not seen:
+        return img
+    out = img.crop((cut + 2, 0, img.width, img.height))
+    return out.crop(out.getbbox()) if out.getbbox() else img
+
+
 def save(img, name, scale):
     w, h = max(1, round(img.width * scale)), max(1, round(img.height * scale))
     img.resize((w, h), Image.LANCZOS).save(OUT / f"{name}.png", optimize=True)
@@ -84,7 +106,7 @@ def save(img, name, scale):
 manifest = {}
 
 
-def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500):
+def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500, post=None):
     """names: list of (anim, frame_index) per frame; ref_index: frame (or 'median') that defines the scale."""
     path = GEN / "raw" / f"{raw}.png"
     if not path.exists():
@@ -92,6 +114,8 @@ def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500):
         return
     print(raw)
     fr = frames(remove_bg(Image.open(path)), n, merge=merge, min_area=min_area)
+    if post:
+        fr = [post(f) for f in fr]
     if not fr:
         return
     hs = sorted(f.height for f in fr)
@@ -116,6 +140,15 @@ sheet("ghost", 2, [("ghost", "float")] * 2, "median", 108)
 sheet("elite", 3, [("elite", "idle"), ("elite", "jump"), ("elite", "fire")], 0, 224)
 sheet("fx", 6, [("fx", "muzzle"), ("fx", "spark"), ("fx", "boom"), ("fx", "boom"), ("fx", "boom"), ("fx", "boom")], 3, 96,
       merge=16, min_area=150)
+# projectiles and shooting / defeat effects (pass 3)
+sheet("bullets", 7, [("bullet", k) for k in ("N", "S", "M", "L", "F", "spit", "enemy")], 0, 48, merge=14, min_area=200)
+sheet("muzzle", 4, [("muzzle", "fire")] * 4, 1, 72, merge=14, min_area=150, post=strip_barrel)
+sheet("impact", 4, [("impact", "hit")] * 4, 1, 56, merge=16, min_area=80)
+sheet("explosion", 6, [("explosion", "boom")] * 6, 2, 128, merge=16, min_area=150)
+for k in ("runner", "bat", "ghost", "elite"):
+    sheet(f"freed_{k}", 2, [(f"freed_{k}", "daze"), (f"freed_{k}", "happy")], "median", 220 if k == "elite" else 110)
+sheet("soul", 2, [("soul", "blaze"), ("soul", "gulp")], 0, 110)
+
 sheet("runner", 4, [("runner", "run")] * 4, "median", 112)
 sheet("bat", 2, [("bat", "fly")] * 2, "median", 96)
 sheet("rat", 2, [("rat", "idle"), ("rat", "fire")], 0, 92)
@@ -153,6 +186,16 @@ layer("bg_far", "bg_far", 720)
 layer("bg_mid", "bg_mid", 300, cut=True)
 layer("ground", "ground", 256)
 layer("title", "title", 720)
+layer("cover_bg", "cover_bg", 720)
+# character-select portraits are plain cut-outs at a fixed height (not part of the manifest frames)
+for k in ("blaze", "gulp"):
+    path = GEN / "raw" / f"select_{k}.png"
+    if path.exists():
+        im = Image.fromarray(remove_bg(Image.open(path)), "RGBA")
+        im = im.crop(im.getbbox())
+        im = im.resize((round(im.width * 520 / im.height), 520), Image.LANCZOS)
+        im.save(OUT / f"select_{k}.png", optimize=True)
+        print(f"select_{k}", im.size)
 
 (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1))
 print("manifest keys:", list(manifest))
