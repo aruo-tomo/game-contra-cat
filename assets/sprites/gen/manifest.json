@@ -979,6 +979,52 @@
    }
   ]
  },
+ "skill": {
+  "beam": [
+   {
+    "file": "skill_beam_0.png",
+    "w": 527,
+    "h": 56,
+    "ax": 0.5
+   }
+  ],
+  "flare": [
+   {
+    "file": "skill_flare_0.png",
+    "w": 110,
+    "h": 110,
+    "ax": 0.483
+   }
+  ],
+  "splash": [
+   {
+    "file": "skill_splash_0.png",
+    "w": 106,
+    "h": 103,
+    "ax": 0.422
+   }
+  ],
+  "vortex": [
+   {
+    "file": "skill_vortex_0.png",
+    "w": 296,
+    "h": 293,
+    "ax": 0.487
+   },
+   {
+    "file": "skill_vortex_1.png",
+    "w": 300,
+    "h": 300,
+    "ax": 0.495
+   },
+   {
+    "file": "skill_vortex_2.png",
+    "w": 301,
+    "h": 304,
+    "ax": 0.483
+   }
+  ]
+ },
  "item": {
   "can": [
    {

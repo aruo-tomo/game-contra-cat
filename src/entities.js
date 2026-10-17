@@ -351,7 +351,8 @@ export class Player {
       for (let d = 0; d <= len; d += 8) {
         if (circleHitRect({ x: x0 + dx * d, y: y0 + dy * d, r: half }, e)) {
           e.damage(BEAM_DMG, this);
-          g.effects.push(new FxAnim('impact', 'hit', e.cx, e.cy, 0.2, 0.5, { rot: Math.random() * 6 }));
+          if (frame('skill', 'splash')) g.effects.push(new SkillPop('splash', e.cx, e.cy, 46, 0.3));
+          else g.effects.push(new FxAnim('impact', 'hit', e.cx, e.cy, 0.2, 0.5, { rot: Math.random() * 6 }));
           break;
         }
       }
@@ -521,6 +522,19 @@ export class Player {
       return;
     }
 
+    // behind the hero: the generated whirlpool
+    const vf = frame('skill', 'vortex', g.t * 14);
+    if (this.char.id === 'gulp' && this.skillT > 0 && vf) {
+      const grow = Math.min(1, (1.6 - this.skillT) / 0.15);
+      const d = SWALLOW_R * 1.5 * (0.6 + 0.4 * grow);
+      ctx.save();
+      ctx.globalAlpha = 0.55 * Math.min(1, this.skillT / 0.2);
+      ctx.translate(this.cx, this.cy + 6);
+      ctx.rotate(g.t * 4);
+      ctx.drawImage(vf.img, -d / 2, (-d / 2) * (vf.h / vf.w), d, d * (vf.h / vf.w));
+      ctx.restore();
+    }
+
     ctx.save();
     if (this.inv > 0 && this.catnip <= 0 && Math.floor(g.t * 18) % 2) ctx.globalAlpha = 0.45;
     const gun = frame('gun', this.char.id);
@@ -539,13 +553,15 @@ export class Player {
     ctx.restore();
 
     if (this.char.id === 'gulp' && this.skillT > 0) {
-      ctx.beginPath();
-      ctx.arc(this.cx, this.cy + 6, SWALLOW_R, 0, Math.PI * 2);
-      ctx.setLineDash([4, 8]);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(232,86,75,0.6)';
-      ctx.stroke();
-      ctx.setLineDash([]);
+      if (!frame('skill', 'vortex')) {
+        ctx.beginPath();
+        ctx.arc(this.cx, this.cy + 6, SWALLOW_R, 0, Math.PI * 2);
+        ctx.setLineDash([4, 8]);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(232,86,75,0.6)';
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
       // air being sucked into the belly mouth
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI * 2 + g.t * 3;
@@ -1451,6 +1467,8 @@ export class EyeBeam {
   }
   draw(ctx) {
     const k = 1 - this.t / this.dur;
+    const beam = frame('skill', 'beam');
+    if (beam) return this.drawArt(ctx, k, beam, frame('skill', 'flare'));
     const w = this.half * 2 * (0.4 + 0.6 * k);
     ctx.save();
     ctx.translate(this.x, this.y);
@@ -1465,6 +1483,47 @@ export class EyeBeam {
     ctx.beginPath();
     ctx.arc(0, 0, w * 0.45, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+  }
+  // generated beam section stretched to length, a flickering flare on the eye
+  drawArt(ctx, k, beam, flare) {
+    const flick = 1 + Math.sin(this.t * 70) * 0.08;
+    const w = this.half * 2 * (0.35 + 0.85 * k) * flick;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.ang);
+    ctx.globalAlpha = Math.min(1, k * 1.8);
+    ctx.drawImage(beam.img, 0, -w / 2, this.len, w);
+    if (flare) {
+      const fh = this.half * 3.4 * (0.7 + 0.5 * k) * flick;
+      const fw = (fh * flare.w) / flare.h;
+      ctx.rotate(this.t * 6);
+      ctx.drawImage(flare.img, -fw / 2, -fh / 2, fw, fh);
+    }
+    ctx.restore();
+  }
+}
+
+// one generated effect frame that pops out, grows and fades (skill impact splash)
+export class SkillPop {
+  constructor(anim, x, y, size, dur) {
+    Object.assign(this, { anim, x, y, size, dur, t: 0, dead: false, rot: (Math.random() - 0.5) * 0.8 });
+  }
+  update(dt) {
+    this.t += dt;
+    if (this.t >= this.dur) this.dead = true;
+  }
+  draw(ctx) {
+    const f = frame('skill', this.anim);
+    if (!f) return;
+    const k = this.t / this.dur;
+    const h = this.size * (0.6 + 0.6 * Math.sqrt(k));
+    const w = (h * f.w) / f.h;
+    ctx.save();
+    ctx.globalAlpha = 1 - k * k;
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+    ctx.drawImage(f.img, -w / 2, -h / 2, w, h);
     ctx.restore();
   }
 }
