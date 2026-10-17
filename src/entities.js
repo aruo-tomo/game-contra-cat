@@ -19,7 +19,10 @@ const BEAM_DMG = 8; // Blaze's third-eye beam, to every enemy along it
 const SWALLOW_R = 110; // Gulp's belly mouth reach
 // grip frames by aim angle in the hero's own facing space (0 = straight ahead, negative = up)
 const GRIP_DIRS = [['gripfwd', 0], ['gripdiag', -Math.PI / 4], ['gripup', -Math.PI / 2], ['gripdown', Math.PI / 4]];
-const GUN_SIZE = { N: 1.35 }; // the starting blasters were cut out smaller than the pickup guns
+// guns are drawn big enough that the handle sticks out below the clenched paw (the paw is ~22px of a
+// 128px frame); the starting blasters stay a little smaller than the pickup guns
+const GUN_SCALE = 1.6;
+const GRIP_OFF = 6; // frame px: the paw closes this far below the measured grip point, nearer the body
 
 export const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
@@ -544,16 +547,16 @@ export class Player {
     const scale = HERO_SCALE * this.char.size;
     const bob = pose.breathe ? Math.sin(this.game.t * 3) * 0.6 : 0;
     const paw = this.pawPoint(pose.f, scale, this.y + this.h + 1 + bob);
-    return { gun, paw, gs: scale * (GUN_SIZE[this.weapon.type] || 1), la: this.localAim() };
+    return { gun, paw, gs: scale * GUN_SCALE, off: GRIP_OFF * scale, la: this.localAim() };
   }
 
   // muzzle tip of the gun in the paws, in world space
   muzzle() {
     const h = this.heldGun();
     if (!h) return null;
-    const { gun, paw, gs, la } = h;
+    const { gun, paw, gs, off, la } = h;
     const mx = (gun.mx - gun.hx) * gun.w * gs;
-    const my = (gun.my - gun.hy) * gun.h * gs;
+    const my = (gun.my - gun.hy) * gun.h * gs + off;
     return {
       x: paw.x + this.facing * (mx * Math.cos(la) - my * Math.sin(la)),
       y: paw.y + mx * Math.sin(la) + my * Math.cos(la),
@@ -582,13 +585,13 @@ export class Player {
   drawHeldGun(ctx) {
     const h = this.heldGun();
     if (!h) return;
-    const { gun, paw, gs, la } = h;
+    const { gun, paw, gs, off, la } = h;
     ctx.save();
     ctx.translate(paw.x, paw.y);
     ctx.scale(this.facing, 1);
     ctx.rotate(la);
     ctx.translate(-(this.recoil || 0) * 3, 0); // kick back on each shot
-    ctx.drawImage(gun.img, -gun.hx * gun.w * gs, -gun.hy * gun.h * gs, gun.w * gs, gun.h * gs);
+    ctx.drawImage(gun.img, -gun.hx * gun.w * gs, -gun.hy * gun.h * gs + off, gun.w * gs, gun.h * gs);
     ctx.restore();
   }
 
