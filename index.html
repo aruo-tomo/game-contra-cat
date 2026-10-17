@@ -290,6 +290,9 @@
   }
   .tbtn-big { width: 16cqh; height: 16cqh; background: rgba(242,179,61,0.85); }
   .tbtn.on { background: var(--red); color: var(--paper); }
+  /* skill ready: the 技 button glows and pulses */
+  .tbtn.ready { background: var(--yellow); animation: tbtn-ready 0.5s ease-in-out infinite alternate; }
+  @keyframes tbtn-ready { to { transform: scale(1.12); box-shadow: 0 0 0 4px rgba(232,86,75,0.7); } }
 
   @container (max-height: 360px) {
     .logo-tag, .press, .pick-skill, .sel-title span { display: none; }
@@ -330,13 +333,13 @@
           <button type="button" class="pick" role="radio" data-char="0" aria-checked="true">
             <img src="assets/sprites/gen/select_blaze.png" alt="">
             <span class="pick-name">火斑 Blaze</span>
-            <span class="pick-skill">專屬技：三眼鎖定，子彈自動追敵</span>
+            <span class="pick-skill">專屬技：三眼光炮射穿成個畫面，再鎖定敵人自動追蹤</span>
             <span class="pick-badge">P1</span>
           </button>
           <button type="button" class="pick" role="radio" data-char="1" aria-checked="false">
             <img src="assets/sprites/gen/select_gulp.png" alt="">
             <span class="pick-name">大口 Gulp</span>
-            <span class="pick-skill">專屬技：肚口吞彈，吞完噴返出去</span>
+            <span class="pick-skill">專屬技：肚口吞彈，再噴出射穿成個畫面嘅彈幕</span>
             <span class="pick-badge">P2</span>
           </button>
         </div>

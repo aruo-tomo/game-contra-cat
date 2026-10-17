@@ -3,7 +3,7 @@ import { initAudio, sfx, startMusic, stopMusic, setMuted, isMuted, setVolumes } 
 import {
   MouseKeyboardCtl, ClassicKeyboardCtl, GamepadCtl, TouchCtl, bindMouse, pollPads, connectedPads, endInputFrame,
   onKonami, getBindings, setBinding, resetBindings, captureNextKey, keyName, ACTION_LABELS, PROFILE_LABELS,
-  tappedAction, bindingConflicts,
+  tappedAction, bindingConflicts, skillKeyLabel,
 } from './input.js';
 import { setupTouch } from './touch.js';
 import { loadSprites } from './sprites.js';
@@ -11,7 +11,7 @@ import { options, saveOptions, ASSIST_MULT, rankFor, saveBest, loadBest } from '
 import { buildLevel1, updateBridges, drawScenery, drawLevel, WALL_X } from './level1.js';
 import {
   Player, Runner, Rat, Turret, Bat, Ghost, Elite, BossWall, Capsule, Item,
-  Particle, FloatText, FreedCat, Debris, FxAnim, overlap, updateBullet, drawBullet,
+  Particle, FloatText, FreedCat, Debris, FxAnim, overlap, updateBullet, drawBullet, SKILL_COST,
 } from './entities.js';
 
 const W = 640;
@@ -575,7 +575,11 @@ class Game {
       ctx.textAlign = 'left';
       ctx.fillStyle = C.ink;
       ctx.font = '900 11px "Noto Sans HK", sans-serif';
-      ctx.fillText(`P${i + 1} ${p.char.name}`, x + 46, y + 15);
+      // skill ready: the name line turns into which key to press
+      const skillReady = p.energy >= SKILL_COST && p.state === 'alive';
+      if (skillReady) ctx.fillStyle = C.redDk;
+      ctx.fillText(skillReady ? `P${i + 1} 撳 ${skillKeyLabel(p.ctl, true)} 必殺！` : `P${i + 1} ${p.char.name}`, x + 46, y + 15);
+      ctx.fillStyle = C.ink;
       for (let h = 0; h < p.maxHp; h++) drawHeart(ctx, x + 52 + h * 14, y + 26, 12, h < p.hp && p.state === 'alive' ? C.red : C.cream);
       ctx.font = '400 11px Bungee, sans-serif';
       ctx.fillText(`×${Math.max(0, p.lives)}`, x + 52 + p.maxHp * 14, y + 30);
@@ -585,8 +589,13 @@ class Game {
       rrect(ctx, ex, ey, 92, 6, 3);
       ctx.fillStyle = C.paper;
       ctx.fill();
+      if (p.ctl.kind === 'touch') {
+        const btn = document.querySelector('.tbtn[data-k="skill"]');
+        if (btn) btn.classList.toggle('ready', skillReady);
+      }
       rrect(ctx, ex, ey, 92 * (p.energy / 100), 6, 3);
-      ctx.fillStyle = p.energy >= 50 ? C.yellow : C.yellowDk;
+      // ready: the bar flashes between yellow and red so it's seen out of the corner of the eye
+      ctx.fillStyle = skillReady ? (Math.floor(this.t * 5) % 2 ? C.red : C.yellow) : C.yellowDk;
       ctx.fill();
       rrect(ctx, ex, ey, 92, 6, 3);
       ctx.lineWidth = 1.5;
@@ -596,11 +605,6 @@ class Game {
       ctx.moveTo(ex + 46, ey);
       ctx.lineTo(ex + 46, ey + 6);
       ctx.stroke();
-      if (p.energy >= 50) {
-        ctx.font = '900 9px "Noto Sans HK", sans-serif';
-        ctx.fillStyle = C.redDk;
-        ctx.fillText(p.char.skill, ex + 96, ey + 6);
-      }
       drawBadge(ctx, x + 160, y + 17, 10, p.weapon.type);
       if (p.weapon.lvl > 1) {
         ctx.font = '400 8px Bungee, sans-serif';
