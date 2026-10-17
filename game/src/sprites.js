@@ -73,16 +73,22 @@ export function drawFrame(ctx, f, x, y, scale, o = {}) {
 
 // White silhouette of a frame, built once and cached, for hit flashes.
 export function whiteOf(f) {
-  if (f.white) return f.white;
+  return tintOf(f, '#fff');
+}
+
+// Silhouette of a frame in one colour (only where the frame is opaque), built once per colour and cached.
+export function tintOf(f, color) {
+  f.tints = f.tints || {};
+  if (f.tints[color]) return f.tints[color];
   const c = document.createElement('canvas');
   c.width = f.img.naturalWidth || f.w;
   c.height = f.img.naturalHeight || f.h;
   const g = c.getContext('2d');
   g.drawImage(f.img, 0, 0);
   g.globalCompositeOperation = 'source-atop';
-  g.fillStyle = '#fff';
+  g.fillStyle = color;
   g.fillRect(0, 0, c.width, c.height);
-  f.white = c;
+  f.tints[color] = c;
   return c;
 }
 

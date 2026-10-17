@@ -19,7 +19,7 @@ OUT = Path(sys.argv[2])
 OUT.mkdir(parents=True, exist_ok=True)
 
 
-def remove_bg(im, tol=48, cut_all=False):
+def remove_bg(im, tol=48, cut_all=False, holes=0):
     """Make the generated sheet's flat background transparent without touching the art.
 
     Only background connected to the canvas border is removed. Whites in the art (the fat
@@ -41,6 +41,12 @@ def remove_bg(im, tol=48, cut_all=False):
     lab, _ = ndi.label((diff < 20) & ~wall)
     edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
     outside = np.isin(lab, edge[edge > 0])
+    if holes:
+        # big enclosed patches of background (e.g. between a tower and its stairs) go too;
+        # small cream details inside the art are far smaller than this
+        sizes = np.bincount(lab.ravel())
+        big = np.nonzero(sizes >= holes)[0]
+        outside |= np.isin(lab, big[big > 0])
     if cut_all:
         # effects with no white/cream in them (swirls, rings): enclosed background goes too
         outside |= (diff < 20) & ~wall
@@ -82,7 +88,7 @@ def foot_anchor(img):
     return round(float((cols.min() + cols.max()) / 2 / a.shape[1]), 3)
 
 
-def strip_barrel(img):
+def strip_barrel(img, i=0):
     """Muzzle-flash frames were drawn coming out of a grey-green gun barrel; cut the barrel off
     so only the flash is left (its left edge then sits at the muzzle). Scan from the left and
     cut where barrel-coloured pixels stop appearing."""
@@ -113,16 +119,16 @@ def save(img, name, scale):
 manifest = {}
 
 
-def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500, post=None, cut_all=False):
+def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500, post=None, cut_all=False, holes=0):
     """names: list of (anim, frame_index) per frame; ref_index: frame (or 'median') that defines the scale."""
     path = GEN / "raw" / f"{raw}.png"
     if not path.exists():
         print(f"missing {path}")
         return
     print(raw)
-    fr = frames(remove_bg(Image.open(path), cut_all=cut_all), n, merge=merge, min_area=min_area)
+    fr = frames(remove_bg(Image.open(path), cut_all=cut_all, holes=holes), n, merge=merge, min_area=min_area)
     if post:
-        fr = [post(f) for f in fr]
+        fr = [post(f, i) for i, f in enumerate(fr)]
     if not fr:
         return
     hs = sorted(f.height for f in fr)
@@ -163,14 +169,29 @@ sheet("runner", 4, [("runner", "run")] * 4, "median", 112)
 sheet("bat", 2, [("bat", "fly")] * 2, "median", 96)
 sheet("rat", 2, [("rat", "idle"), ("rat", "fire")], 0, 92)
 sheet("turret", 1, [("turret", "body")], 0, 76)
-sheet("fortress", 1, [("fortress", "body")], 0, 700)
+sheet("fortress", 1, [("fortress", "body")], 0, 700, holes=5000)
+# boss parts that sit in the fortress sockets: hatch, pivoting barrel, wrecked hatch, rat-eye core, cracked core
+def cut_smoke(im, i):
+    """The wrecked hatch (frame 2) was drawn with a curl of grey smoke on top; keep only the square plate
+    (rows at least half as wide as the plate) so it fits the socket. The game adds its own smoke."""
+    if i != 2:
+        return im
+    a = np.asarray(im)[..., 3] > 128
+    widths = a.sum(1)
+    top = int(np.argmax(widths >= 0.5 * widths.max()))
+    out = im.crop((0, top, im.width, im.height))
+    return out.crop(out.getbbox())
+
+
+sheet("boss_parts", 5, [("boss", k) for k in ("pod", "barrel", "podbroken", "core", "corehurt")], 0, 80, merge=12,
+      min_area=300, post=cut_smoke)
 sheet("ratking", 1, [("ratking", "body")], 0, 320)
 sheet("guns", 2, [("gun", "blaze"), ("gun", "gulp")], 0, 26)
 # one gun per pickup weapon (N keeps gun_blaze / gun_gulp), all drawn at one scale on the sheet
 sheet("weapons", 4, [("gun", k) for k in ("S", "M", "L", "F")], "median", 40)
 # skill effects: a beam section the game stretches to length (ends trimmed so it has no caps),
 # the beam's source flare and impact splash, and Gulp's looping suction vortex
-trim_ends = lambda im: im.crop((round(im.width * 0.03), 0, round(im.width * 0.97), im.height))
+trim_ends = lambda im, i=0: im.crop((round(im.width * 0.03), 0, round(im.width * 0.97), im.height))
 sheet("skill_beam", 1, [("skill", "beam")], 0, 56, post=trim_ends)
 sheet("skill_beamfx", 2, [("skill", "flare"), ("skill", "splash")], "median", 110, merge=16, min_area=300)
 sheet("skill_vortex", 3, [("skill", "vortex")] * 3, "median", 300, merge=24, min_area=300, cut_all=True)

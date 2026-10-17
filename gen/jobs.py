@@ -223,3 +223,18 @@ JOBS6 = [
          "centre, with wide gaps of background between the arms, small motion dashes. Each frame is the same vortex rotated a little further "
          "clockwise. Do NOT fill any area with white or cream: only red, yellow, grey-green and black strokes on the background."),
 ]
+
+# --- pass 7: stage boss parts that sit in the fortress sockets ---
+JOBS7 = [
+    dict(name="boss_parts", refs=["raw/fortress.png", "refs/sheet.png"], prompt=STYLE + BG + row(5) +
+         "Five separate parts for a cardboard fortress boss run by a Red Mouse army, all drawn at the same scale, thick black ink outlines, "
+         "no cream or white fills (use grey-green metal, coral red, mustard yellow, black): "
+         "1) a square riveted grey-green tin hatch plate seen straight from the front, with a round black ball-joint mount in its centre "
+         "and a small glowing red rat-eye lamp above it; "
+         "2) a short thick grey-green cannon barrel in side view pointing LEFT, perfectly horizontal, a red stripe near its muzzle, "
+         "a round collar at its right end where it pivots; "
+         "3) the same square tin hatch plate blown open: bent, torn and charred black, cracked, with one curl of grey smoke on top; "
+         "4) a big round riveted grey-green tin porthole holding one giant angry red rat eye with a black vertical slit pupil looking LEFT, "
+         "red veins, a small glossy highlight; "
+         "5) the same porthole, its glass cracked in a star pattern and the red eye squinting in pain."),
+]
