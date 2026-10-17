@@ -35,3 +35,12 @@ codex login --device-auth            # 用 ChatGPT 帳戶登入
 cd gen && python3 run_jobs.py name1 name2   # 指定名就重做；唔指定就只做未有嘅
 cd .. && python3 tools/process_sprites.py gen game/assets/sprites/gen
 ```
+
+## 發佈到 GitHub Pages
+
+```sh
+sh tools/publish_pages.sh
+```
+
+將 `game/` 推去 `gh-pages` 分支，網址係 https://aruo-tomo.github.io/game-contra-cat/ 。第一次要喺 GitHub 嘅 repo Settings → Pages 揀 “Deploy from a branch”，branch 揀 `gh-pages`、資料夾揀 `/ (root)`。
+
