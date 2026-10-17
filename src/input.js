@@ -3,6 +3,7 @@
 // Game code reads only these actions, never key codes.
 
 import { getTouchState } from './touch.js';
+import { options } from './options.js';
 
 const STORE_KEY = 'contracat.bindings.v1';
 
@@ -273,6 +274,20 @@ export class ClassicKeyboardCtl extends Ctl {
     const P = this.profile;
     const l = isDown(P, 'left'), r = isDown(P, 'right'), u = isDown(P, 'up'), d = isDown(P, 'down');
     const mx = (r ? 1 : 0) - (l ? 1 : 0);
+    // auto-aim: unless up (or down in mid-air) is held, the game picks the target
+    const manual = u || (d && !p.onGround);
+    if (options.autoAim && !manual) {
+      return {
+        mx, down: d, up: u, aim: null, autoAim: true, fire: 'auto',
+        jump: this.edge('j', isPressed(P, 'jump')),
+        jumpHeld: isDown(P, 'jump'),
+        dash: this.edge('d', isPressed(P, 'dash')),
+        skill: this.edge('s', isPressed(P, 'skill')),
+        lock: isDown(P, 'lock'),
+        pause: this.edge('p', isPressed(P, 'pause')),
+        assist: 0,
+      };
+    }
     let ax = mx;
     let ay = (d ? 1 : 0) - (u ? 1 : 0);
     // standing still and pressing down = crouch and shoot forward
@@ -354,7 +369,9 @@ export class TouchCtl extends Ctl {
       down: t.ly > 0.6,
       up: t.ly < -0.6,
       aim,
-      fire: !!aim,
+      // aim stick idle: auto-aim at the nearest enemy (if enabled) so one hand can just move
+      autoAim: !aim && options.autoAim,
+      fire: aim ? true : options.autoAim ? 'auto' : false,
       jump: this.edge('j', t.jump),
       jumpHeld: t.jump,
       dash: this.edge('d', t.dash),

@@ -217,11 +217,29 @@ export class Player {
     if (this.x > maxX) this.x = maxX;
 
     // aim
-    let aim = c.aim ? { ...c.aim } : { x: this.facing, y: 0 };
-    if (c.assist) aim = g.assistAim(this, aim, c.assist);
+    let aim;
+    this.autoTarget = null;
+    if (c.aim) {
+      aim = { ...c.aim };
+      if (c.assist) aim = g.assistAim(this, aim, c.assist);
+    } else if (c.autoAim) {
+      if (mx) this.facing = Math.sign(mx);
+      const t = (this.autoTarget = g.autoAimTarget(this));
+      if (t) {
+        const dx = t.cx - this.cx;
+        const dy = t.cy - this.cy;
+        const l = Math.hypot(dx, dy) || 1;
+        aim = { x: dx / l, y: dy / l };
+      } else {
+        aim = { x: this.facing, y: 0 };
+      }
+    } else {
+      aim = { x: this.facing, y: 0 };
+    }
     this.aim = aim;
     if (c.aim && Math.abs(aim.x) > 0.15) this.facing = Math.sign(aim.x);
     else if (mx) this.facing = Math.sign(mx);
+    else if (this.autoTarget && Math.abs(aim.x) > 0.15) this.facing = Math.sign(aim.x); // standing still: face the target
 
     // fire
     const firing = c.fire === 'auto' ? g.enemiesOnScreen() : c.fire;
@@ -1185,6 +1203,7 @@ export class Capsule extends Enemy {
     this.item = item;
     this.score = 0;
   }
+  touches() { return false; } // a pickup carrier, harmless to bump into
   update(dt) {
     this.base(dt);
     this.x += 120 * dt;

@@ -135,6 +135,23 @@ class Game {
     return best == null ? aim : { x: Math.cos(best), y: Math.sin(best) };
   }
 
+  // nearest target for auto-aim: in front beats behind, the weapon can only if nothing else is around
+  autoAimTarget(p) {
+    let best = null;
+    let bestScore = Infinity;
+    for (const e of this.enemies) {
+      if (!e.hittable() || !this.onScreen(e)) continue;
+      const dx = e.cx - p.cx;
+      const d = Math.hypot(dx, e.cy - p.cy);
+      if (d > 420) continue;
+      let score = d;
+      if (Math.sign(dx) !== p.facing) score *= 1.6;
+      if (e instanceof Capsule) score *= 10;
+      if (score < bestScore) { bestScore = score; best = e; }
+    }
+    return best;
+  }
+
   groundTopAt(x) {
     let top = null;
     for (const s of this.level.solids) {
@@ -693,7 +710,7 @@ function toast(text) {
   t.textContent = text;
   t.hidden = false;
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => { t.hidden = true; }, 2600);
+  toast.timer = setTimeout(() => { t.hidden = true; }, 3200);
 }
 
 const MODE_LABELS = { pc: '滑鼠＋鍵盤', classic: '經典鍵盤', touch: '觸控' };
@@ -742,6 +759,12 @@ function startGame(players, padIndex = null) {
   game.start({ ctls, chars, mode: prefs.mode, difficulty: prefs.difficulty, konami: prefs.konami });
   prefs.konami = false;
   showScreen(null);
+  // first game with keys or touch and auto-aim on: say what it does
+  if (options.autoAim && prefs.mode !== 'pc' && !options.autoAimTipSeen) {
+    toast('自動瞄準已開：專心行同跳就得（設定入面可以關）');
+    options.autoAimTipSeen = true;
+    saveOptions();
+  }
 }
 
 function pauseGame() {
@@ -769,6 +792,7 @@ function renderOptions() {
   $('optSfx').value = Math.round(options.sfx * 100);
   for (const b of document.querySelectorAll('[data-shake]')) b.setAttribute('aria-pressed', String((b.dataset.shake === 'on') === options.shake));
   for (const b of document.querySelectorAll('[data-assist]')) b.setAttribute('aria-pressed', String(b.dataset.assist === options.assist));
+  for (const b of document.querySelectorAll('[data-autoaim]')) b.setAttribute('aria-pressed', String((b.dataset.autoaim === 'on') === options.autoAim));
 }
 function applyOptions() {
   setVolumes(options.music, options.sfx);
@@ -779,6 +803,7 @@ $('optMusic').addEventListener('input', (e) => { options.music = e.target.value 
 $('optSfx').addEventListener('input', (e) => { initAudio(); options.sfx = e.target.value / 100; applyOptions(); sfx.pickup(); });
 document.querySelectorAll('[data-shake]').forEach((b) => b.addEventListener('click', () => { options.shake = b.dataset.shake === 'on'; applyOptions(); }));
 document.querySelectorAll('[data-assist]').forEach((b) => b.addEventListener('click', () => { options.assist = b.dataset.assist; applyOptions(); }));
+document.querySelectorAll('[data-autoaim]').forEach((b) => b.addEventListener('click', () => { options.autoAim = b.dataset.autoaim === 'on'; applyOptions(); }));
 
 // settings: rebinding
 let settingsProfile = 'pc';

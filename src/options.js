@@ -4,7 +4,7 @@
 const OPT_KEY = 'contracat.options.v1';
 const BEST_KEY = 'contracat.best.v1';
 
-export const DEFAULT_OPTIONS = { music: 0.7, sfx: 0.9, shake: true, assist: 'normal', mode: null, char: 0 };
+export const DEFAULT_OPTIONS = { music: 0.7, sfx: 0.9, shake: true, assist: 'normal', mode: null, char: 0, autoAim: true, autoAimTipSeen: false };
 export const ASSIST_MULT = { off: 0, normal: 1, strong: 1.6 };
 
 function read(key) {
