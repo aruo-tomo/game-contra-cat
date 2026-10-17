@@ -4,6 +4,8 @@ const { chromium } = require('playwright');
 const URL = process.env.GAME_URL || 'http://localhost:8765/index.html';
 const players = Number(process.argv[2] || 1);
 const speed = Number(process.argv[3] || 4);
+// 'auto': the bot only moves and jumps; the game's auto-aim does the shooting
+const autoAim = process.argv[4] === 'auto';
 
 (async () => {
   const browser = await chromium.launch();
@@ -15,7 +17,7 @@ const speed = Number(process.argv[3] || 4);
   await page.waitForFunction(() => window.__game);
   await page.click('[data-mode="classic"]');
   await page.click(players > 1 ? '#btn2p' : '#btn1p');
-  await page.evaluate(({ speed }) => {
+  await page.evaluate(({ speed, autoAim }) => {
     const g = window.__game;
     window.__fast = speed;
     const log = (window.__log = { hurts: 0, marks: {}, elite: null, boss: null });
@@ -49,11 +51,12 @@ const speed = Number(process.argv[3] || 4);
           const wantJump = pl.onGround && (pit || runnerClose || Math.random() < 0.01);
           const jump = wantJump && !prevJump;
           prevJump = wantJump;
+          if (autoAim) return { mx, down: false, up: false, aim: null, autoAim: true, fire: 'auto', jump, jumpHeld: true, dash: false, skill: pl.energy >= 50, lock: false, pause: false, assist: 0 };
           return { mx, down: false, up: false, aim, fire: true, jump, jumpHeld: true, dash: false, skill: pl.energy >= 50, lock: false, pause: false, assist: 0 };
         },
       };
     }
-  }, { speed });
+  }, { speed, autoAim });
 
   const t0 = Date.now();
   let last = '';

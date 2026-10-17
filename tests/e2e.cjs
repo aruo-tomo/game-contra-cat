@@ -121,11 +121,6 @@ const check = (name, ok, info = '') => { results.push(`${ok ? 'PASS' : 'FAIL'} $
   check('Gulp spits them back', spit > 0, 'spit=' + spit);
 
   // Blaze lock-on
-  const lk = await page.evaluate(() => {
-    const g = __game; const p = g.players[0];
-    g.enemies.push(new (g.enemies.find(() => true)?.constructor || Object)());
-    return true;
-  }).catch(() => false);
   const lock = await page.evaluate(() => {
     const g = __game; const p = g.players[0]; p.energy = 100;
     return g.enemies.filter((e) => e.hittable()).length;

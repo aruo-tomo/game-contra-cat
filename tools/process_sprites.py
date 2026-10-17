@@ -20,27 +20,26 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 
 def remove_bg(im, tol=48):
+    """Make the generated sheet's flat background transparent without touching the art.
+
+    Only background connected to the canvas border is removed. Whites in the art (the fat
+    white cat, the ghost, teeth, bellies) can be the exact same colour as the background,
+    so enclosed regions are never removed, and the ink outline is thickened first so a small
+    gap in the line can't let the flood leak inside a character.
+    """
     rgb = np.asarray(im.convert("RGB")).astype(np.int32)
     border = np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]])
     ref = np.median(border, axis=0)
     diff = np.abs(rgb - ref).sum(-1)
     ink = rgb.mean(-1) < 95
-    bgish = diff < tol
-    wall = ndi.binary_dilation(ink, iterations=2)
-    lab, _ = ndi.label(bgish & ~wall)
+    wall = ndi.binary_dilation(ink, iterations=3)
+    lab, _ = ndi.label((diff < 20) & ~wall)
     edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
     outside = np.isin(lab, edge[edge > 0])
-    outside = ndi.binary_dilation(outside, iterations=3) & ~ink & (diff < tol * 1.5)
-    # large enclosed pockets of pure background (gaps between legs, under arms)
-    lab2, n2 = ndi.label(bgish & ~outside & ~ink)
-    if n2:
-        sizes = ndi.sum(np.ones_like(diff), lab2, index=np.arange(1, n2 + 1))
-        flat = ndi.mean(diff, lab2, index=np.arange(1, n2 + 1))
-        pockets = [i + 1 for i, (s, f) in enumerate(zip(sizes, flat)) if s > 250 and f < 14]
-        outside |= np.isin(lab2, pockets)
+    # close the 3px margin left by the thickened wall, up to (never past) the ink line
+    outside = ndi.binary_dilation(outside, iterations=4) & ~ink & (diff < tol)
     alpha = np.where(outside, 0, 255).astype(np.uint8)
-    out = np.dstack([np.asarray(im.convert("RGB")), alpha])
-    return out
+    return np.dstack([np.asarray(im.convert("RGB")), alpha])
 
 
 def frames(rgba, n, merge=10, min_area=1500):

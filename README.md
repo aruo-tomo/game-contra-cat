@@ -24,7 +24,8 @@ ES modules 要經 HTTP 載入，直接開檔案唔得。
 ```sh
 node tests/e2e.cjs        # 操作、武器、Boss、雙人、手掣、觸控等 26 項
 node tests/polish.cjs     # coyote time、跳掣緩衝、瞄準姿勢、hit-stop、評級、選項等 14 項
-node tests/autoplay.cjs 1 4   # 機械人自動通關（人數、加速倍數），輸出每段用時同受傷次數
+node tests/autoaim.cjs     # 飛天罐唔扣血、自動瞄準、手機自動射
+node tests/autoplay.cjs 1 4 [auto]   # 機械人自動通關（人數、加速倍數、auto＝只行同跳），輸出每段用時同受傷次數
 ```
 
 ## 重新生成圖
