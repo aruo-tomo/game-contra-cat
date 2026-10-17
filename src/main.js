@@ -1,15 +1,16 @@
 import { C, rrect, ink, drawHeart, drawBadge, makePaperPattern } from './art.js';
-import { initAudio, sfx, startMusic, stopMusic, setMuted, isMuted } from './audio.js';
+import { initAudio, sfx, startMusic, stopMusic, setMuted, isMuted, setVolumes } from './audio.js';
 import {
   MouseKeyboardCtl, ClassicKeyboardCtl, GamepadCtl, TouchCtl, bindMouse, pollPads, connectedPads, endInputFrame,
   onKonami, getBindings, setBinding, resetBindings, captureNextKey, keyName, ACTION_LABELS, PROFILE_LABELS,
 } from './input.js';
 import { setupTouch } from './touch.js';
 import { loadSprites } from './sprites.js';
+import { options, saveOptions, ASSIST_MULT, rankFor, saveBest, loadBest } from './options.js';
 import { buildLevel1, updateBridges, drawScenery, drawLevel, WALL_X } from './level1.js';
 import {
   Player, Runner, Rat, Turret, Bat, Ghost, Elite, BossWall, Capsule, Item,
-  Particle, FloatText, FreedCat, Debris, overlap, updateBullet, drawBullet,
+  Particle, FloatText, FreedCat, Debris, FxAnim, overlap, updateBullet, drawBullet,
 } from './entities.js';
 
 const W = 640;
@@ -64,7 +65,14 @@ class Game {
     this.runnerT = 2;
     this.lock = null;
     this.bossTarget = null;
-    this.banner = { text: '第一關　後巷貓草叢', t: 2.6 };
+    this.banner = null;
+    this.bannerQ = [];
+    this.say('第一關　後巷貓草叢', 2.0);
+    this.say('出發！', 1.0);
+    this.hitStop = 0;
+    this.look = 0;
+    this.deaths = 0;
+    this.catSpawned = 0;
     this.score = 0;
     this.freed = 0;
     this.continues = 3;
@@ -73,7 +81,8 @@ class Game {
     this.overT = 0;
     opts.ctls.forEach((ctl, i) => this.addPlayer(i, ctl));
     this.state = 'play';
-    startMusic('stage');
+    sfx.start();
+    setTimeout(() => { if (this.state === 'play' && !this.bossTarget) startMusic('stage'); }, 900);
   }
 
   addPlayer(idx, ctl) {
@@ -107,7 +116,8 @@ class Game {
   // nudge the aim toward the nearest enemy within `deg` degrees
   assistAim(p, aim, deg) {
     const a0 = Math.atan2(aim.y, aim.x);
-    const lim = (deg * Math.PI) / 180;
+    const lim = (deg * ASSIST_MULT[options.assist] * Math.PI) / 180;
+    if (!lim) return aim;
     let best = null;
     let bestD = lim;
     for (const e of this.enemies) {
@@ -142,30 +152,50 @@ class Game {
     }
   }
 
-  shake(a) { this.shakeAmt = Math.max(this.shakeAmt, a); }
+  shake(a) { if (options.shake) this.shakeAmt = Math.max(this.shakeAmt, a); }
+
+  // brief freeze on heavy hits so they land with weight
+  freeze(s) { this.hitStop = Math.max(this.hitStop, s); }
+
+  // banners play one after another; style 'warn' is the flashing boss alarm
+  say(text, t, style) {
+    const b = { text, t, max: t, style };
+    if (this.banner) this.bannerQ.push(b);
+    else this.banner = b;
+  }
+
+  addEnemy(e) {
+    if (e.cat) this.catSpawned++;
+    this.enemies.push(e);
+    return e;
+  }
 
   // ---- spawning ----
   spawnRunner(dir) {
     const x = dir < 0 ? this.cam.x + W + 10 : this.cam.x - 36;
     const top = this.groundTopAt(x + 13);
-    if (top == null) return;
-    this.enemies.push(new Runner(this, x, top - 45, dir));
+    // never drop a runner right at a pit edge, where it would fall in at once
+    if (top == null || this.groundTopAt(x + 13 + dir * 70) == null) return;
+    this.addEnemy(new Runner(this, x, top - 45, dir));
   }
 
   spawn(s) {
     const right = this.cam.x + W + 20;
     switch (s.t) {
-      case 'capsule': this.enemies.push(new Capsule(this, s.item)); break;
-      case 'rat': this.enemies.push(new Rat(this, s.at, s.y)); break;
-      case 'turret': this.enemies.push(new Turret(this, s.at, s.y)); break;
-      case 'bat': this.enemies.push(new Bat(this, right, s.y)); break;
-      case 'ghost': this.enemies.push(new Ghost(this, right, s.y)); break;
+      case 'capsule': this.addEnemy(new Capsule(this, s.item)); break;
+      case 'rat': this.addEnemy(new Rat(this, s.at, s.y)); break;
+      case 'turret': this.addEnemy(new Turret(this, s.at, s.y)); break;
+      case 'bat': this.addEnemy(new Bat(this, right, s.y)); break;
+      case 'ghost': this.addEnemy(new Ghost(this, right, s.y)); break;
       case 'elite': {
         this.lock = { x: s.camx };
         const e = new Elite(this, s.camx + 440);
-        this.enemies.push(e);
+        e.delay = 1.6;
+        this.addEnemy(e);
         this.bossTarget = e;
-        this.banner = { text: '中 Boss：三眼肥白貓', t: 2.2 };
+        this.say('WARNING', 1.6, 'warn');
+        this.say('中 Boss：三眼肥白貓', 1.6);
+        sfx.siren();
         startMusic('boss');
         break;
       }
@@ -174,9 +204,12 @@ class Game {
         const b = new BossWall(this, WALL_X);
         this.enemies.push(b);
         b.init();
+        for (const part of b.parts) part.cool += 2.2;
+        this.say('WARNING', 2.2, 'warn');
+        sfx.siren();
         this.bossTarget = b.parts.find((p) => p.kind === 'core');
         this.bossTarget.boss = '貓抓板要塞・鼠眼核心';
-        this.banner = { text: '赤鼠軍 貓抓板要塞', t: 2.4 };
+        this.say('赤鼠軍 貓抓板要塞', 1.8);
         startMusic('boss');
         break;
       }
@@ -188,7 +221,7 @@ class Game {
     if (by && by.energy != null) by.energy = Math.min(100, by.energy + 8);
     if (e instanceof Capsule) {
       this.items.push(new Item(this, e.cx - 11, e.cy - 11, e.item));
-      this.puff(e.cx, e.cy, 8, [C.cream, C.red]);
+      this.effects.push(new FxAnim('boom', e.cx, e.cy, 0.35, 0.35));
       sfx.boom(false);
       return;
     }
@@ -200,7 +233,9 @@ class Game {
       this.text(e.cx, e.y - 6, FREED_LINES[this.freed % FREED_LINES.length], C.greenDk);
       sfx.meow();
     } else {
-      this.puff(e.cx, e.cy, e.kind === 'core' ? 30 : 12, [C.red, C.yellow, C.cream]);
+      this.puff(e.cx, e.cy, e.kind === 'core' ? 20 : 6, [C.red, C.yellow, C.cream]);
+      this.effects.push(new FxAnim('boom', e.cx, e.cy, e.kind === 'core' ? 0.7 : 0.45, e.kind === 'core' ? 1.1 : e.kind ? 0.7 : 0.5));
+      this.freeze(e.kind === 'core' ? 0.3 : e.kind || e instanceof Turret ? 0.07 : 0);
       sfx.boom(e.kind != null);
       if (e.villain && !e.kind) { this.text(e.cx, e.y - 6, '吱！', C.ink); sfx.squeak(); }
       this.shake(e.kind ? 8 : 3);
@@ -209,7 +244,8 @@ class Game {
       this.lock = null;
       this.bossTarget = null;
       this.items.push(new Item(this, e.cx, e.y, 'F'));
-      this.banner = { text: '解放咗三眼肥白貓！', t: 2 };
+      this.say('解放咗三眼肥白貓！', 2);
+      this.freeze(0.25);
       this.shake(10);
       startMusic('stage');
     }
@@ -224,11 +260,37 @@ class Game {
     this.state = 'clear';
     stopMusic();
     sfx.clear();
-    setTimeout(() => showScreen('clear'), 900);
-    $('clearScore').textContent = String(this.score).padStart(6, '0');
-    $('clearFreed').textContent = this.freed;
+    this.parade();
+    setTimeout(() => showScreen('clear'), 1600);
     const s = Math.round(this.time);
-    $('clearTime').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    const fmt = (n) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+    const freedRate = this.catSpawned ? this.freed / this.catSpawned : 0;
+    const rank = rankFor({ time: this.time, deaths: this.deaths, freedRate, score: this.score });
+    this.result = { score: this.score, time: s, deaths: this.deaths, freed: this.freed, freedRate, rank };
+    const prev = loadBest();
+    const isBest = saveBest({ score: this.score, rank, time: s });
+    $('clearScore').textContent = String(this.score).padStart(6, '0');
+    $('clearFreed').textContent = `${this.freed}／${this.catSpawned}`;
+    $('clearTime').textContent = fmt(s);
+    $('clearDeaths').textContent = this.deaths;
+    $('clearRank').textContent = rank;
+    $('clearRank').dataset.rank = rank;
+    $('clearBest').textContent = isBest
+      ? (prev ? `新紀錄！之前最高 ${String(prev.score).padStart(6, '0')}` : '第一次過關，已記錄成績')
+      : `最高紀錄 ${String(prev.score).padStart(6, '0')}（${prev.rank} 級）`;
+  }
+
+  // the cats rescued this stage march across the screen
+  parade() {
+    const sprites = ['cat05', 'cat04', 'cat06', 'cat03'];
+    const n = Math.min(14, Math.max(4, this.freed));
+    for (let i = 0; i < n; i++) {
+      const f = new FreedCat(this, sprites[i % sprites.length], this.cam.x - 30 - i * 40, 300, i % 4 === 3 ? 70 : 42);
+      f.vx = 150;
+      f.vy = -200 - (i % 3) * 60;
+      f.life = 6;
+      this.effects.push(f);
+    }
   }
 
   continueGame() {
@@ -248,7 +310,16 @@ class Game {
   update(dt) {
     this.t += dt;
     const joined = pollPads();
+    if (this.state === 'clear') {
+      for (const fx of this.effects) fx.update(dt);
+      this.effects = this.effects.filter((f) => !f.dead);
+      return joined;
+    }
     if (this.state !== 'play') return joined;
+    if (this.hitStop > 0) {
+      this.hitStop -= dt;
+      return joined;
+    }
     this.time += dt;
 
     // a second gamepad can drop in at any time
@@ -272,8 +343,10 @@ class Game {
     const alive = this.alivePlayers();
     const maxCam = this.lock ? this.lock.x : this.level.width - W;
     if (alive.length) {
-      const lead = Math.max(...alive.map((p) => p.x));
-      const target = Math.min(lead - W * 0.45, maxCam);
+      const leader = alive.reduce((a, b) => (b.x > a.x ? b : a));
+      // look ahead in the direction the leader faces
+      this.look += (leader.facing * 48 - this.look) * Math.min(1, dt * 1.5);
+      const target = Math.min(leader.x - W * 0.45 + Math.max(0, this.look), maxCam);
       if (target > this.cam.x) this.cam.x += Math.min(target - this.cam.x, 420 * dt);
     }
 
@@ -324,13 +397,14 @@ class Game {
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 30);
     if (this.banner) {
       this.banner.t -= dt;
-      if (this.banner.t <= 0) this.banner = null;
+      if (this.banner.t <= 0) this.banner = this.bannerQ.shift() || null;
     }
     if (this.overT > 0) {
       this.overT -= dt;
       if (this.overT <= 0) {
         this.state = 'over';
         stopMusic();
+        sfx.gameOver();
         $('overScore').textContent = String(this.score).padStart(6, '0');
         $('btnContinue').hidden = this.continues <= 0;
         $('btnContinue').textContent = `接關（仲有 ${this.continues} 次）`;
@@ -352,7 +426,7 @@ class Game {
         }
         if (b.owner) b.owner.energy = Math.min(100, b.owner.energy + 1);
         e.damage(b.dmg, b.owner);
-        this.effects.push(new Particle(b.x, b.y, 0, 0, 3, C.cream, 0.15));
+        this.effects.push(new FxAnim('spark', b.x, b.y, 0.08, 0.45, Math.random() * 6));
         if (b.dead) break;
       }
     }
@@ -529,7 +603,7 @@ class Game {
     ctx.font = '400 13px Bungee, sans-serif';
     ctx.fillText(String(this.score).padStart(6, '0'), W / 2, 22);
     ctx.font = '700 10px "Noto Sans HK", sans-serif';
-    ctx.fillText(`已解放 ${this.freed} 隻貓`, W / 2, 36);
+    ctx.fillText(`已解放 ${this.freed}／${this.catSpawned} 隻貓`, W / 2, 36);
 
     const bt = this.bossTarget;
     if (bt && !bt.dead && bt.y > -100) {
@@ -549,8 +623,33 @@ class Game {
       ctx.stroke();
     }
 
-    if (this.banner) {
-      const a = Math.min(1, this.banner.t * 2);
+    if (this.banner && this.banner.style === 'warn') {
+      const b = this.banner;
+      const on = Math.floor(b.t * 6) % 2 === 0;
+      ctx.fillStyle = 'rgba(232,86,75,0.18)';
+      ctx.fillRect(0, 0, W, H);
+      for (const y of [116, 172]) {
+        ctx.fillStyle = C.ink;
+        ctx.fillRect(0, y, W, 12);
+        ctx.fillStyle = C.yellow;
+        for (let x = -((this.t * 80) % 24); x < W; x += 24) {
+          ctx.beginPath();
+          ctx.moveTo(x, y + 12); ctx.lineTo(x + 12, y); ctx.lineTo(x + 20, y); ctx.lineTo(x + 8, y + 12);
+          ctx.fill();
+        }
+      }
+      if (on) {
+        ctx.font = '400 34px Bungee, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 7;
+        ctx.strokeStyle = C.ink;
+        ctx.strokeText('WARNING', W / 2, 160);
+        ctx.fillStyle = C.red;
+        ctx.fillText('WARNING', W / 2, 160);
+      }
+    } else if (this.banner) {
+      const a = Math.min(1, this.banner.t * 2, (this.banner.max - this.banner.t) * 4 + 0.2);
       ctx.globalAlpha = a;
       ctx.font = '900 28px "Noto Sans HK", sans-serif';
       ctx.lineJoin = 'round';
@@ -600,6 +699,7 @@ function renderSegments() {
 
 function startGame(players, padIndex = null) {
   initAudio();
+  setVolumes(options.music, options.sfx);
   const ctls = [];
   if (padIndex != null) ctls.push(new GamepadCtl(padIndex));
   else if (prefs.mode === 'classic') ctls.push(new ClassicKeyboardCtl('classic1'));
@@ -634,6 +734,23 @@ function toTitle() {
   game.state = 'title';
   showScreen('title');
 }
+
+// settings: options
+function renderOptions() {
+  $('optMusic').value = Math.round(options.music * 100);
+  $('optSfx').value = Math.round(options.sfx * 100);
+  for (const b of document.querySelectorAll('[data-shake]')) b.setAttribute('aria-pressed', String((b.dataset.shake === 'on') === options.shake));
+  for (const b of document.querySelectorAll('[data-assist]')) b.setAttribute('aria-pressed', String(b.dataset.assist === options.assist));
+}
+function applyOptions() {
+  setVolumes(options.music, options.sfx);
+  saveOptions();
+  renderOptions();
+}
+$('optMusic').addEventListener('input', (e) => { options.music = e.target.value / 100; applyOptions(); });
+$('optSfx').addEventListener('input', (e) => { initAudio(); options.sfx = e.target.value / 100; applyOptions(); sfx.pickup(); });
+document.querySelectorAll('[data-shake]').forEach((b) => b.addEventListener('click', () => { options.shake = b.dataset.shake === 'on'; applyOptions(); }));
+document.querySelectorAll('[data-assist]').forEach((b) => b.addEventListener('click', () => { options.assist = b.dataset.assist; applyOptions(); }));
 
 // settings: rebinding
 let settingsProfile = 'pc';
@@ -682,9 +799,9 @@ document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('clic
 document.querySelectorAll('[data-diff]').forEach((b) => b.addEventListener('click', () => { prefs.difficulty = b.dataset.diff; renderSegments(); }));
 $('btn1p').addEventListener('click', () => startGame(1));
 $('btn2p').addEventListener('click', () => startGame(2));
-$('btnSettings').addEventListener('click', () => { renderSettings(); showScreen('settings'); });
+$('btnSettings').addEventListener('click', () => { renderSettings(); renderOptions(); showScreen('settings'); });
 $('btnResume').addEventListener('click', resumeGame);
-$('btnPauseSettings').addEventListener('click', () => { renderSettings(); showScreen('settings'); });
+$('btnPauseSettings').addEventListener('click', () => { renderSettings(); renderOptions(); showScreen('settings'); });
 $('btnQuit').addEventListener('click', toTitle);
 $('btnContinue').addEventListener('click', () => { initAudio(); game.continueGame(); showScreen(null); });
 $('btnOverTitle').addEventListener('click', toTitle);
@@ -730,7 +847,9 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.033, (now - last) / 1000);
   last = now;
-  const joined = game.update(dt);
+  let joined = game.update(dt);
+  // test hook: run extra simulation steps per frame (window.__fast = 4) for automated playthroughs
+  for (let k = 1; k < (window.__fast || 1); k++) joined = joined.concat(game.update(dt));
   if (game.state === 'title' && joined.length && $('settings').hidden) startGame(1, joined[0]);
   else if (game.state === 'paused' && joined.length) resumeGame();
   else if (game.state === 'play') {

@@ -93,6 +93,30 @@
     "h": 128,
     "ax": 0.333
    }
+  ],
+  "aimup": [
+   {
+    "file": "blaze_aimup_0.png",
+    "w": 106,
+    "h": 142,
+    "ax": 0.5
+   }
+  ],
+  "aimdiag": [
+   {
+    "file": "blaze_aimdiag_0.png",
+    "w": 123,
+    "h": 140,
+    "ax": 0.481
+   }
+  ],
+  "hurt": [
+   {
+    "file": "blaze_hurt_0.png",
+    "w": 114,
+    "h": 137,
+    "ax": 0.56
+   }
   ]
  },
  "gulp": {
@@ -188,6 +212,116 @@
     "w": 121,
     "h": 128,
     "ax": 0.503
+   }
+  ],
+  "aimup": [
+   {
+    "file": "gulp_aimup_0.png",
+    "w": 103,
+    "h": 141,
+    "ax": 0.43
+   }
+  ],
+  "aimdiag": [
+   {
+    "file": "gulp_aimdiag_0.png",
+    "w": 121,
+    "h": 140,
+    "ax": 0.384
+   }
+  ],
+  "hurt": [
+   {
+    "file": "gulp_hurt_0.png",
+    "w": 112,
+    "h": 133,
+    "ax": 0.591
+   }
+  ]
+ },
+ "ghost": {
+  "float": [
+   {
+    "file": "ghost_float_0.png",
+    "w": 121,
+    "h": 108,
+    "ax": 0.535
+   },
+   {
+    "file": "ghost_float_1.png",
+    "w": 121,
+    "h": 108,
+    "ax": 0.468
+   }
+  ]
+ },
+ "elite": {
+  "idle": [
+   {
+    "file": "elite_idle_0.png",
+    "w": 226,
+    "h": 224,
+    "ax": 0.471
+   }
+  ],
+  "jump": [
+   {
+    "file": "elite_jump_0.png",
+    "w": 218,
+    "h": 217,
+    "ax": 0.495
+   }
+  ],
+  "fire": [
+   {
+    "file": "elite_fire_0.png",
+    "w": 284,
+    "h": 222,
+    "ax": 0.586
+   }
+  ]
+ },
+ "fx": {
+  "muzzle": [
+   {
+    "file": "fx_muzzle_0.png",
+    "w": 30,
+    "h": 31,
+    "ax": 0.539
+   }
+  ],
+  "spark": [
+   {
+    "file": "fx_spark_0.png",
+    "w": 38,
+    "h": 39,
+    "ax": 0.514
+   }
+  ],
+  "boom": [
+   {
+    "file": "fx_boom_0.png",
+    "w": 61,
+    "h": 46,
+    "ax": 0.532
+   },
+   {
+    "file": "fx_boom_1.png",
+    "w": 98,
+    "h": 96,
+    "ax": 0.498
+   },
+   {
+    "file": "fx_boom_2.png",
+    "w": 79,
+    "h": 84,
+    "ax": 0.53
+   },
+   {
+    "file": "fx_boom_3.png",
+    "w": 33,
+    "h": 46,
+    "ax": 0.611
    }
   ]
  },

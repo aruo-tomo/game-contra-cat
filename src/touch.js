@@ -1,19 +1,25 @@
-// Phone controls: left stick moves, right stick aims and auto-fires, plus jump / dash / skill buttons.
+// Phone controls. The left part of the screen moves, the right part aims and auto-fires:
+// a stick appears wherever the thumb lands, so there is no fixed spot to hit.
+// Jump / dash / skill are fixed buttons at the bottom centre.
 
 const state = { lx: 0, ly: 0, rx: 0, ry: 0, rm: 0, rActive: false, jump: false, dash: false, skill: false };
 export const getTouchState = () => state;
 
 export function setupTouch(root) {
   root.innerHTML = `
-    <div class="stick stick-l" id="stickL" aria-label="移動"><div class="knob"></div><span>移動</span></div>
-    <div class="stick stick-r" id="stickR" aria-label="瞄準射擊"><div class="knob"></div><span>瞄準射擊</span></div>
+    <div class="tzone tzone-l" id="zoneL" aria-label="移動區">
+      <div class="stick" id="stickL"><div class="knob"></div><span>移動</span></div>
+    </div>
+    <div class="tzone tzone-r" id="zoneR" aria-label="瞄準射擊區">
+      <div class="stick stick-aim" id="stickR"><div class="knob"></div><span>瞄準射擊</span></div>
+    </div>
     <div class="tbtns">
       <button type="button" class="tbtn" data-k="skill">技</button>
       <button type="button" class="tbtn" data-k="dash">衝</button>
       <button type="button" class="tbtn tbtn-big" data-k="jump">跳</button>
     </div>`;
-  stick(root.querySelector('#stickL'), (x, y) => { state.lx = x; state.ly = y; });
-  stick(root.querySelector('#stickR'), (x, y, active) => {
+  floatingStick(root.querySelector('#zoneL'), root.querySelector('#stickL'), (x, y) => { state.lx = x; state.ly = y; });
+  floatingStick(root.querySelector('#zoneR'), root.querySelector('#stickR'), (x, y, active) => {
     state.rx = x; state.ry = y; state.rm = Math.hypot(x, y); state.rActive = active;
   });
   for (const b of root.querySelectorAll('.tbtn')) {
@@ -27,31 +33,47 @@ export function setupTouch(root) {
   }
 }
 
-function stick(el, onMove) {
-  const knob = el.querySelector('.knob');
+function floatingStick(zone, stick, onMove) {
+  const knob = stick.querySelector('.knob');
   let id = null;
+  let cx = 0;
+  let cy = 0;
+  const radius = () => stick.offsetWidth / 2;
+  const place = (e) => {
+    const z = zone.getBoundingClientRect();
+    cx = e.clientX;
+    cy = e.clientY;
+    stick.style.left = `${cx - z.left - radius()}px`;
+    stick.style.top = `${cy - z.top - radius()}px`;
+  };
   const move = (e) => {
-    const r = el.getBoundingClientRect();
-    let dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-    let dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+    const r = radius();
+    let dx = (e.clientX - cx) / r;
+    let dy = (e.clientY - cy) / r;
     const m = Math.hypot(dx, dy);
     if (m > 1) { dx /= m; dy /= m; }
-    knob.style.transform = `translate(${dx * r.width * 0.3}px, ${dy * r.height * 0.3}px)`;
+    knob.style.transform = `translate(${dx * r * 0.6}px, ${dy * r * 0.6}px)`;
     onMove(dx, dy, true);
   };
-  el.addEventListener('pointerdown', (e) => {
+  zone.addEventListener('pointerdown', (e) => {
+    if (id !== null) return;
     e.preventDefault();
     id = e.pointerId;
-    el.setPointerCapture(id);
+    zone.setPointerCapture(id);
+    place(e);
+    stick.classList.add('live');
     move(e);
   });
-  el.addEventListener('pointermove', (e) => { if (e.pointerId === id) move(e); });
+  zone.addEventListener('pointermove', (e) => { if (e.pointerId === id) move(e); });
   const end = (e) => {
     if (e.pointerId !== id) return;
     id = null;
     knob.style.transform = '';
+    stick.classList.remove('live');
+    stick.style.left = '';
+    stick.style.top = '';
     onMove(0, 0, false);
   };
-  el.addEventListener('pointerup', end);
-  el.addEventListener('pointercancel', end);
+  zone.addEventListener('pointerup', end);
+  zone.addEventListener('pointercancel', end);
 }

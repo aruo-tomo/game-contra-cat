@@ -67,7 +67,7 @@ export class Player {
     this.w = 26;
     this.h = 46;
     this.x = game.cam.x + 80 + idx * 40;
-    this.y = 120;
+    this.y = -60 - idx * 30; // drop in from the sky at the start
     this.vx = 0;
     this.vy = 0;
     this.facing = 1;
@@ -97,6 +97,10 @@ export class Player {
     this.catnip = 0;
     this.anim = 0;
     this.dropT = 0;
+    this.jumpBuf = 0;
+    this.airT = 0;
+    this.jumped = false;
+    this.hurtT = 0;
     this.trail = [];
     this.input = null;
   }
@@ -131,6 +135,7 @@ export class Player {
     this.input = c;
     this.anim += dt;
     this.inv = Math.max(0, this.inv - dt);
+    this.hurtT = Math.max(0, this.hurtT - dt);
     this.catnip = Math.max(0, this.catnip - dt);
     this.dashCd = Math.max(0, this.dashCd - dt);
     this.dropT = Math.max(0, this.dropT - dt);
@@ -163,21 +168,30 @@ export class Player {
     for (const tr of this.trail) tr.a -= dt * 2.5;
     this.trail = this.trail.filter((tr) => tr.a > 0);
 
-    if (c.jump) {
+    // jump buffering: a press shortly before landing still jumps once we touch down
+    this.jumpBuf = c.jump ? 0.12 : Math.max(0, this.jumpBuf - dt);
+    if (this.jumpBuf > 0) {
       const onPlatform = this.onGround && this.groundRef && this.groundRef.kind !== 'ground';
-      if (c.down && onPlatform) {
+      // coyote time: still allowed to ground-jump for a moment after running off a ledge
+      const canGroundJump = this.onGround || (this.airT < 0.1 && !this.jumped);
+      if (c.jump && c.down && onPlatform) {
         this.dropT = 0.25;
         this.setCrouch(false);
         this.y += 2;
-      } else if (this.onGround) {
+        this.jumpBuf = 0;
+      } else if (canGroundJump) {
         this.setCrouch(false);
         this.vy = -545;
         this.jumps = 1;
+        this.jumped = true;
+        this.jumpBuf = 0;
         sfx.jump(false);
-      } else if (this.jumps < 2) {
+      } else if (c.jump && this.jumps < 2) {
         this.vy = -470;
         this.jumps = 2;
+        this.jumped = true;
         this.spin = 0.001;
+        this.jumpBuf = 0;
         sfx.jump(true);
       }
     }
@@ -185,8 +199,11 @@ export class Player {
     this.dropping = this.dropT > 0;
 
     moveBody(this, dt, g.level, this.dashT <= 0);
-    if (this.onGround) { this.jumps = 0; this.spin = 0; }
-    else if (this.jumps === 0) this.jumps = 1; // walked off a ledge: one air jump left
+    if (this.onGround) { this.jumps = 0; this.spin = 0; this.airT = 0; this.jumped = false; }
+    else {
+      this.airT += dt;
+      if (this.jumps === 0) this.jumps = 1; // walked off a ledge: one air jump left
+    }
     if (this.spin) this.spin = Math.min(1, this.spin + dt * 2.8);
 
     // stay inside the view
@@ -255,6 +272,7 @@ export class Player {
       }
     }
     g.bullets.push(...shots);
+    g.effects.push(new FxAnim('muzzle', ox, oy, 0.07, 0.6, a));
     this.cool = cool * this.rate;
     sfx.shoot(w.type);
   }
@@ -305,7 +323,9 @@ export class Player {
     if (this.state !== 'alive' || this.inv > 0 || this.catnip > 0 || this.dashT > 0) return;
     this.hp--;
     this.inv = 1.3;
+    this.hurtT = 0.3;
     this.game.shake(6);
+    this.game.freeze(0.06);
     sfx.hurt();
     if (this.hp <= 0) this.die(false);
   }
@@ -335,7 +355,10 @@ export class Player {
 
   loseLife() {
     const g = this.game;
-    g.puff(this.cx, this.cy, 14, [this.char.gun, C.cream]);
+    g.puff(this.cx, this.cy, 8, [this.char.gun, C.cream]);
+    const ko = frame(this.char.id, 'down');
+    if (ko && this.y < 420) g.effects.push(new KnockedOut(ko, this.cx, this.y + this.h, this.facing, HERO_SCALE * this.char.size));
+    g.deaths = (g.deaths || 0) + 1;
     this.lives--;
     if (this.weapon.lvl > 1) this.weapon.lvl = 1;
     else this.weapon = { type: 'N', lvl: 1 };
@@ -388,11 +411,14 @@ export class Player {
     if (this.state === 'down') return { f: frame(key, 'down'), anchor: 'bottom' };
     const skillPose = this.char.id === 'gulp' ? this.skillT > 0 : this.skillT > 4.4;
     if (skillPose) return { f: frame(key, 'skill') };
+    if (this.hurtT > 0) return { f: frame(key, 'hurt') };
     if (this.dashT > 0) return { f: frame(key, 'dash') };
     if (this.spin) return { f: frame(key, 'ball'), anchor: 'center' };
     if (!this.onGround) return { f: frame(key, 'jump') };
     if (this.crouch) return { f: frame(key, 'crouch') };
     if (Math.abs(this.vx) > 20) return { f: frame(key, 'run', this.anim * 13) };
+    if (this.aim.y < -0.85) return { f: frame(key, 'aimup') || frame(key, 'idle') };
+    if (this.aim.y < -0.35) return { f: frame(key, 'aimdiag') || frame(key, 'idle') };
     return { f: frame(key, 'idle'), breathe: true };
   }
 
@@ -647,7 +673,7 @@ class Enemy {
   get cy() { return this.y + this.h / 2; }
   damage(n, by) {
     this.hp -= n;
-    this.flash = 0.08;
+    this.flash = 0.05;
     sfx.hit();
     if (this.hp <= 0 && !this.dead) {
       this.dead = true;
@@ -663,14 +689,17 @@ class Enemy {
   drawGen(ctx, key, anim, i, scale, o = {}) {
     const f = frame(key, anim, i);
     if (!f) return false;
-    drawFrame(ctx, f, this.cx, this.y + this.h + (o.dy || 0), scale, o);
-    if (this.flash > 0) {
-      ctx.beginPath();
-      ctx.arc(this.cx, this.cy, Math.max(this.w, this.h) * 0.5, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.fill();
-    }
+    drawFrame(ctx, f, this.cx, this.y + this.h + (o.dy || 0), scale, { ...o, flash: this.flash > 0 });
     return true;
+  }
+  // pulsing red glow at a muzzle shortly before this enemy fires
+  warn(ctx, x, y) {
+    if (this.cool > 0.35 || !this.game.onScreen(this)) return;
+    const k = 1 - this.cool / 0.35;
+    ctx.beginPath();
+    ctx.arc(x, y, 3 + k * 6 + Math.sin(this.t * 40) * 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(232,86,75,${0.35 + k * 0.5})`;
+    ctx.fill();
   }
   drawSprite(ctx, name, h, opts = {}) {
     const img = this.game.img[name];
@@ -744,7 +773,10 @@ export class Rat extends Enemy {
     }
   }
   draw(ctx) {
-    if (this.drawGen(ctx, 'rat', this.fireT > 0 ? 'fire' : 'idle', 0, 46 / 92, { flip: -this.facing, dy: 1 })) return;
+    if (this.drawGen(ctx, 'rat', this.fireT > 0 ? 'fire' : 'idle', 0, 46 / 92, { flip: -this.facing, dy: 1 })) {
+      this.warn(ctx, this.cx + this.facing * 26, this.y + 20);
+      return;
+    }
     const p = this.game.nearestPlayer(this);
     const a = this.aimA ?? (p ? Math.atan2(p.cy - this.y - 18, p.cx - this.cx) : Math.PI);
     drawRat(ctx, this.cx, this.y + this.h, this.facing, this.t, { flash: this.flash > 0 });
@@ -778,7 +810,9 @@ export class Turret extends Enemy {
   }
   draw(ctx) {
     drawGun(ctx, this.cx, this.y + 8, this.ang, 28, C.ratDk);
-    if (this.drawGen(ctx, 'turret', 'body', 0, 42 / 76, { dy: 1 })) return;
+    const drew = this.drawGen(ctx, 'turret', 'body', 0, 42 / 76, { dy: 1 });
+    this.warn(ctx, this.cx + Math.cos(this.ang) * 28, this.y + 8 + Math.sin(this.ang) * 28);
+    if (drew) return;
     rrect(ctx, this.x, this.y + 4, this.w, this.h - 4, 5);
     ink(ctx, this.flash > 0 ? '#fff' : '#B9C2C4', 2.5);
     ctx.beginPath();
@@ -857,6 +891,7 @@ export class Ghost extends Enemy {
     if (this.x < this.game.cam.x - 200) this.dead = true;
   }
   draw(ctx) {
+    if (this.drawGen(ctx, 'ghost', 'float', this.t * 2.5, 52 / 108, { alpha: this.alpha, dy: Math.sin(this.t * 2) * 3 + 4 })) return;
     this.drawSprite(ctx, 'cat06', 50, { alpha: this.alpha, bob: Math.sin(this.t * 2) * 3 });
   }
 }
@@ -864,7 +899,7 @@ export class Ghost extends Enemy {
 // 03: three-eyed fat white cat, mid-boss
 export class Elite extends Enemy {
   constructor(game, x) {
-    const hp = game.players.length > 1 ? 70 : 48;
+    const hp = game.players.filter(Boolean).length > 1 ? 96 : 64;
     super(game, x, -140, 76, 100, hp);
     this.state = 'drop';
     this.timer = 0;
@@ -879,6 +914,7 @@ export class Elite extends Enemy {
     const p = g.nearestPlayer(this);
     this.timer -= dt;
     const angry = this.hp < this.maxHp / 2;
+    if (this.delay > 0) { this.delay -= dt; return; } // waits for the WARNING banner
     if (this.state === 'drop') {
       this.vx = 0;
       moveBody(this, dt, g.level);
@@ -933,6 +969,9 @@ export class Elite extends Enemy {
   draw(ctx) {
     const squash = this.onGround ? 1 : 1.05;
     const p = this.game.nearestPlayer(this);
+    const flip = p && p.cx > this.cx ? -1 : 1; // generated frames face left
+    const anim = this.state === 'volley' ? 'fire' : this.onGround ? 'idle' : 'jump';
+    if (this.drawGen(ctx, 'elite', anim, 0, 116 / 224, { flip, dy: 2 })) return;
     this.drawSprite(ctx, 'cat03', 112 * squash, { flip: p && p.cx > this.cx ? -1 : 1 });
     if (this.state === 'volley') {
       ctx.beginPath();
@@ -959,7 +998,7 @@ export class BossWall extends Enemy {
   touches() { return false; }
   init() {
     const g = this.game;
-    const two = g.players.length > 1;
+    const two = g.players.filter(Boolean).length > 1;
     // socket centres measured on the generated fortress image (px), mapped to the world
     const art = frame('fortress', 'body');
     const at = (px, py, w, h) => (art
@@ -969,9 +1008,9 @@ export class BossWall extends Enemy {
     const c2 = at(96, 391, 34, 30) || [this.x - 6, 176];
     const c3 = at(100, 531, 44, 52) || [this.x + 2, 236];
     this.parts = [
-      new BossPart(g, this, c1[0], c1[1], 'cannon', two ? 22 : 16),
-      new BossPart(g, this, c2[0], c2[1], 'cannon', two ? 22 : 16),
-      new BossPart(g, this, c3[0], c3[1], 'core', two ? 70 : 50),
+      new BossPart(g, this, c1[0], c1[1], 'cannon', two ? 28 : 16),
+      new BossPart(g, this, c2[0], c2[1], 'cannon', two ? 28 : 16),
+      new BossPart(g, this, c3[0], c3[1], 'core', two ? 95 : 50),
     ];
     this.art = art;
     g.enemies.push(...this.parts);
@@ -1220,20 +1259,56 @@ export class FreedCat {
     this.vy += 900 * dt;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
-    if (this.y > 320 && this.vy > 0 && this.t < 2.5) { this.y = 320; this.vy = -300; }
-    if (this.t > 2.5) this.dead = true;
+    const life = this.life ?? 2.5;
+    if (this.y > 300 && this.vy > 0 && this.t < life) { this.y = 300; this.vy = -300; }
+    if (this.t > life) this.dead = true;
   }
   draw(ctx) {
     const img = this.game.img[this.sprite];
     const w = (img.width * this.h) / img.height;
     ctx.save();
-    ctx.globalAlpha = Math.min(1, (2.5 - this.t) * 1.5);
+    ctx.globalAlpha = Math.min(1, ((this.life ?? 2.5) - this.t) * 1.5);
     ctx.translate(this.x, this.y);
     ctx.rotate(Math.sin(this.t * 10) * 0.15);
     if ('filter' in ctx) ctx.filter = 'saturate(0.5) brightness(1.15)';
     ctx.drawImage(img, -w / 2, -this.h, w, this.h);
     ctx.restore();
     if (this.t < 1.6) drawHeart(ctx, this.x + 14, this.y - this.h - 8 - this.t * 20, 12, C.pink);
+  }
+}
+
+// One-shot sprite animation from the generated fx sheet (muzzle flash, hit spark, explosion).
+export class FxAnim {
+  constructor(anim, x, y, dur, scale, rot = 0) {
+    Object.assign(this, { anim, x, y, dur, scale, rot, t: 0, dead: false });
+  }
+  update(dt) {
+    this.t += dt;
+    if (this.t >= this.dur) this.dead = true;
+  }
+  draw(ctx) {
+    const list = frame('fx', this.anim) ? (this.anim === 'boom' ? 4 : 1) : 0;
+    if (!list) return;
+    const f = frame('fx', this.anim, Math.min(list - 1, Math.floor((this.t / this.dur) * list)));
+    if (f) drawFrame(ctx, f, this.x, this.y, this.scale, { anchor: 'center', rot: this.rot });
+  }
+}
+
+// A defeated hero tumbles backwards off screen before respawning.
+export class KnockedOut {
+  constructor(f, x, y, facing, scale) {
+    Object.assign(this, { f, x, y, facing, scale, vx: -facing * 120, vy: -380, rot: 0, t: 0, dead: false });
+  }
+  update(dt) {
+    this.t += dt;
+    this.vy += 1100 * dt;
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.rot -= this.facing * dt * 5;
+    if (this.t > 1.1) this.dead = true;
+  }
+  draw(ctx) {
+    drawFrame(ctx, this.f, this.x, this.y, this.scale, { flip: this.facing, rot: this.rot, alpha: Math.min(1, (1.1 - this.t) * 2) });
   }
 }
 

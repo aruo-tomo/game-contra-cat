@@ -62,9 +62,28 @@ export function drawFrame(ctx, f, x, y, scale, o = {}) {
   ctx.scale(o.flip || 1, 1);
   if (o.alpha != null) ctx.globalAlpha *= o.alpha;
   const left = -w * (f.ax ?? 0.5);
-  if (o.anchor === 'center') ctx.drawImage(f.img, left, -h / 2, w, h);
-  else ctx.drawImage(f.img, left, -h, w, h);
+  const top = o.anchor === 'center' ? -h / 2 : -h;
+  ctx.drawImage(f.img, left, top, w, h);
+  if (o.flash) {
+    ctx.globalAlpha *= 0.6;
+    ctx.drawImage(whiteOf(f), left, top, w, h);
+  }
   ctx.restore();
+}
+
+// White silhouette of a frame, built once and cached, for hit flashes.
+export function whiteOf(f) {
+  if (f.white) return f.white;
+  const c = document.createElement('canvas');
+  c.width = f.img.naturalWidth || f.w;
+  c.height = f.img.naturalHeight || f.h;
+  const g = c.getContext('2d');
+  g.drawImage(f.img, 0, 0);
+  g.globalCompositeOperation = 'source-atop';
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, c.width, c.height);
+  f.white = c;
+  return c;
 }
 
 // Repeat a layer horizontally, mirroring every other copy so the seams always match.
