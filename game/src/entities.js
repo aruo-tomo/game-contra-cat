@@ -3,17 +3,20 @@
 import { C, ink, ellipse, rrect, drawRat, drawGun, drawHeart, drawBadge, WEAPON_INFO } from './art.js';
 import { sfx } from './audio.js';
 import { SPR, frame, drawFrame } from './sprites.js';
+import { skillKeyLabel } from './input.js';
 
 export const GRAVITY = 1500;
 const RUN = 155;
 const HERO_SCALE = 60 / 128; // generated hero frames are 128px tall when standing
 
 export const CHARS = [
-  { id: 'blaze', name: '火斑 Blaze', sprite: 'cat01', gun: C.yellow, drawH: 54, size: 1, skill: '三眼鎖定' },
+  { id: 'blaze', name: '火斑 Blaze', sprite: 'cat01', gun: C.yellow, drawH: 54, size: 1, skill: '三眼光炮' },
   { id: 'gulp', name: '大口 Gulp', sprite: 'cat02', gun: C.red, drawH: 60, size: 1.04, skill: '肚口吞彈' },
 ];
 
-const SKILL_COST = 50;
+export const SKILL_COST = 50;
+const BEAM_DMG = 8; // Blaze's third-eye beam, to every enemy along it
+const SWALLOW_R = 110; // Gulp's belly mouth reach
 
 export const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
@@ -93,6 +96,8 @@ export class Player {
     this.energy = 0;
     this.skillT = 0;
     this.swallowed = 0;
+    this.spitPending = false;
+    this.skillReady = false;
     this.locks = [];
     this.lockShot = 0;
     this.catnip = 0;
@@ -248,8 +253,16 @@ export class Player {
     // skill
     this.skillT = Math.max(0, this.skillT - dt);
     if (c.skill && this.energy >= SKILL_COST && this.skillT <= 0) this.useSkill();
-    if (this.char.id === 'gulp' && this.skillT === 0 && this.swallowed > 0) this.spit();
+    if (this.char.id === 'gulp' && this.skillT === 0 && this.spitPending) this.spit();
     if (this.char.id === 'blaze') this.locks = this.locks.filter((e) => !e.dead);
+    // tell the player the moment the skill becomes usable
+    const ready = this.energy >= SKILL_COST;
+    if (ready && !this.skillReady) {
+      g.text(this.cx, this.y - 30 - this.idx * 14, `必殺OK！撳 ${skillKeyLabel(this.ctl)}`, C.red);
+      g.effects.push(new ReadyRing(this));
+      sfx.ready();
+    }
+    this.skillReady = ready;
 
     if (this.y > 440) this.die(true);
   }
@@ -305,39 +318,69 @@ export class Player {
     const g = this.game;
     this.energy -= SKILL_COST;
     if (this.char.id === 'blaze') {
-      // third eye marks up to 3 enemies on screen; shots home in on them
+      this.eyeBeam();
+      // then the third eye marks up to 5 enemies on screen; shots home in on them
       this.locks = g.enemies
         .filter((e) => e.hittable() && e.x + e.w > g.cam.x && e.x < g.cam.x + g.W)
         .sort((a, b) => Math.hypot(a.x - this.x, a.y - this.y) - Math.hypot(b.x - this.x, b.y - this.y))
-        .slice(0, 3);
+        .slice(0, 5);
       this.skillT = 5;
       sfx.lock();
-      g.text(this.cx, this.y - 14, this.locks.length ? '鎖定！' : '冇目標', C.red);
+      g.text(this.cx, this.y - 14, '三眼光炮！', C.red);
     } else {
       this.skillT = 1.6;
       this.swallowed = 0;
+      this.spitPending = true;
       sfx.swallow();
       g.text(this.cx, this.y - 14, '啊——', C.red);
     }
   }
 
-  // Gulp: swallowed bullets come back out as a fan of heavy shots
+  // Blaze: the third eye fires a beam right across the screen, hitting every enemy along it
+  eyeBeam() {
+    const g = this.game;
+    const a = Math.atan2(this.aim.y, this.aim.x);
+    const x0 = this.cx + this.facing * 6;
+    const y0 = this.y + 8;
+    const len = g.W * 1.3;
+    const half = 14;
+    const dx = Math.cos(a);
+    const dy = Math.sin(a);
+    for (const e of g.enemies) {
+      if (!e.hittable()) continue;
+      for (let d = 0; d <= len; d += 8) {
+        if (circleHitRect({ x: x0 + dx * d, y: y0 + dy * d, r: half }, e)) {
+          e.damage(BEAM_DMG, this);
+          g.effects.push(new FxAnim('impact', 'hit', e.cx, e.cy, 0.2, 0.5, { rot: Math.random() * 6 }));
+          break;
+        }
+      }
+    }
+    g.effects.push(new EyeBeam(x0, y0, a, len, half));
+    g.shake(5);
+    g.freeze(0.05);
+    sfx.beam();
+  }
+
+  // Gulp: swallowed bullets come back out as a fan of heavy shots that pierce across the screen;
+  // even an empty belly spits a small fan
   spit() {
     const g = this.game;
-    const n = Math.min(16, this.swallowed * 2);
+    const n = Math.min(20, 8 + this.swallowed * 2);
     const a = Math.atan2(this.aim.y, this.aim.x);
     for (let i = 0; i < n; i++) {
-      const ang = a + (i - (n - 1) / 2) * 0.09;
-      g.bullets.push({ x: this.cx, y: this.cy, vx: Math.cos(ang) * 520, vy: Math.sin(ang) * 520, t: 0, owner: this, kind: 'spit', r: 6, dmg: 2 });
+      const ang = a + (i - (n - 1) / 2) * 0.07;
+      g.bullets.push({ x: this.cx, y: this.cy, vx: Math.cos(ang) * 620, vy: Math.sin(ang) * 620, t: 0, owner: this, kind: 'spit', r: 6, dmg: 2, pierce: new Set() });
     }
     sfx.spit();
     this.swallowed = 0;
+    this.spitPending = false;
   }
 
   // returns true if the bullet was swallowed
   trySwallow(b) {
     if (this.char.id !== 'gulp' || this.skillT <= 0 || this.state !== 'alive') return false;
-    if (Math.hypot(b.x - this.cx, b.y - this.cy) > 78) return false;
+    if (Math.hypot(b.x - this.cx, b.y - this.cy) > SWALLOW_R) return false;
     this.swallowed++;
     sfx.hit();
     return true;
@@ -363,6 +406,7 @@ export class Player {
       this.downT = 5;
       this.reviveP = 0;
       this.skillT = 0;
+      this.spitPending = false;
       this.game.text(this.cx, this.y - 10, '隊友！救我！', C.red);
     } else {
       this.loseLife();
@@ -388,6 +432,7 @@ export class Player {
     this.locks = [];
     this.skillT = 0;
     this.swallowed = 0;
+    this.spitPending = false;
     if (this.lives > 0) {
       this.state = 'dead';
       this.respawnT = 1.2;
@@ -495,7 +540,7 @@ export class Player {
 
     if (this.char.id === 'gulp' && this.skillT > 0) {
       ctx.beginPath();
-      ctx.arc(this.cx, this.cy + 6, 78, 0, Math.PI * 2);
+      ctx.arc(this.cx, this.cy + 6, SWALLOW_R, 0, Math.PI * 2);
       ctx.setLineDash([4, 8]);
       ctx.lineWidth = 2;
       ctx.strokeStyle = 'rgba(232,86,75,0.6)';
@@ -504,7 +549,7 @@ export class Player {
       // air being sucked into the belly mouth
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI * 2 + g.t * 3;
-        const r = 70 - ((g.t * 120 + i * 20) % 60);
+        const r = SWALLOW_R - 8 - ((g.t * 160 + i * 28) % 90);
         ctx.beginPath();
         ctx.arc(this.cx + Math.cos(a) * r, this.cy + 6 + Math.sin(a) * r, 2.5, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(232,86,75,0.7)';
@@ -529,7 +574,9 @@ export class Player {
     ctx.font = '900 10px Bungee, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = this.idx === 0 ? C.red : C.greenDk;
-    ctx.fillText(`P${this.idx + 1}`, this.cx, this.y - (this.crouch ? 36 : 20));
+    const labelY = this.y - (this.crouch ? 36 : 20);
+    ctx.fillText(`P${this.idx + 1}`, this.cx, labelY);
+    if (this.skillReady && this.skillT <= 0) drawReadyStar(ctx, this.cx + 16, labelY - 4, g.t);
   }
 
   drawGunArm(ctx, gun, ang) {
@@ -1363,6 +1410,84 @@ export class FreedCat {
       drawHeart(ctx, this.x + this.dir * 10, this.y - this.h - 6 - (this.t - this.daze) * 22, 11, C.pink);
       ctx.globalAlpha = 1;
     }
+  }
+}
+
+function circleHitRect(b, r) {
+  const nx = Math.max(r.x, Math.min(b.x, r.x + r.w));
+  const ny = Math.max(r.y, Math.min(b.y, r.y + r.h));
+  return (b.x - nx) ** 2 + (b.y - ny) ** 2 < b.r * b.r;
+}
+
+// small spinning yellow star next to the P1/P2 label while the skill is ready
+function drawReadyStar(ctx, x, y, t) {
+  const r = 5 + Math.sin(t * 8) * 1.2;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(t * 2);
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const rr = i % 2 ? r * 0.45 : r;
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  ctx.closePath();
+  ctx.fillStyle = C.yellow;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = C.ink;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Blaze's third-eye beam: a thick ink-outlined yellow/red ray across the screen that thins out and fades
+export class EyeBeam {
+  constructor(x, y, ang, len, half) {
+    Object.assign(this, { x, y, ang, len, half, t: 0, dur: 0.4, dead: false });
+  }
+  update(dt) {
+    this.t += dt;
+    if (this.t >= this.dur) this.dead = true;
+  }
+  draw(ctx) {
+    const k = 1 - this.t / this.dur;
+    const w = this.half * 2 * (0.4 + 0.6 * k);
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.ang);
+    ctx.globalAlpha = Math.min(1, k * 1.6);
+    ctx.fillStyle = C.ink;
+    ctx.fillRect(0, -w / 2 - 2, this.len, w + 4);
+    ctx.fillStyle = C.red;
+    ctx.fillRect(0, -w / 2, this.len, w);
+    ctx.fillStyle = C.yellow;
+    ctx.fillRect(0, -w / 4, this.len, w / 2);
+    ctx.beginPath();
+    ctx.arc(0, 0, w * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// expanding ring around a hero the moment the skill becomes ready
+export class ReadyRing {
+  constructor(p) {
+    Object.assign(this, { p, t: 0, dur: 0.6, dead: false });
+  }
+  update(dt) {
+    this.t += dt;
+    if (this.t >= this.dur) this.dead = true;
+  }
+  draw(ctx) {
+    const k = this.t / this.dur;
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.beginPath();
+    ctx.arc(this.p.cx, this.p.cy, 18 + k * 40, 0, Math.PI * 2);
+    ctx.lineWidth = 4 * (1 - k) + 1;
+    ctx.strokeStyle = C.yellow;
+    ctx.stroke();
+    ctx.restore();
   }
 }
 

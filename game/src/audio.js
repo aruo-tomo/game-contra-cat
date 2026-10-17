@@ -117,6 +117,14 @@ export const sfx = {
   squeak: () => tone({ f0: 1800, f1: 2600, dur: 0.07, vol: 0.06 }),
   swallow: () => tone({ type: 'sine', f0: 400, f1: 80, dur: 0.18, vol: 0.25 }),
   spit: () => noise({ dur: 0.2, vol: 0.25, freq: 2500 }),
+  // skill became usable: bright rising arpeggio
+  ready() {
+    [784, 988, 1319].forEach((f, i) => tone({ type: 'triangle', f0: f, dur: 0.09, vol: 0.13, at: i * 0.05 }));
+  },
+  beam() {
+    tone({ type: 'sawtooth', f0: 1800, f1: 200, dur: 0.35, vol: 0.16 });
+    noise({ dur: 0.3, vol: 0.2, freq: 1200 });
+  },
   lock() {
     tone({ f0: 1200, dur: 0.05, vol: 0.1 });
     tone({ f0: 1600, dur: 0.05, vol: 0.1, at: 0.07 });

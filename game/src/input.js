@@ -58,6 +58,16 @@ function saveBindings() {
 }
 
 export const getBindings = () => bindings;
+
+// What to press for the skill, shown when it becomes ready; `short` fits the HUD
+export function skillKeyLabel(ctl, short = false) {
+  const key = (code) => (short ? keyName(code).replace('數字鍵 ', 'Num') : keyName(code));
+  if (!ctl) return '技';
+  if (ctl.kind === 'mouse') return short ? key(bindings.pc.skill[0]) : `${key(bindings.pc.skill[0])}／右鍵`;
+  if (ctl.kind === 'classic') return key(bindings[ctl.profile].skill[0]);
+  if (ctl.kind === 'pad') return short ? 'LB' : 'LB／Y';
+  return short ? '技' : '「技」掣';
+}
 export function setBinding(profile, action, code) {
   bindings[profile][action] = [code];
   saveBindings();
