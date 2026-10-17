@@ -84,14 +84,14 @@ def save(img, name, scale):
 manifest = {}
 
 
-def sheet(raw, n, names, ref_index, ref_h):
+def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500):
     """names: list of (anim, frame_index) per frame; ref_index: frame (or 'median') that defines the scale."""
     path = GEN / "raw" / f"{raw}.png"
     if not path.exists():
         print(f"missing {path}")
         return
     print(raw)
-    fr = frames(remove_bg(Image.open(path)), n)
+    fr = frames(remove_bg(Image.open(path)), n, merge=merge, min_area=min_area)
     if not fr:
         return
     hs = sorted(f.height for f in fr)
@@ -108,6 +108,14 @@ for hero in ("blaze", "gulp"):
     sheet(f"{hero}_pose", 4, [(hero, "idle"), (hero, "jump"), (hero, "ball"), (hero, "crouch")], 0, HERO_H)
     sheet(f"{hero}_pose2", 3, [(hero, "dash"), (hero, "down"), (hero, "skill")], 2, HERO_H)
 
+for hero in ("blaze", "gulp"):
+    # arms raised make these frames taller than the 128px standing pose
+    sheet(f"{hero}_aim", 3, [(hero, "aimup"), (hero, "aimdiag"), (hero, "hurt")], 1, 140)
+
+sheet("ghost", 2, [("ghost", "float")] * 2, "median", 108)
+sheet("elite", 3, [("elite", "idle"), ("elite", "jump"), ("elite", "fire")], 0, 224)
+sheet("fx", 6, [("fx", "muzzle"), ("fx", "spark"), ("fx", "boom"), ("fx", "boom"), ("fx", "boom"), ("fx", "boom")], 3, 96,
+      merge=16, min_area=150)
 sheet("runner", 4, [("runner", "run")] * 4, "median", 112)
 sheet("bat", 2, [("bat", "fly")] * 2, "median", 96)
 sheet("rat", 2, [("rat", "idle"), ("rat", "fire")], 0, 92)

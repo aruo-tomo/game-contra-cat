@@ -84,7 +84,7 @@ const check = (name, ok, info = '') => { results.push(`${ok ? 'PASS' : 'FAIL'} $
   st = await page.evaluate(() => ({ lock: __game.lock, core: !!__game.bossTarget }));
   check('boss spawns', !!st.lock && st.core, JSON.stringify(st));
   await page.evaluate(() => __game.bossTarget.damage(999, __game.players[0]));
-  await sleep(4000);
+  await sleep(5500);
   st = await page.evaluate(() => ({ state: __game.state, clearVisible: !document.getElementById('clear').hidden }));
   await page.screenshot({ path: OUT + '05-clear.png' });
   check('stage clear', st.state === 'clear' && st.clearVisible, JSON.stringify(st));

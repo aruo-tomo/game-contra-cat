@@ -154,6 +154,18 @@
   .fine { font-size: 0.75em; color: var(--muted); }
 
   /* settings */
+  .opts { display: grid; gap: 0.5em; }
+  .opt { display: grid; grid-template-columns: 6em minmax(0, 1fr); align-items: center; gap: 0.8em; font-weight: 700; }
+  .opt input[type="range"] { width: 100%; accent-color: var(--red); }
+  .opt input:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+  .clear-head { display: flex; gap: 1em; align-items: center; }
+  .rank {
+    flex: none; width: 2.2em; height: 2.2em; display: grid; place-items: center; font: 400 2.2em var(--latin);
+    border: 3px solid var(--ink); border-radius: 50%; background: var(--paper-dk); box-shadow: 4px 4px 0 var(--ink); transform: rotate(-8deg);
+  }
+  .rank[data-rank="S"] { background: var(--yellow); }
+  .rank[data-rank="A"] { background: var(--red); color: var(--paper); }
+  .rank[data-rank="B"] { background: var(--green); color: var(--paper); }
   .tabs { display: flex; gap: 0.4em; flex-wrap: wrap; }
   .tabs button {
     font: inherit; font-weight: 700; padding: 0.3em 0.8em; border: 2px solid var(--ink); border-radius: 999px;
@@ -196,23 +208,28 @@
 
   /* touch controls */
   #touch { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
-  #touch .stick, #touch .tbtn { pointer-events: auto; touch-action: none; }
+  .tzone { position: absolute; top: 18%; bottom: 0; pointer-events: auto; touch-action: none; }
+  .tzone-l { left: 0; width: 40%; }
+  .tzone-r { right: 0; width: 38%; }
   .stick {
-    position: absolute; bottom: 5cqh; width: 27cqh; height: 27cqh; border-radius: 50%;
-    border: 3px solid rgba(30,30,30,0.4); background: rgba(239,234,223,0.25);
-    display: grid; place-items: center;
+    position: absolute; width: 26cqh; height: 26cqh; border-radius: 50%;
+    border: 3px solid rgba(30,30,30,0.4); background: rgba(239,234,223,0.22);
+    display: grid; place-items: center; pointer-events: none; opacity: 0.25;
   }
-  .stick span { position: absolute; bottom: -1.6em; font-size: 11px; font-weight: 900; color: var(--ink); }
-  .stick-l { left: 3cqw; }
-  .stick-r { right: 3cqw; }
+  .stick.live { opacity: 1; }
+  .tzone-l .stick { left: 3cqw; bottom: 5cqh; }
+  .tzone-r .stick { right: 3cqw; bottom: 5cqh; }
+  .stick.live { bottom: auto; right: auto; }
+  .stick span { position: absolute; bottom: -1.6em; font-size: 11px; font-weight: 900; color: var(--ink); white-space: nowrap; }
   .knob { width: 40%; height: 40%; border-radius: 50%; background: var(--ink); opacity: 0.75; }
-  .stick-r .knob { background: var(--red); }
-  .tbtns { position: absolute; right: calc(7cqw + 27cqh); bottom: 5cqh; display: flex; gap: 2cqh; align-items: flex-end; }
+  .stick-aim .knob { background: var(--red); }
+  .tbtns { position: absolute; left: 41%; right: 39%; bottom: 4cqh; display: flex; gap: 1.5cqh; align-items: flex-end; justify-content: center; }
   .tbtn {
-    width: 13cqh; height: 13cqh; border-radius: 50%; border: 3px solid var(--ink);
+    pointer-events: auto; touch-action: none;
+    width: 12cqh; height: 12cqh; border-radius: 50%; border: 3px solid var(--ink);
     background: rgba(239,234,223,0.8); font: 900 4cqh var(--display); color: var(--ink);
   }
-  .tbtn-big { width: 17cqh; height: 17cqh; background: rgba(242,179,61,0.85); }
+  .tbtn-big { width: 16cqh; height: 16cqh; background: rgba(242,179,61,0.85); }
   .tbtn.on { background: var(--red); color: var(--paper); }
 
   @container (max-height: 320px) {
@@ -308,13 +325,21 @@
 
     <section id="clear" class="screen" hidden>
       <div class="card">
-        <h2>第一關完成！</h2>
-        <p>貓抓板要塞倒咗。下一站：寵物醫院走廊（製作中）。</p>
+        <div class="clear-head">
+          <div class="rank" id="clearRank" data-rank="C">C</div>
+          <div>
+            <h2>第一關完成！</h2>
+            <p>貓抓板要塞倒咗。下一站：寵物醫院走廊（製作中）。</p>
+          </div>
+        </div>
         <div class="stats">
           <div class="stat"><b id="clearScore">000000</b><span>分數</span></div>
           <div class="stat"><b id="clearFreed">0</b><span>解放貓數</span></div>
           <div class="stat"><b id="clearTime">0:00</b><span>用時</span></div>
+          <div class="stat"><b id="clearDeaths">0</b><span>倒下次數</span></div>
         </div>
+        <p class="fine" id="clearBest"></p>
+        <p class="fine">評級：4 分鐘內過關、冇倒下、解放七成以上嘅貓、30000 分以上，每達成一項加一級（C → S）。</p>
         <div class="row">
           <button type="button" class="btn" id="btnAgain">再玩一次</button>
           <button type="button" class="btn alt" id="btnClearTitle">返回標題</button>
@@ -324,7 +349,22 @@
 
     <section id="settings" class="screen" hidden>
       <div class="card">
-        <h2>鍵位設定</h2>
+        <h2>設定</h2>
+        <div class="opts">
+          <label class="opt" for="optMusic"><span>音樂音量</span><input type="range" id="optMusic" min="0" max="100" step="5"></label>
+          <label class="opt" for="optSfx"><span>音效音量</span><input type="range" id="optSfx" min="0" max="100" step="5"></label>
+          <div class="opt"><span>畫面震動</span>
+            <div class="seg" role="group" aria-label="畫面震動">
+              <button type="button" data-shake="on">開</button><button type="button" data-shake="off">關</button>
+            </div>
+          </div>
+          <div class="opt"><span>瞄準輔助</span>
+            <div class="seg" role="group" aria-label="瞄準輔助">
+              <button type="button" data-assist="off">關</button><button type="button" data-assist="normal">標準</button><button type="button" data-assist="strong">強</button>
+            </div>
+          </div>
+        </div>
+        <p class="label">鍵位</p>
         <div class="tabs" role="tablist">
           <button type="button" role="tab" data-profile="pc">滑鼠＋鍵盤</button>
           <button type="button" role="tab" data-profile="classic1">經典 P1</button>
@@ -334,7 +374,7 @@
         <div id="bindList"></div>
         <p class="fine">撳個掣再撳新嘅鍵就改到。手掣同觸控用固定配置。</p>
         <div class="row">
-          <button type="button" class="btn alt" id="btnReset">重設預設</button>
+          <button type="button" class="btn alt" id="btnReset">重設鍵位</button>
           <button type="button" class="btn" id="btnSettingsDone">完成</button>
         </div>
       </div>
