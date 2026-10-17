@@ -88,6 +88,9 @@ const setupRats = (args) => {
   r = await page.evaluate(() => __rats.map((e) => e.dead));
   check('Gulp spit pierces a line of enemies', r.every(Boolean), JSON.stringify(r));
 
+  // generated skill art is in the manifest (beam, its flare and splash, Gulp's vortex)
+  r = await page.evaluate(() => fetch('assets/sprites/gen/manifest.json').then((x) => x.json()).then((m) => Object.keys(m.skill || {})));
+  check('skill effect art loaded', ['beam', 'flare', 'splash', 'vortex'].every((k) => r.includes(k)), JSON.stringify(r));
   check('no console errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
   console.log(results.join('\n'));

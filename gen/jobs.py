@@ -203,3 +203,23 @@ JOBS5 = (
              "4) a catnip flamethrower with a round mustard-yellow fuel tank on top, a flared nozzle and little green catnip leaves painted on it."),
     ]
 )
+
+# --- pass 6: skill effects (Blaze's third-eye beam, Gulp's belly-mouth suction) ---
+JOBS6 = [
+    dict(name="skill_beam", refs=["refs/cat01.png", "raw/bullets.png"], prompt=STYLE + BG +
+         "One single object: a straight, perfectly HORIZONTAL section of a huge cartoon energy beam that runs across the WHOLE canvas from the "
+         "very left edge to the very right edge, about one sixth of the canvas tall, centred vertically. Thick black wobbly ink outline only along "
+         "its top and bottom edges. Inside: an outer band of coral red, a wide mustard-yellow middle, and a thin pale-yellow hot core line; "
+         "lengthwise streaks and a few small ink speed dashes running along it, grainy print texture. The beam is the same all along its length "
+         "(no start, no end, no taper, no sparks or particles around it)."),
+    dict(name="skill_beamfx", refs=["refs/cat01.png", "raw/impact.png"], prompt=STYLE + BG + row(2) +
+         "Two cartoon effect pieces for a third-eye laser beam fired to the RIGHT, no holes in them: "
+         "1) the beam's source flare: a round blinding starburst flash with spiky rays, concentric yellow and red rings like a glowing target eye, "
+         "thick black outline; 2) the beam's impact splash: a big jagged star-shaped burst splashing outward, yellow centre with red tips, "
+         "a few chunky shards, thick black outline."),
+    dict(name="skill_vortex", refs=["refs/cat02.png"], prompt=STYLE + BG + row(3) +
+         "A 3-frame looping animation of a round cartoon suction vortex seen from the front, like a whirlpool of wind being sucked into a mouth: "
+         "6 to 8 curved spiral arms of thick coral-red and mustard-yellow brush strokes with black ink outlines, swirling inward toward an empty "
+         "centre, with wide gaps of background between the arms, small motion dashes. Each frame is the same vortex rotated a little further "
+         "clockwise. Do NOT fill any area with white or cream: only red, yellow, grey-green and black strokes on the background."),
+]

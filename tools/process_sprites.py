@@ -19,7 +19,7 @@ OUT = Path(sys.argv[2])
 OUT.mkdir(parents=True, exist_ok=True)
 
 
-def remove_bg(im, tol=48):
+def remove_bg(im, tol=48, cut_all=False):
     """Make the generated sheet's flat background transparent without touching the art.
 
     Only background connected to the canvas border is removed. Whites in the art (the fat
@@ -27,6 +27,11 @@ def remove_bg(im, tol=48):
     so enclosed regions are never removed, and the ink outline is thickened first so a small
     gap in the line can't let the flood leak inside a character.
     """
+    if im.mode == "RGBA":
+        rgba = np.asarray(im)
+        edge = np.concatenate([rgba[0, :, 3], rgba[-1, :, 3], rgba[:, 0, 3], rgba[:, -1, 3]])
+        if (edge == 0).mean() > 0.5:  # already cut out by the generator: keep its alpha
+            return rgba.copy()
     rgb = np.asarray(im.convert("RGB")).astype(np.int32)
     border = np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]])
     ref = np.median(border, axis=0)
@@ -36,6 +41,9 @@ def remove_bg(im, tol=48):
     lab, _ = ndi.label((diff < 20) & ~wall)
     edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
     outside = np.isin(lab, edge[edge > 0])
+    if cut_all:
+        # effects with no white/cream in them (swirls, rings): enclosed background goes too
+        outside |= (diff < 20) & ~wall
     # close the 3px margin left by the thickened wall, up to (never past) the ink line
     outside = ndi.binary_dilation(outside, iterations=4) & ~ink & (diff < tol)
     alpha = np.where(outside, 0, 255).astype(np.uint8)
@@ -105,14 +113,14 @@ def save(img, name, scale):
 manifest = {}
 
 
-def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500, post=None):
+def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500, post=None, cut_all=False):
     """names: list of (anim, frame_index) per frame; ref_index: frame (or 'median') that defines the scale."""
     path = GEN / "raw" / f"{raw}.png"
     if not path.exists():
         print(f"missing {path}")
         return
     print(raw)
-    fr = frames(remove_bg(Image.open(path)), n, merge=merge, min_area=min_area)
+    fr = frames(remove_bg(Image.open(path), cut_all=cut_all), n, merge=merge, min_area=min_area)
     if post:
         fr = [post(f) for f in fr]
     if not fr:
@@ -160,6 +168,12 @@ sheet("ratking", 1, [("ratking", "body")], 0, 320)
 sheet("guns", 2, [("gun", "blaze"), ("gun", "gulp")], 0, 26)
 # one gun per pickup weapon (N keeps gun_blaze / gun_gulp), all drawn at one scale on the sheet
 sheet("weapons", 4, [("gun", k) for k in ("S", "M", "L", "F")], "median", 40)
+# skill effects: a beam section the game stretches to length (ends trimmed so it has no caps),
+# the beam's source flare and impact splash, and Gulp's looping suction vortex
+trim_ends = lambda im: im.crop((round(im.width * 0.03), 0, round(im.width * 0.97), im.height))
+sheet("skill_beam", 1, [("skill", "beam")], 0, 56, post=trim_ends)
+sheet("skill_beamfx", 2, [("skill", "flare"), ("skill", "splash")], "median", 110, merge=16, min_area=300)
+sheet("skill_vortex", 3, [("skill", "vortex")] * 3, "median", 300, merge=24, min_area=300, cut_all=True)
 sheet("items", 7, [("item", k) for k in ("can", "S", "M", "L", "F", "R", "B")], 1, 48)
 
 # opaque layers
