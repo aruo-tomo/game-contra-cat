@@ -1,0 +1,114 @@
+"""Image generation jobs for 喵斗羅. Each job -> one Codex image_generation call."""
+import json
+
+STYLE = ("Art style must match the attached reference art exactly: hand-drawn cartoon, thick slightly wobbly black ink outlines, "
+         "grainy risograph / aged-paper texture inside the color fills, limited flat palette of coral red (#E8564B), mustard yellow (#F2B33D), "
+         "grey-green (#7E9A8C), cream (#EFEADF) and black. ")
+BG = ("Background: one plain flat solid pale cream color (#F6F3EC) filling the whole canvas and nothing else — no ground shadows, "
+      "no text, no numbers, no labels, no frame borders, no grid lines. ")
+
+def sheet(n, facing="RIGHT"):
+    return (f"Layout: a game sprite sheet with exactly {n} frames in ONE horizontal row across a landscape canvas, evenly spaced, "
+            f"with wide empty background gaps so no two frames touch or overlap. The same character at the same size and proportions in every frame, "
+            f"all feet on the same invisible baseline. Side view, the character faces {facing}. ")
+
+BLAZE = ("Character: the red three-eyed spotted cat from the reference (coral red fluffy body with round yellow spots, THREE big concentric-ring "
+         "yellow eyes — two eyes plus a third eye on the forehead, a huge grin full of sharp white triangular teeth, yellow inner ears, red tail with yellow spots). "
+         "It is an action hero that stands and runs UPRIGHT ON TWO HIND LEGS like a cartoon commando, front paws free (it holds no weapon). ")
+GULP = ("Character: the grey-green tabby cat from the reference (slim grey-green body with dark tabby stripes, huge round yellow eyes with black slit pupils, "
+        "pink nose, cream belly patch with a second fanged mouth in the middle of the belly, white paws, long striped tail), slender and a little nervous-looking. "
+        "It is an action hero that stands and runs UPRIGHT ON TWO HIND LEGS like a cartoon commando, front paws free (it holds no weapon). ")
+
+def hero(key, desc, ref, skill):
+    return [
+        dict(name=f"{key}_run", refs=[ref], prompt=STYLE + BG + sheet(6) + desc +
+             "Frames: a 6-frame running cycle, legs alternating clearly, arms pumping, slight body bob."),
+        dict(name=f"{key}_pose", refs=[ref], prompt=STYLE + BG + sheet(4) + desc +
+             "Frames, left to right: 1) idle ready stance standing upright; 2) jumping upward, body stretched; "
+             "3) curled into a tight round ball doing a somersault; 4) crouching very low and flat, ready to pounce."),
+        dict(name=f"{key}_pose2", refs=[ref], prompt=STYLE + BG + sheet(3) + desc +
+             "Frames, left to right: 1) dashing forward extremely fast, body leaning almost horizontal, a few speed lines behind; "
+             "2) knocked out lying flat on its back, swirly dizzy eyes, tongue out, little stars; 3) " + skill),
+    ]
+
+JOBS = (
+    hero("blaze", BLAZE, "refs/cat01.png",
+         "special move: standing upright, the third forehead eye glowing bright yellow and shooting a thin targeting beam forward.")
+    + hero("gulp", GULP, "refs/cat02.png",
+           "special move: standing upright with the belly mouth opened extremely wide like a vacuum, swirl lines being sucked into the belly mouth.")
+    + [
+        dict(name="guns", refs=["refs/cat01.png", "refs/cat02.png"], prompt=STYLE + BG +
+             "Two small chunky cartoon toy blasters side by side with a wide gap, both pointing RIGHT, perfectly horizontal side view: "
+             "left one mustard yellow with red trim and a fish-shaped muzzle; right one coral red with yellow trim and a paw print on its side."),
+        dict(name="runner", refs=["refs/cat05.png"], prompt=STYLE + BG + sheet(4, "LEFT") +
+             "Character: the screaming red cat from the reference (tall pointy ears, one big yellow eye and one small white crazy eye, "
+             "screaming wide-open mouth with a heart-shaped tongue, cream belly, red and yellow striped tail). It runs UPRIGHT on two legs, frantic. "
+             "Frames: a 4-frame running cycle."),
+        dict(name="bat", refs=["refs/cat04.png"], prompt=STYLE + BG + sheet(2, "LEFT") +
+             "Character: the grey-green bat-winged cat from the reference (huge yellow eyes, small fangs, cream belly, red and yellow bat wings), flying. "
+             "Frames: 1) wings raised high; 2) wings swept down. Seen from the front, turned slightly to the left."),
+        dict(name="rat", refs=["refs/sheet.png"], prompt=STYLE + BG + sheet(2, "LEFT") +
+             "Character: a Red Mouse army soldier — a grey rat with pink ears, pink feet and a long pink tail, a red bandana tied on its head, "
+             "one glowing red eye, a tiny belt, standing upright and holding a small grey rifle. "
+             "Frames: 1) standing guard holding the rifle; 2) firing the rifle forward with a small yellow muzzle flash."),
+        dict(name="turret", refs=["refs/sheet.png"], prompt=STYLE + BG +
+             "One object centered: a Red Mouse army cannon turret built from a giant grey tin can on two short stubby legs, "
+             "a round metal dome on top, a red rat-face emblem painted on the front. Draw it WITHOUT any gun barrel. Front three-quarter view."),
+        dict(name="fortress", refs=["refs/sheet.png"], prompt=STYLE + BG +
+             "Portrait canvas. One tall object filling the full height: the stage boss, a cardboard cat-scratching-post tower taken over by the Red Mouse army. "
+             "Corrugated cardboard, several sisal rope wraps, a red flag with a black rat silhouette on top. On its LEFT side: two empty dark square sockets "
+             "at about 30% and 52% of the height, and one larger empty round socket at about 74% of the height (sockets are empty holes, no cannons inside)."),
+        dict(name="ratking", refs=["refs/sheet.png"], prompt=STYLE + BG +
+             "One character centered: the Rat King, final boss of the Red Mouse empire — a huge fat grey rat in a red cape with a crooked golden crown, "
+             "holding a scepter topped with a glowing red gem, battle scars, menacing grin. Three-quarter front view, full body."),
+        dict(name="items", refs=["refs/sheet.png"], prompt=STYLE + BG +
+             "Game pickup icons in ONE horizontal row with wide gaps between them, all roughly the same size: "
+             "1) a flying grey tin can of cat food with small white wings and a fish picture on its red label; "
+             "then six round badge tokens with thick black outline, each showing ONE big bold black capital letter: "
+             "2) S on a coral red badge, 3) M on a grey-green badge, 4) L on a pink-red badge, 5) F on a mustard yellow badge, "
+             "6) R on a cream badge, 7) B on a light green badge."),
+        dict(name="bg_far", refs=["refs/sheet.png"], prompt=STYLE +
+             "Wide side-scrolling game background, far layer, landscape canvas: a long row of city apartment rooftops at dusk with water tanks and antennas, "
+             "a few lit yellow windows, pale grey-green buildings filling the lower 70% of the canvas, plain cream paper sky above, no moon, no characters. "
+             "Low contrast and soft so foreground stays readable. No text."),
+        dict(name="bg_mid", refs=["refs/sheet.png"], prompt=STYLE + BG +
+             "Wide side-scrolling game background, middle layer, landscape canvas: a long back-alley wooden fence of pointed planks running across the "
+             "full width, with a torn 'missing cat' poster, a green trash can and a street lamp in front of it. The fence occupies only the bottom 40% "
+             "of the canvas and its bottom edge touches the bottom of the canvas; everything above the fence is the plain cream background. No text."),
+        dict(name="ground", refs=["refs/sheet.png"], prompt=STYLE +
+             "Square canvas, a seamless tileable texture filling the whole canvas edge to edge: packed light tan earth (#D8C9A8) with small darker "
+             "pebbles and paper grain, very flat and low contrast. No outline, no grass, no objects."),
+        dict(name="title", refs=["refs/cat01.png", "refs/cat02.png"], prompt=STYLE +
+             "Landscape key art for the title screen: the two heroes from the references — the red three-eyed spotted cat and the grey-green tabby "
+             "with a mouth on its belly — standing back to back in heroic action poses holding chunky toy blasters, in a night back alley with a big "
+             "yellow moon, several grey rats in red bandanas lurking in the background. Dynamic, fun. Absolutely no text or logo."),
+    ]
+)
+
+if __name__ == "__main__":
+    print(json.dumps(JOBS))
+
+# --- polish pass: extra poses, enemy animation, effects ---
+JOBS2 = [
+    dict(name="blaze_aim", refs=["refs/cat01.png"], prompt=STYLE + BG + sheet(3) + BLAZE +
+         "Frames, left to right: 1) standing, both front paws raised straight UP above the head as if aiming upward; "
+         "2) standing, both front paws stretched forward and diagonally upward at 45 degrees as if aiming diagonally up; "
+         "3) hurt: recoiling backward, eyes squeezed shut, fur standing on end, small impact stars."),
+    dict(name="gulp_aim", refs=["refs/cat02.png"], prompt=STYLE + BG + sheet(3) + GULP +
+         "Frames, left to right: 1) standing, both front paws raised straight UP above the head as if aiming upward; "
+         "2) standing, both front paws stretched forward and diagonally upward at 45 degrees as if aiming diagonally up; "
+         "3) hurt: recoiling backward, eyes squeezed shut, fur standing on end, small impact stars."),
+    dict(name="ghost", refs=["refs/cat06.png"], prompt=STYLE + BG + sheet(2, "front") +
+         "Character: the white ghost cat from the reference (cream ghost sheet body with wavy bottom, cat ears with yellow inner ears, "
+         "two big black eyes, pink cheeks, yellow paw pads, little yellow feet), floating. Frames: 1) arms raised spooky, body wavy to the left; "
+         "2) arms raised spooky, body wavy to the right."),
+    dict(name="elite", refs=["refs/cat03.png"], prompt=STYLE + BG + sheet(3, "LEFT") +
+         "Character: the huge fat fluffy white three-eyed cat from the reference (three yellow eyes — one on the forehead, small fangs, "
+         "grey-green feet, cream fur, yellow-tipped tail), a heavy mid-boss, three-quarter view facing left. "
+         "Frames: 1) standing menacingly; 2) mid-air jump, belly up, paws tucked; 3) the forehead eye glowing bright yellow, firing energy."),
+    dict(name="fx", refs=["refs/sheet.png"], prompt=STYLE + BG +
+         "Game visual effects in ONE horizontal row with wide gaps, all on their own, no characters: "
+         "1) a small yellow muzzle flash star burst; 2) a small white and yellow hit spark burst; "
+         "then a 4-frame cartoon explosion sequence of the same explosion growing and fading: 3) small red and yellow fireball; "
+         "4) big round red, yellow and cream fireball with black outline; 5) breaking up into puffy cream smoke clouds; 6) a few small fading smoke puffs."),
+]

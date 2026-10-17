@@ -1,0 +1,6 @@
+gen/logs/
+gen/codex-test.log
+gen/*.log
+tests/shots/
+__pycache__/
+node_modules/

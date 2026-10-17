@@ -1,0 +1,348 @@
+<meta charset="utf-8">
+<title>喵斗羅 Contra-Cat</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Noto+Sans+HK:wght@500;700;900&display=swap">
+<style>
+  /* Layout: one 16:9 stage letterboxed on ink; menus are paper cards laid over the canvas. Single deliberate look. */
+  :root {
+    --ink: #1E1E1E;
+    --paper: #EFEADF;
+    --paper-dk: #E2DACA;
+    --red: #E8564B;
+    --yellow: #F2B33D;
+    --green: #7E9A8C;
+    --green-dk: #5C786A;
+    --muted: #5E584E;
+    --display: "Noto Sans HK", "PingFang HK", "Microsoft JhengHei", sans-serif;
+    --latin: Bungee, "Arial Black", sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    background: var(--ink);
+    color: var(--ink);
+    font-family: var(--display);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #app {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    padding-left: max(0px, env(safe-area-inset-left, 0px));
+    padding-right: max(0px, env(safe-area-inset-right, 0px));
+  }
+  #stage {
+    position: relative;
+    width: min(100%, calc((100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 16 / 9));
+    aspect-ratio: 16 / 9;
+    max-width: 100%;
+    container-type: size;
+    overflow: hidden;
+    background: var(--paper);
+  }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 3cqh 3cqw;
+    background: rgba(30, 30, 30, 0.35);
+    overflow: auto;
+    font-size: clamp(11px, 2.6cqh, 17px);
+  }
+  .card {
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    box-shadow: 6px 6px 0 var(--ink);
+    padding: 1.4em 1.6em;
+    width: min(100%, 34em);
+    display: grid;
+    gap: 0.9em;
+  }
+  h1, h2 { margin: 0; text-wrap: balance; line-height: 1.1; }
+  h2 { font-size: 1.8em; font-weight: 900; }
+  p { margin: 0; line-height: 1.5; }
+
+  /* title */
+  #title { background: transparent; padding: 0; place-items: stretch; }
+  .title-wrap {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 3cqw;
+    padding: 4cqh 4cqw;
+    align-items: center;
+    background:
+      radial-gradient(circle at 18% 30%, rgba(242,179,61,0.35) 0 14%, transparent 15%),
+      var(--paper);
+    min-height: 100%;
+  }
+  .logo { display: grid; gap: 0.4em; }
+  .logo .kicker { font-family: var(--latin); font-size: 0.85em; letter-spacing: 0.12em; color: var(--red); }
+  .logo h1 {
+    font-size: clamp(40px, 15cqh, 120px);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    color: var(--yellow);
+    -webkit-text-stroke: 0.06em var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 0.06em 0.06em 0 var(--ink);
+    transform: rotate(-3deg);
+    transform-origin: left center;
+  }
+  .logo .sub { font-weight: 700; color: var(--muted); }
+  .keyart { margin: 0.4em 0 0; position: relative; max-width: 30em; }
+  .keyart img {
+    display: block; width: 100%; max-height: 42cqh; object-fit: cover; border: 3px solid var(--ink); border-radius: 12px;
+    box-shadow: 5px 5px 0 var(--ink); transform: rotate(-1deg);
+  }
+  .keyart figcaption { position: absolute; left: 0.6em; bottom: -0.8em; display: flex; gap: 0.4em; }
+  .heroes { display: flex; align-items: flex-end; gap: 1.2em; margin-top: 0.4em; }
+  .hero { display: grid; justify-items: center; gap: 0.3em; }
+  .hero img { height: clamp(60px, 26cqh, 210px); width: auto; filter: drop-shadow(4px 4px 0 rgba(30,30,30,0.25)); }
+  .hero:first-child img { animation: bob 1.4s ease-in-out infinite; }
+  .hero:last-child img { animation: bob 1.4s ease-in-out 0.7s infinite; }
+  .tag {
+    font-size: 0.8em; font-weight: 900; padding: 0.15em 0.6em;
+    border: 2px solid var(--ink); border-radius: 999px; background: var(--paper);
+  }
+  .tag.p1 { background: #F6D6CF; }
+  .tag.p2 { background: #D5E1DA; }
+  @keyframes bob { 50% { transform: translateY(-6%); } }
+
+  .menu { display: grid; gap: 0.7em; }
+  .row { display: flex; gap: 0.6em; flex-wrap: wrap; }
+  .btn {
+    font: inherit; font-weight: 900; font-size: 1.05em;
+    padding: 0.55em 1em;
+    border: 3px solid var(--ink);
+    border-radius: 10px;
+    background: var(--yellow);
+    color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    cursor: pointer;
+    flex: 1 1 auto;
+  }
+  .btn.alt { background: var(--paper); }
+  .btn.red { background: var(--red); color: var(--paper); }
+  .btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn:focus-visible, .seg button:focus-visible, .key:focus-visible, .tabs button:focus-visible, .hud-btn:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+  .field { display: grid; gap: 0.3em; }
+  .label { font-size: 0.75em; font-weight: 900; letter-spacing: 0.08em; color: var(--muted); }
+  .seg { display: flex; border: 2.5px solid var(--ink); border-radius: 10px; overflow: hidden; }
+  .seg button {
+    flex: 1; font: inherit; font-weight: 700; padding: 0.4em 0.6em; border: 0; background: var(--paper); color: var(--ink); cursor: pointer;
+  }
+  .seg button + button { border-left: 2.5px solid var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .legend {
+    font-size: 0.82em; line-height: 1.55; background: var(--paper-dk);
+    border: 2px dashed var(--ink); border-radius: 10px; padding: 0.6em 0.8em;
+  }
+  .legend b { font-weight: 900; }
+  kbd {
+    font-family: var(--latin); font-size: 0.8em; padding: 0.05em 0.4em; border: 1.5px solid var(--ink);
+    border-radius: 4px; background: var(--paper); white-space: nowrap;
+  }
+  .fine { font-size: 0.75em; color: var(--muted); }
+
+  /* settings */
+  .tabs { display: flex; gap: 0.4em; flex-wrap: wrap; }
+  .tabs button {
+    font: inherit; font-weight: 700; padding: 0.3em 0.8em; border: 2px solid var(--ink); border-radius: 999px;
+    background: var(--paper); color: var(--ink); cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+  #bindList { display: grid; gap: 0.35em; }
+  .bind-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.2em 0.8em; }
+  .bind-row small { grid-column: 1 / -1; color: var(--muted); font-size: 0.72em; margin-top: -0.3em; }
+  .bind-row small:empty { display: none; }
+  .key {
+    font: inherit; font-weight: 900; min-width: 6.5em; text-align: center; padding: 0.25em 0.6em;
+    border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); color: var(--ink); cursor: pointer;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .key.fixed { cursor: default; background: var(--paper-dk); box-shadow: none; }
+  .key.listening { background: var(--yellow); }
+
+  /* overlays */
+  .hud-btn {
+    position: absolute; top: 1.5cqh; z-index: 3;
+    font: 900 clamp(10px, 2.4cqh, 14px) var(--display);
+    padding: 0.3em 0.7em; border: 2px solid var(--ink); border-radius: 999px;
+    background: rgba(239,234,223,0.9); color: var(--ink); cursor: pointer;
+  }
+  #btnMute { left: 58%; }
+  #btnPause { left: calc(58% + 4.6em); }
+  #toast {
+    position: absolute; left: 50%; top: 14cqh; transform: translateX(-50%); z-index: 5;
+    background: var(--ink); color: var(--yellow); font-weight: 900; padding: 0.5em 1em; border-radius: 999px;
+    font-size: clamp(12px, 3cqh, 18px); white-space: nowrap;
+  }
+  #loading {
+    position: absolute; inset: 0; display: grid; place-items: center; font-weight: 900; font-size: 20px; background: var(--paper);
+  }
+  .stats { display: flex; gap: 1.2em; flex-wrap: wrap; }
+  .stat { display: grid; }
+  .stat b { font-family: var(--latin); font-weight: 400; font-size: 1.5em; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 0.75em; color: var(--muted); font-weight: 700; }
+
+  /* touch controls */
+  #touch { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+  #touch .stick, #touch .tbtn { pointer-events: auto; touch-action: none; }
+  .stick {
+    position: absolute; bottom: 5cqh; width: 27cqh; height: 27cqh; border-radius: 50%;
+    border: 3px solid rgba(30,30,30,0.4); background: rgba(239,234,223,0.25);
+    display: grid; place-items: center;
+  }
+  .stick span { position: absolute; bottom: -1.6em; font-size: 11px; font-weight: 900; color: var(--ink); }
+  .stick-l { left: 3cqw; }
+  .stick-r { right: 3cqw; }
+  .knob { width: 40%; height: 40%; border-radius: 50%; background: var(--ink); opacity: 0.75; }
+  .stick-r .knob { background: var(--red); }
+  .tbtns { position: absolute; right: calc(7cqw + 27cqh); bottom: 5cqh; display: flex; gap: 2cqh; align-items: flex-end; }
+  .tbtn {
+    width: 13cqh; height: 13cqh; border-radius: 50%; border: 3px solid var(--ink);
+    background: rgba(239,234,223,0.8); font: 900 4cqh var(--display); color: var(--ink);
+  }
+  .tbtn-big { width: 17cqh; height: 17cqh; background: rgba(242,179,61,0.85); }
+  .tbtn.on { background: var(--red); color: var(--paper); }
+
+  @container (max-height: 320px) {
+    .title-wrap { grid-template-columns: 1fr 1fr; padding: 2cqh 3cqw; }
+    .legend { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero img { animation: none !important; }
+  }
+</style>
+
+<div id="app">
+  <div id="stage">
+    <canvas id="game" aria-label="喵斗羅遊戲畫面"></canvas>
+    <div id="touch" hidden></div>
+    <button type="button" class="hud-btn" id="btnMute" aria-pressed="false">聲音</button>
+    <button type="button" class="hud-btn" id="btnPause">暫停</button>
+
+    <section id="title" class="screen" hidden>
+      <div class="title-wrap">
+        <div class="logo">
+          <span class="kicker">MEOW-TRA · STAGE 1</span>
+          <h1>喵斗羅</h1>
+          <p class="sub">赤鼠帝國洗腦咗全城隻貓。兩隻怪貓突擊隊出動，打醒佢哋！</p>
+          <figure class="keyart">
+            <img src="assets/sprites/gen/title.jpg" alt="火斑同大口背對背拎住玩具槍，後巷入面有幾隻赤鼠兵">
+            <figcaption><span class="tag p1">P1 火斑 Blaze</span><span class="tag p2">P2 大口 Gulp</span></figcaption>
+          </figure>
+        </div>
+        <div class="menu">
+          <div class="row">
+            <button type="button" class="btn" id="btn1p">單人出擊</button>
+            <button type="button" class="btn red" id="btn2p">雙人合作</button>
+          </div>
+          <div class="field">
+            <span class="label">操作方式</span>
+            <div class="seg" role="group" aria-label="操作方式">
+              <button type="button" data-mode="pc">滑鼠＋鍵盤</button>
+              <button type="button" data-mode="classic">經典鍵盤</button>
+              <button type="button" data-mode="touch">觸控</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="label">難度</span>
+            <div class="seg" role="group" aria-label="難度">
+              <button type="button" data-diff="nine">九命貓：3 格血、9 條命</button>
+              <button type="button" data-diff="classic">經典：一擊即死、3 條命</button>
+            </div>
+          </div>
+          <div class="legend" data-legend="pc">
+            <b>P1</b> <kbd>A</kbd><kbd>D</kbd> 行　<kbd>S</kbd> 伏低　<kbd>Space</kbd> 跳（空中再撳＝二段跳）<br>
+            滑鼠瞄準，<b>按住左鍵</b>連射　<kbd>左 Shift</kbd> 閃避衝刺　<b>右鍵</b>／<kbd>E</kbd> 專屬技<br>
+            <b>P2</b> 用手掣：左搖桿行、右搖桿推出去就射、<kbd>A</kbd> 跳、<kbd>RB</kbd> 衝刺、<kbd>LB</kbd> 專屬技
+          </div>
+          <div class="legend" data-legend="classic" hidden>
+            同一張鍵盤兩個人玩。冇滑鼠：方向鍵決定瞄準方向，有敵人就自動連射；按住「鎖定」企定只轉方向。<br>
+            <b>P1</b> <kbd>WASD</kbd> 行　<kbd>J</kbd> 跳　<kbd>K</kbd> 衝刺　<kbd>L</kbd> 鎖定　<kbd>I</kbd> 專屬技<br>
+            <b>P2</b> <kbd>←↑→↓</kbd> 行　數字鍵 <kbd>1</kbd> 跳　<kbd>2</kbd> 衝刺　<kbd>3</kbd> 鎖定　<kbd>5</kbd> 專屬技
+          </div>
+          <div class="legend" data-legend="touch" hidden>
+            左邊搖桿行（向下＝伏低），右邊搖桿推去邊就射去邊。<br>
+            <b>跳</b>（空中再撳＝二段跳）、<b>衝</b> 閃避衝刺、<b>技</b> 專屬技。接手掣可以加入 P2。
+          </div>
+          <div class="row">
+            <button type="button" class="btn alt" id="btnSettings">鍵位設定</button>
+          </div>
+          <p class="fine">手掣撳 A 直接開始。遊戲中第二個手掣撳 A 隨時加入。標題畫面輸入 上上下下左右左右＋跳，有驚喜。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="pause" class="screen" hidden>
+      <div class="card">
+        <h2>暫停</h2>
+        <div class="row">
+          <button type="button" class="btn" id="btnResume">繼續</button>
+          <button type="button" class="btn alt" id="btnPauseSettings">鍵位設定</button>
+          <button type="button" class="btn alt" id="btnQuit">返回標題</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="over" class="screen" hidden>
+      <div class="card">
+        <h2>全軍覆沒</h2>
+        <div class="stats"><div class="stat"><b id="overScore">000000</b><span>分數</span></div></div>
+        <div class="row">
+          <button type="button" class="btn red" id="btnContinue">接關</button>
+          <button type="button" class="btn alt" id="btnOverTitle">返回標題</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="clear" class="screen" hidden>
+      <div class="card">
+        <h2>第一關完成！</h2>
+        <p>貓抓板要塞倒咗。下一站：寵物醫院走廊（製作中）。</p>
+        <div class="stats">
+          <div class="stat"><b id="clearScore">000000</b><span>分數</span></div>
+          <div class="stat"><b id="clearFreed">0</b><span>解放貓數</span></div>
+          <div class="stat"><b id="clearTime">0:00</b><span>用時</span></div>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="btnAgain">再玩一次</button>
+          <button type="button" class="btn alt" id="btnClearTitle">返回標題</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="settings" class="screen" hidden>
+      <div class="card">
+        <h2>鍵位設定</h2>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" data-profile="pc">滑鼠＋鍵盤</button>
+          <button type="button" role="tab" data-profile="classic1">經典 P1</button>
+          <button type="button" role="tab" data-profile="classic2">經典 P2</button>
+        </div>
+        <p class="label" id="bindTitle"></p>
+        <div id="bindList"></div>
+        <p class="fine">撳個掣再撳新嘅鍵就改到。手掣同觸控用固定配置。</p>
+        <div class="row">
+          <button type="button" class="btn alt" id="btnReset">重設預設</button>
+          <button type="button" class="btn" id="btnSettingsDone">完成</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="toast" hidden></div>
+    <div id="loading">載入緊…</div>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
