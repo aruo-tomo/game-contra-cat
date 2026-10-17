@@ -2,7 +2,7 @@
 
 import { C, ink, ellipse, rrect, drawRat, drawGun, drawHeart, drawBadge, WEAPON_INFO } from './art.js';
 import { sfx } from './audio.js';
-import { SPR, frame, drawFrame } from './sprites.js';
+import { SPR, frame, drawFrame, tintOf } from './sprites.js';
 import { skillKeyLabel } from './input.js';
 
 export const GRAVITY = 1500;
@@ -560,7 +560,25 @@ export class Player {
     };
   }
 
-  // the current weapon with its handle in the paws, drawn before (behind) the body so the paws wrap it
+  // Redraw just the clenched paws over the gun handle: the same frame, clipped to a disc round the paw point
+  // (the point is the front of the fist, so the disc sits a little back along the aim to cover the whole fist)
+  drawPawsOver(ctx, pose, scale, bottom) {
+    const f = pose.f;
+    const paw = this.pawPoint(f, scale, bottom);
+    const la = this.localAim();
+    const back = 4 * scale; // frame px -> logical px
+    const r = 13 * scale; // the fist is ~22px across in a 128px frame
+    const cx = paw.x - this.facing * Math.cos(la) * back;
+    const cy = paw.y - Math.sin(la) * back;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+    drawFrame(ctx, f, this.cx, bottom, scale, { flip: this.facing });
+    ctx.restore();
+  }
+
+  // the current weapon with its handle in the paws, drawn over the arm (the paws are redrawn on top)
   drawHeldGun(ctx) {
     const h = this.heldGun();
     if (!h) return;
@@ -629,13 +647,17 @@ export class Player {
     const ang = Math.atan2(this.aim.y, this.aim.x);
     // the gun sits behind the body when aiming backwards over the shoulder
     const gunBehind = Math.sign(Math.cos(ang)) !== this.facing;
-    if (hasGrip && pose.gun) this.drawHeldGun(ctx);
     if (showGun && gunBehind) this.drawGunArm(ctx, gun, ang);
     if (pose.anchor === 'center') {
       drawFrame(ctx, pose.f, this.cx, this.y + this.h - 22, scale, { flip: this.facing, anchor: 'center', rot: this.spin * Math.PI * 2 * this.facing });
     } else {
       const bob = pose.breathe ? Math.sin(g.t * 3) * 0.6 : 0;
       drawFrame(ctx, pose.f, this.cx, this.y + this.h + 1 + bob, scale, { flip: this.facing });
+      // held gun in front of the arm, then the paws again on top so they close round its handle
+      if (hasGrip && pose.gun) {
+        this.drawHeldGun(ctx);
+        this.drawPawsOver(ctx, pose, scale, this.y + this.h + 1 + bob);
+      }
     }
     if (showGun && !gunBehind) this.drawGunArm(ctx, gun, ang);
     ctx.restore();
@@ -1261,11 +1283,18 @@ export class BossWall extends Enemy {
     const g = this.game;
     if (this.art) {
       const w = (this.art.w * FORT.h) / this.art.h;
-      ctx.drawImage(this.art.img, x + FORT.x, FORT.y, w, FORT.h);
+      // collapsing: the tower shakes and darkens (only the tower itself, never the sky around it)
+      const k = this.dying > 0 ? 1 - this.dying / 2.4 : 0;
+      const sx = this.dying > 0 ? (Math.random() - 0.5) * 4 : 0;
+      ctx.drawImage(this.art.img, x + FORT.x + sx, FORT.y + k * 10, w, FORT.h);
       if (this.dying > 0) {
-        ctx.fillStyle = 'rgba(30,30,30,0.25)';
-        ctx.fillRect(x + FORT.x, FORT.y, w, FORT.h);
+        ctx.save();
+        ctx.globalAlpha = 0.15 + 0.3 * k;
+        ctx.drawImage(tintOf(this.art, '#2a2622'), x + FORT.x + sx, FORT.y + k * 10, w, FORT.h);
+        ctx.restore();
       }
+      // wrecked cannons stay in their sockets
+      for (const p of this.parts) if (p.dead) p.drawWreck(ctx);
       return;
     }
     // cardboard tower
@@ -1323,7 +1352,8 @@ class BossPart extends Enemy {
       this.ang = Math.max(Math.PI * 0.55, Math.min(Math.PI * 1.35, (this.ang + Math.PI * 2) % (Math.PI * 2)));
       if (this.cool <= 0) {
         this.cool = 1.3;
-        enemyShot(g, this.x + Math.cos(this.ang) * 26, this.cy + Math.sin(this.ang) * 26, this.ang, 230);
+        const m = this.barrelTip();
+        enemyShot(g, m.x, m.y, this.ang, 230);
       }
     } else if (this.cool <= 0) {
       const cannonsLeft = this.wall.parts.filter((q) => q.kind === 'cannon' && !q.dead).length;
@@ -1335,8 +1365,18 @@ class BossPart extends Enemy {
       sfx.enemyShot();
     }
   }
+  // the barrel pivots on the hatch's ball joint; the shot leaves its tip
+  barrelTip() {
+    const len = frame('boss', 'barrel') ? 30 : 26;
+    return { x: this.cx + Math.cos(this.ang) * len, y: this.cy + Math.sin(this.ang) * len };
+  }
+  drawWreck(ctx) {
+    const f = frame('boss', this.kind === 'core' ? 'corehurt' : 'podbroken');
+    if (f) drawFrame(ctx, f, this.cx, this.cy, (this.w + 6) / f.w, { anchor: 'center' });
+  }
   draw(ctx) {
     if (this.dead) return;
+    if (this.drawArt(ctx)) return;
     if (this.kind === 'cannon') {
       drawGun(ctx, this.x + 6, this.cy, this.ang, 34, C.ratDk);
       rrect(ctx, this.x, this.y, this.w, this.h, 5);
@@ -1358,6 +1398,31 @@ class BossPart extends Enemy {
       ctx.textAlign = 'center';
       ctx.fillText('鼠眼核心', this.cx, this.y + this.h + 16);
     }
+  }
+  // generated hatch + pivoting barrel, and the rat-eye porthole (cracked below half health)
+  drawArt(ctx) {
+    const flash = this.flash > 0;
+    if (this.kind === 'cannon') {
+      const pod = frame('boss', 'pod');
+      const barrel = frame('boss', 'barrel');
+      if (!pod || !barrel) return false;
+      drawFrame(ctx, pod, this.cx, this.cy, (this.w + 6) / pod.w, { anchor: 'center', flash });
+      const bl = 34;
+      const bh = (barrel.h * bl) / barrel.w;
+      ctx.save();
+      ctx.translate(this.cx, this.cy);
+      ctx.rotate(this.ang - Math.PI); // the art points left
+      ctx.drawImage(flash ? tintOf(barrel, '#fff') : barrel.img, -bl * 0.9, -bh / 2, bl, bh);
+      ctx.restore();
+      const m = this.barrelTip();
+      this.warn(ctx, m.x, m.y);
+      return true;
+    }
+    const core = frame('boss', this.hp < this.maxHp / 2 ? 'corehurt' : 'core');
+    if (!core) return false;
+    const pulse = 1 + Math.sin(this.t * 6) * 0.05;
+    drawFrame(ctx, core, this.cx, this.cy, ((this.w + 14) / core.w) * pulse, { anchor: 'center', flash });
+    return true;
   }
 }
 
