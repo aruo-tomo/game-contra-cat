@@ -191,12 +191,15 @@ JOBS5 = (
     grip_jobs("blaze", BLAZE, "refs/cat01.png")
     + grip_jobs("gulp", GULP, "refs/cat02.png")
     + [
-        dict(name="weapons", refs=["refs/cat01.png", "refs/cat02.png"], prompt=STYLE + BG + row(4) +
+        dict(name="weapons", refs=["raw/guns.png", "refs/cat01.png"], prompt=STYLE + BG + row(4) +
+             "Draw them in EXACTLY the same style as the attached toy-blaster image: very THICK bold wobbly black ink outlines, chunky rounded "
+             "simple shapes, big flat grainy color areas, very few small details, no thin lines, no fine engraving, nothing floating "
+             "or detached from the gun (no glow rays, no sparks, no smoke). "
              "Four chunky cartoon toy guns for cat commandos, all pointing RIGHT, perfectly horizontal side view, each with a pistol-grip "
              "handle under its rear half, all drawn at the same scale: "
              "1) a stubby wide hairball shotgun with three short fat barrels side by side and a fluffy red pom-pom on top (coral red with yellow trim); "
              "2) a chunky cat-litter machine gun with a round drum magazine underneath and a long grey-green perforated barrel; "
-             "3) a sleek long laser-pointer rifle, cream body with a red lens glowing at the tip and a small scope; "
+             "3) a sleek long laser-pointer rifle, cream body with a round red lens at the tip and a small scope; "
              "4) a catnip flamethrower with a round mustard-yellow fuel tank on top, a flared nozzle and little green catnip leaves painted on it."),
     ]
 )
