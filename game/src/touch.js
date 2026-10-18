@@ -1,22 +1,23 @@
 // Phone controls. The left part of the screen moves, the right part aims and auto-fires:
 // a stick appears wherever the thumb lands, so there is no fixed spot to hit.
 // Jump / dash / skill are fixed buttons at the bottom centre.
+import { t } from './i18n.js';
 
 const state = { lx: 0, ly: 0, rx: 0, ry: 0, rm: 0, rActive: false, jump: false, dash: false, skill: false };
 export const getTouchState = () => state;
 
 export function setupTouch(root) {
   root.innerHTML = `
-    <div class="tzone tzone-l" id="zoneL" aria-label="移動區">
-      <div class="stick" id="stickL"><div class="knob"></div><span>移動</span></div>
+    <div class="tzone tzone-l" id="zoneL" aria-label="${t('touch.moveZone')}">
+      <div class="stick" id="stickL"><div class="knob"></div><span>${t('touch.move')}</span></div>
     </div>
-    <div class="tzone tzone-r" id="zoneR" aria-label="瞄準射擊區">
-      <div class="stick stick-aim" id="stickR"><div class="knob"></div><span>瞄準射擊</span></div>
+    <div class="tzone tzone-r" id="zoneR" aria-label="${t('touch.aimZone')}">
+      <div class="stick stick-aim" id="stickR"><div class="knob"></div><span>${t('touch.aim')}</span></div>
     </div>
     <div class="tbtns">
-      <button type="button" class="tbtn" data-k="skill">技</button>
-      <button type="button" class="tbtn" data-k="dash">衝</button>
-      <button type="button" class="tbtn tbtn-big" data-k="jump">跳</button>
+      <button type="button" class="tbtn" data-k="skill">${t('touch.skill')}</button>
+      <button type="button" class="tbtn" data-k="dash">${t('touch.dash')}</button>
+      <button type="button" class="tbtn tbtn-big" data-k="jump">${t('touch.jump')}</button>
     </div>`;
   floatingStick(root.querySelector('#zoneL'), root.querySelector('#stickL'), (x, y) => { state.lx = x; state.ly = y; });
   floatingStick(root.querySelector('#zoneR'), root.querySelector('#stickR'), (x, y, active) => {

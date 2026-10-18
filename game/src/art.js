@@ -1,4 +1,5 @@
 // Palette and procedural drawing helpers shared by the level and entities.
+import { t } from './i18n.js';
 // Colours follow the reference sheet: thick ink outline, aged-paper ground, red / yellow / grey-green.
 
 export const C = {
@@ -123,13 +124,13 @@ export function drawHeart(ctx, x, y, s, fill) {
 }
 
 export const WEAPON_INFO = {
-  N: { name: '爪擊彈', color: C.cream },
-  S: { name: '毛球散射', color: C.red },
-  M: { name: '貓砂機槍', color: C.green },
-  L: { name: '激光筆', color: '#E5484D' },
-  F: { name: '木天蓼火球', color: C.yellow },
-  R: { name: '加速', color: C.cream },
-  B: { name: '貓薄荷', color: '#9CCB7A' },
+  N: { name: t('w.N'), color: C.cream },
+  S: { name: t('w.S'), color: C.red },
+  M: { name: t('w.M'), color: C.green },
+  L: { name: t('w.L'), color: '#E5484D' },
+  F: { name: t('w.F'), color: C.yellow },
+  R: { name: t('w.R'), color: C.cream },
+  B: { name: t('w.B'), color: '#9CCB7A' },
 };
 
 export function drawBadge(ctx, x, y, r, letter) {

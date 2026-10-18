@@ -1,5 +1,6 @@
 // Stage 1: 後巷貓草叢 (back-alley catnip jungle). Geometry, spawn script and scenery.
 
+import { t } from './i18n.js';
 import { C, mulberry32, rrect, ink } from './art.js';
 import { SPR, drawTiled } from './sprites.js';
 
@@ -230,10 +231,10 @@ export function drawScenery(ctx, camx, t, W, H) {
       ctx.fillStyle = C.red;
       ctx.font = '900 13px "Noto Sans HK", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(p.v < 0.22 ? '尋貓' : '赤鼠', 0, -8);
+      ctx.fillText(p.v < 0.22 ? t('poster.lost1') : t('poster.rat1'), 0, -8);
       ctx.fillStyle = C.ink;
       ctx.font = '700 9px "Noto Sans HK", sans-serif';
-      ctx.fillText(p.v < 0.22 ? '有賞' : '帝國', 0, 8);
+      ctx.fillText(p.v < 0.22 ? t('poster.lost2') : t('poster.rat2'), 0, 8);
       ctx.restore();
     } else if (p.kind === 'bin') {
       rrect(ctx, p.x - 16, 262, 32, 38, 3);

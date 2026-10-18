@@ -43,11 +43,11 @@ const setupRats = (args) => {
   await sleep(100);
   let r = await page.evaluate((i) => ({
     ready: __game.players[i].skillReady,
-    cues: __game.effects.filter((f) => typeof f.text === 'string' && f.text.startsWith('必殺OK')).map((f) => f.text),
+    cues: __game.effects.filter((f) => typeof f.text === 'string' && /^(必殺OK|SKILL READY)/.test(f.text)).map((f) => f.text),
   }), bi);
   check('skill ready: cue with the key to press', r.ready && r.cues.length === 1 && /I/.test(r.cues[0]), JSON.stringify(r));
   await sleep(200);
-  r = await page.evaluate(() => __game.effects.filter((f) => typeof f.text === 'string' && f.text.startsWith('必殺OK')).length);
+  r = await page.evaluate(() => __game.effects.filter((f) => typeof f.text === 'string' && /^(必殺OK|SKILL READY)/.test(f.text)).length);
   check('skill ready cue is not repeated every frame', r <= 1, String(r));
 
   // Blaze: one beam reaches the far side of the screen and hits everything along it

@@ -300,3 +300,44 @@ def hold_jobs(key, desc, ref, w):
 
 JOBS8 = [j for key, desc, ref in (("blaze", BLAZE, "refs/cat01.png"), ("gulp", GULP, "refs/cat02.png"))
          for w in ("N", "S", "M", "L", "F") for j in hold_jobs(key, desc, ref, w)]
+
+# --- pass 9: opening story, American comic-book panels (no text: captions and speech bubbles are HTML, so they translate) ---
+COMIC = ("Classic American comic-book panel art: dynamic dramatic camera angle, bold black ink lines and solid black shadows, "
+         "Ben-Day halftone dot shading, a few action/speed lines, printed on slightly aged paper, using ONLY the palette coral red, "
+         "mustard yellow, grey-green, cream and black. Wide landscape 3:2 panel filling the whole canvas edge to edge, no border. "
+         "ABSOLUTELY NO TEXT, NO LETTERS, NO SPEECH BUBBLES, NO CAPTION BOXES, NO SOUND-EFFECT WORDS anywhere in the image. "
+         "Keep the top fifth of the image simple (sky, wall or shadow) so a caption can be laid over it. ")
+CAST = ("Blaze is the red three-eyed spotted cat from the first reference (coral red with round yellow spots, three big ring eyes, a huge grin "
+        "of sharp teeth); Gulp is the grey-green tabby from the second reference (huge round yellow eyes, white paws, a second fanged mouth "
+        "on its cream belly). Both stand upright on two legs like cartoon commandos. ")
+RATS = "The villains are the Red Mouse army from the third reference: grey rats with pink ears and tails, red bandanas and one glowing red eye. "
+
+def panel(n, refs, scene):
+    return dict(name=f"story_{n}", refs=refs, prompt=STYLE + COMIC + scene)
+
+JOBS9 = [
+    panel(1, ["refs/cat01.png", "refs/cat02.png", "raw/cover_bg.png"],
+          "Scene: a peaceful night over a cosy cartoon city of rooftops and water tanks under a huge mustard-yellow full moon. "
+          "Many ordinary happy cats of all kinds nap on rooftops, sit on fences and play with a ball of yarn. Calm, warm, a little nostalgic."),
+    panel(2, ["refs/sheet.png", "raw/ratking.png", "raw/fortress.png"],
+          RATS + "Scene: deep under the city in a dark sewer cavern, the fat Rat King from the second reference stands on a scaffold, laughing "
+          "with his arms raised, as rat soldiers pull a giant lever. Behind them rises a tall junk-built brainwave tower topped with a red "
+          "rat-face dish, sending out big concentric red wave rings. Seen from a low angle, menacing."),
+    panel(3, ["refs/cat05.png", "refs/cat04.png", "refs/cat03.png"],
+          "Scene: the red brainwave rings sweep across the night rooftops. The city's cats are hit: their eyes turn into glowing red spirals, "
+          "fur standing on end, they scream and twist into wild monsters — like the screaming red cat, the bat-winged cat and the huge fat "
+          "white three-eyed cat from the references. Chaotic, dramatic, close-up on the screaming faces."),
+    panel(4, ["refs/cat01.png", "refs/cat02.png"],
+          CAST + "Scene: in a narrow back alley the same red waves wash over Blaze and Gulp but do nothing: the wave bends away from Blaze's "
+          "glowing third eye, and Gulp's belly mouth is gulping a piece of the wave like noodles. Blaze grins, Gulp looks startled. "
+          "Medium shot, both heroes clearly visible, trash cans and a wooden fence behind."),
+    panel(5, ["refs/cat01.png", "refs/cat02.png", "raw/guns.png"],
+          CAST + "Scene: in a messy alley hideout lit by one hanging bulb, Blaze cocks the mustard-yellow toy blaster with a fish-shaped muzzle "
+          "from the third reference with a wild grin, while Gulp nervously hugs the coral-red toy blaster with a paw print. A crate of "
+          "hairball ammo, a map of the city with a red rat symbol pinned on the wall. Heroic low angle."),
+    panel(6, ["refs/cat01.png", "refs/cat02.png", "raw/fortress.png"],
+          CAST + RATS.replace("from the third reference", "") +
+          "Scene: Blaze and Gulp charge out of the alley side by side holding their toy blasters, running straight at the viewer, speed "
+          "lines behind. Far in the background a cardboard cat-scratching-post fortress with a red rat flag, red wave rings rising from it, "
+          "and tiny rat soldiers on its walls. Epic, the start of a big adventure."),
+]
