@@ -833,8 +833,49 @@ const BULLET_SIZE = { N: 13, S: 14, M: 10, L: 48, F: 21, spit: 15, enemy: 16 };
 const BULLET_HEAD = { N: 0.7, S: 0.7, M: 0.72, L: 0.88, F: 0.68, spit: 0.78, enemy: 0.55 };
 const BULLET_GLOW = { L: 'rgba(255,80,70,0.35)', F: 'rgba(255,170,40,0.35)', enemy: 'rgba(232,60,60,0.3)', S: 'rgba(232,86,75,0.18)' };
 
+// Enemy shots are dark, spiky and ringed with a flashing red danger circle: nothing like the heroes'
+// bright warm hairballs and beams, so they can be told apart at a glance in a busy fight.
+function drawEnemyShot(ctx, b) {
+  const bomb = b.r >= 6;
+  const f = frame('eshot', bomb ? 'bomb' : 'pellet', b.t * 10);
+  const size = bomb ? 28 : 19; // the bomb frame includes its fuse
+  // danger ring: pulses and flashes so the shot stands out on light and dark backgrounds alike
+  const pulse = 0.5 + 0.5 * Math.sin(b.t * 22);
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, size * (bomb ? 0.44 : 0.62) + 2 * pulse, 0, Math.PI * 2);
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = C.ink;
+  ctx.stroke();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = pulse > 0.5 ? '#FF3B30' : C.paper;
+  ctx.stroke();
+  if (f) {
+    // the bomb's round body sits in the lower part of its frame (fuse on top): centre the body on the shot
+    drawFrame(ctx, f, b.x, b.y - (bomb ? size * 0.16 : 0), size / f.h, { anchor: 'center', rot: bomb ? Math.sin(b.t * 6) * 0.25 : b.t * 8 });
+    return;
+  }
+  // without the art: black spiked ball with a red eye
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.rotate(b.t * 8);
+  ctx.beginPath();
+  for (let i = 0; i < 16; i++) {
+    const r = i % 2 ? b.r + 1 : b.r + 4;
+    const a = (i / 16) * Math.PI * 2;
+    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  ctx.closePath();
+  ink(ctx, C.ink, 1.5);
+  ctx.beginPath();
+  ctx.arc(0, 0, b.r * 0.45, 0, Math.PI * 2);
+  ctx.fillStyle = '#FF3B30';
+  ctx.fill();
+  ctx.restore();
+}
+
 export function drawBullet(ctx, b) {
   const kind = b.kind;
+  if (kind === 'enemy') return drawEnemyShot(ctx, b);
   const f = frame('bullet', kind);
   if (!f) return drawBulletLegacy(ctx, b);
   const ang = Math.atan2(b.vy, b.vx);

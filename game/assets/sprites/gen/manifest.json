@@ -3207,6 +3207,36 @@
    }
   ]
  },
+ "eshot": {
+  "pellet": [
+   {
+    "file": "eshot_pellet_0.png",
+    "w": 48,
+    "h": 48,
+    "ax": 0.493
+   },
+   {
+    "file": "eshot_pellet_1.png",
+    "w": 47,
+    "h": 45,
+    "ax": 0.496
+   }
+  ],
+  "bomb": [
+   {
+    "file": "eshot_bomb_0.png",
+    "w": 46,
+    "h": 68,
+    "ax": 0.497
+   },
+   {
+    "file": "eshot_bomb_1.png",
+    "w": 51,
+    "h": 72,
+    "ax": 0.43
+   }
+  ]
+ },
  "muzzle": {
   "fire": [
    {

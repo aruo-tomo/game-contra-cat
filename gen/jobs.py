@@ -341,3 +341,14 @@ JOBS9 = [
           "lines behind. Far in the background a cardboard cat-scratching-post fortress with a red rat flag, red wave rings rising from it, "
           "and tiny rat soldiers on its walls. Epic, the start of a big adventure."),
 ]
+
+# --- pass 10: enemy shots that can't be mistaken for the heroes' (which are all bright warm hairballs / beams) ---
+JOBS10 = [
+    dict(name="enemy_shots", refs=["raw/bullets.png", "refs/sheet.png"], prompt=STYLE + BG + row(4) +
+         "Four Red Mouse army enemy projectiles, drawn DARK so they read instantly against bright hero shots: mostly solid BLACK "
+         "with thick ink outlines and only small red details, no glow halo, no motion trail, no flames, nothing yellow or cream: "
+         "1) a small round black iron ball covered in short sharp spikes like a sea urchin, with one glowing red rat eye in its centre; "
+         "2) the same spiked black ball rotated 45 degrees, the red eye half-closed; "
+         "3) a bigger round black cartoon bomb with a red rat-face emblem on its side and a short sparking fuse on top; "
+         "4) the same black bomb rotated, fuse spark bigger."),
+]

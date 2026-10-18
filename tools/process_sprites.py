@@ -187,6 +187,9 @@ sheet("fx", 6, [("fx", "muzzle"), ("fx", "spark"), ("fx", "boom"), ("fx", "boom"
       merge=16, min_area=150)
 # projectiles and shooting / defeat effects (pass 3)
 sheet("bullets", 7, [("bullet", k) for k in ("N", "S", "M", "L", "F", "spit", "enemy")], 0, 48, merge=14, min_area=200)
+# enemy shots: dark spiked pellets (2 spin frames) and a lobbed bomb (2 frames), unlike any hero shot
+sheet("enemy_shots", 4, [("eshot", "pellet"), ("eshot", "pellet"), ("eshot", "bomb"), ("eshot", "bomb")], 0, 48,
+      merge=14, min_area=200)
 sheet("muzzle", 4, [("muzzle", "fire")] * 4, 1, 72, merge=14, min_area=150, post=strip_barrel)
 sheet("impact", 4, [("impact", "hit")] * 4, 1, 56, merge=16, min_area=80)
 sheet("explosion", 6, [("explosion", "boom")] * 6, 2, 128, merge=16, min_area=150)

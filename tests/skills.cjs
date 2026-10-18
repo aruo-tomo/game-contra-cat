@@ -91,6 +91,20 @@ const setupRats = (args) => {
   // generated skill art is in the manifest (beam, its flare and splash, Gulp's vortex)
   r = await page.evaluate(() => fetch('assets/sprites/gen/manifest.json').then((x) => x.json()).then((m) => Object.keys(m.skill || {})));
   check('skill effect art loaded', ['beam', 'flare', 'splash', 'vortex'].every((k) => r.includes(k)), JSON.stringify(r));
+  // enemy shots read as dark against every hero shot (all bright and warm), so they can't be mixed up
+  r = await page.evaluate(async () => {
+    const { drawBullet } = await import('./src/entities.js');
+    const lum = (kind, r = 4.5) => {
+      const c = document.createElement('canvas'); c.width = c.height = 64;
+      const g = c.getContext('2d'); g.fillStyle = '#EFEADF'; g.fillRect(0, 0, 64, 64);
+      drawBullet(g, { x: 32, y: 32, vx: 1, vy: 0, t: 0.2, kind, r, bx: 32, by: 32, ang: 0 });
+      const d = g.getImageData(24, 24, 16, 16).data; let s = 0;
+      for (let i = 0; i < d.length; i += 4) s += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      return Math.round(s / (d.length / 4));
+    };
+    return { enemy: lum('enemy'), bomb: lum('enemy', 6), hero: ['N', 'S', 'M', 'L', 'F', 'spit'].map((k) => lum(k)) };
+  });
+  check('enemy shots are dark, hero shots bright', r.enemy < 110 && r.bomb < 110 && Math.min(...r.hero) > 140, JSON.stringify(r));
   check('no console errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
   console.log(results.join('\n'));
