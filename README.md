@@ -30,6 +30,7 @@ node tests/autoaim.cjs     # 飛天罐唔扣血、自動瞄準、手機自動射
 node tests/skills.cjs      # 必殺準備提示、三眼光炮射穿全畫面、大口噴彈貫穿
 node tests/grip.cjs        # 主角畫成揸住當前武器、換槍換圖、子彈由槍口出、受傷衝刺翻滾收槍
 node tests/story.cjs       # 英文版、開場漫畫（6 格、第二次開波跳過、睇故事掣）、語言切換
+node tests/enemies.cjs     # 機槍兵、投彈兵、狙擊兵、衝鋒兵、撲人尖叫貓、盤旋插落蝙蝠貓
 node tests/autoplay.cjs 1 4 [auto]   # 機械人自動通關（人數、加速倍數、auto＝只行同跳），輸出每段用時同受傷次數
 ```
 

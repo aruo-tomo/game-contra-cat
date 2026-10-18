@@ -12,7 +12,7 @@ import { loadSprites } from './sprites.js';
 import { options, saveOptions, ASSIST_MULT, rankFor, saveBest, loadBest } from './options.js';
 import { buildLevel1, updateBridges, drawScenery, drawLevel, WALL_X } from './level1.js';
 import {
-  Player, Runner, Rat, Turret, Bat, Ghost, Elite, BossWall, Capsule, Item,
+  Player, Runner, Rat, Turret, Bat, Ghost, Elite, BossWall, Capsule, Item, Gunner, Grenadier, Charger, Sniper,
   Particle, FloatText, FreedCat, Debris, FxAnim, overlap, updateBullet, drawBullet, SKILL_COST,
 } from './entities.js';
 
@@ -210,6 +210,15 @@ class Game {
       case 'capsule': this.addEnemy(new Capsule(this, s.item)); break;
       case 'rat': this.addEnemy(new Rat(this, s.at, s.y)); break;
       case 'turret': this.addEnemy(new Turret(this, s.at, s.y)); break;
+      case 'gunner': this.addEnemy(new Gunner(this, s.at, s.y)); break;
+      case 'grenadier': this.addEnemy(new Grenadier(this, s.at, s.y)); break;
+      case 'sniper': this.addEnemy(new Sniper(this, s.at, s.y)); break;
+      case 'charger': {
+        const x = this.cam.x + W + 20;
+        const top = this.groundTopAt(x + 12);
+        if (top != null) this.addEnemy(new Charger(this, x, top, -1));
+        break;
+      }
       case 'bat': this.addEnemy(new Bat(this, right, s.y)); break;
       case 'ghost': this.addEnemy(new Ghost(this, right, s.y)); break;
       case 'elite': {
@@ -408,6 +417,20 @@ class Game {
     for (const e of this.enemies) e.update(dt);
     for (const b of this.bullets) updateBullet(b, dt);
     for (const b of this.ebullets) updateBullet(b, dt);
+    // grenadier bombs burst when they reach the ground or a plank: a small blast that hurts heroes nearby
+    for (const b of this.ebullets) {
+      if (!b.bomb || b.dead || b.vy <= 0) continue;
+      const top = this.groundTopAt(b.x);
+      const plank = this.level.platforms().some((q) => b.x > q.x && b.x < q.x + q.w && b.y + b.r >= q.y && b.y + b.r - b.vy * dt <= q.y + 2);
+      if (!plank && (top == null || b.y + b.r < top)) continue;
+      b.dead = true;
+      this.effects.push(new FxAnim('explosion', 'boom', b.x, b.y - 6, 0.4, 0.42));
+      this.shake(3);
+      sfx.boom(false);
+      for (const p of this.alivePlayers()) {
+        if (Math.hypot(p.cx - b.x, p.y + p.h - 6 - b.y) < 30 && !p.trySwallow(b) && p.catnip <= 0) p.hurt();
+      }
+    }
     for (const it of this.items) it.update(dt);
     for (const fx of this.effects) fx.update(dt);
 
@@ -465,7 +488,8 @@ class Game {
         if (p.catnip > 0) { b.dead = true; continue; }
         if (p.inv > 0 || p.dashT > 0) continue;
         b.dead = true;
-        this.effects.push(new FxAnim('impact', 'hit', b.x, b.y, 0.18, 0.45, { rot: Math.random() * 6 }));
+        if (b.bomb) { this.effects.push(new FxAnim('explosion', 'boom', b.x, b.y - 6, 0.4, 0.42)); sfx.boom(false); }
+        else this.effects.push(new FxAnim('impact', 'hit', b.x, b.y, 0.18, 0.45, { rot: Math.random() * 6 }));
         p.hurt();
       }
       for (const e of this.enemies) {

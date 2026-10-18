@@ -352,3 +352,26 @@ JOBS10 = [
          "3) a bigger round black cartoon bomb with a red rat-face emblem on its side and a short sparking fuse on top; "
          "4) the same black bomb rotated, fuse spark bigger."),
 ]
+
+# --- pass 11: more Red Mouse soldier types, each with its own silhouette so the player can read what it will do ---
+RAT_BASE = ("Character: a Red Mouse army soldier drawn EXACTLY like the rat in the first reference image — the same grey-green rat with "
+            "big pink ears, pink feet, a long pink striped tail, one big glowing red eye, a belt with a yellow pouch, the same thick "
+            "black outlines, size and proportions. It stands upright. ")
+JOBS11 = [
+    dict(name="rat_gunner", refs=["raw/rat.png", "raw/weapons.png"], prompt=STYLE + BG + sheet(2, "LEFT") + RAT_BASE +
+         "This one is a heavy GUNNER: a round mustard-yellow army helmet instead of the bandana, a little chubbier, holding a big chunky "
+         "grey-green machine gun with a round drum magazine at hip height with both paws. "
+         "Frames: 1) braced, legs wide, gun level; 2) firing, body shaking back, three small yellow muzzle flashes in a row."),
+    dict(name="rat_grenadier", refs=["raw/rat.png", "raw/enemy_shots.png"], prompt=STYLE + BG + sheet(2, "LEFT") + RAT_BASE +
+         "This one is a GRENADIER: no gun, a red bandana, a cross-body strap with three black round rat-face bombs from the second reference "
+         "hanging on it. Frames: 1) holding one black bomb up beside its head, ready to throw, sly grin; "
+         "2) mid overhand throw, arm swung forward high, the bomb just leaving its paw."),
+    dict(name="rat_charger", refs=["raw/rat.png"], prompt=STYLE + BG + sheet(4, "LEFT") + RAT_BASE +
+         "This one is a CHARGER: no gun, aviator goggles pushed up on its head, a red scarf flying behind, a big wooden fork held forward "
+         "like a spear, angry teeth showing. Frames: 1) and 2) a fast sprint cycle leaning forward, legs alternating; "
+         "3) crouched low about to leap; 4) leaping forward through the air, fork thrust out."),
+    dict(name="rat_sniper", refs=["raw/rat.png"], prompt=STYLE + BG + sheet(2, "LEFT") + RAT_BASE +
+         "This one is a SNIPER: a red beret instead of the bandana, kneeling on one knee, holding a very long thin grey rifle with a big "
+         "scope pressed to its red eye. Frames: 1) kneeling, aiming the long rifle perfectly level, very still; "
+         "2) the same pose with a sharp small yellow muzzle flash and the rifle kicking up slightly."),
+]

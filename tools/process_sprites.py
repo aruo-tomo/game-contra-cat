@@ -200,6 +200,27 @@ sheet("soul", 2, [("soul", "blaze"), ("soul", "gulp")], 0, 110)
 sheet("runner", 4, [("runner", "run")] * 4, "median", 112)
 sheet("bat", 2, [("bat", "fly")] * 2, "median", 96)
 sheet("rat", 2, [("rat", "idle"), ("rat", "fire")], 0, 92)
+
+
+def drop_loose(im, i):
+    """The grenadier's throw frame was drawn with the bomb already flying off; the game throws its own
+    bomb, so keep only the rat (the largest connected piece)."""
+    if i != 1:
+        return im
+    a = np.asarray(im).copy()
+    lab, n = ndi.label(a[..., 3] > 0)
+    if n > 1:
+        sizes = ndi.sum(a[..., 3] > 0, lab, index=np.arange(1, n + 1))
+        a[..., 3] = np.where(lab == np.argmax(sizes) + 1, a[..., 3], 0)
+    out = Image.fromarray(a, "RGBA")
+    return out.crop(out.getbbox())
+
+
+# more Red Mouse soldier types (frames face left like the rifle rat)
+sheet("rat_gunner", 2, [("gunner", "idle"), ("gunner", "fire")], 0, 96, merge=24)
+sheet("rat_grenadier", 2, [("grenadier", "idle"), ("grenadier", "throw")], 0, 92, merge=24, post=drop_loose)
+sheet("rat_sniper", 2, [("sniper", "aim"), ("sniper", "fire")], 0, 74, merge=24)
+sheet("rat_charger", 4, [("charger", "run"), ("charger", "run"), ("charger", "crouch"), ("charger", "leap")], 0, 80, merge=8)
 sheet("turret", 1, [("turret", "body")], 0, 76)
 sheet("fortress", 1, [("fortress", "body")], 0, 700, holes=5000)
 # boss parts that sit in the fortress sockets: hatch, pivoting barrel, wrecked hatch, rat-eye core, cracked core
