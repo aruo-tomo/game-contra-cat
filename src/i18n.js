@@ -157,7 +157,7 @@ const en = {
   'say.midboss': 'Mid-boss: Fat White Three-Eye', 'say.fortress': 'Red Mouse Scratching-Post Fortress', 'say.eliteFreed': 'Fat White Three-Eye is free!',
   'boss.fortress': 'Scratching-Post Fortress · Rat-Eye Core', 'boss.elite': 'Fat White Three-Eye (brainwashed)', 'boss.core': 'RAT-EYE CORE',
   'squeak': 'Squeak!', 'elite.roar': 'MRAOWW!',
-  'hud.p2join': 'P2 join: press A on a gamepad, or {key}', 'hud.skill': 'P{n} press {key}: SKILL!',
+  'hud.p2join': 'P2: press gamepad A or {key}', 'hud.skill': 'P{n} press {key}: SKILL!',
   'hud.dead': 'Respawning…', 'hud.out': 'Out', 'hud.down': 'Waiting for a lick', 'hud.freed': 'Cats freed {freed} / {total}',
   'skill.ready': 'SKILL READY! Press {key}', 'skill.beam': 'THIRD-EYE BEAM!', 'skill.gulp': 'GULP—',
   'down.help': 'Help me, buddy!', 'revived': 'Licked awake!', 'life.lost': '-1 LIFE',
