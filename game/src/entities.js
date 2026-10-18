@@ -38,7 +38,7 @@ export function moveBody(e, dt, level, gravity = true) {
   e.x += e.vx * dt;
   e.hitWall = false;
   for (const s of level.solids) {
-    if (!overlap(e, s)) continue;
+    if (s.kind === 'ceil' || !overlap(e, s)) continue;
     if (e.vx > 0) e.x = s.x - e.w;
     else if (e.vx < 0) e.x = s.x + s.w;
     else continue;
@@ -51,6 +51,8 @@ export function moveBody(e, dt, level, gravity = true) {
   e.onGround = false;
   for (const s of level.solids) {
     if (!overlap(e, s)) continue;
+    // a ceiling only stops things going up: anything can drop in through it
+    if (s.kind === 'ceil') { if (e.vy < 0) { e.y = s.y + s.h; e.vy = 0; } continue; }
     if (e.vy > 0) { e.y = s.y - e.h; e.vy = 0; e.onGround = true; e.groundRef = s; }
     else if (e.vy < 0) { e.y = s.y + s.h; e.vy = 0; }
   }
@@ -826,6 +828,8 @@ export function updateBullet(b, dt) {
     b.y += b.vy * dt;
   }
   if (b.gravity) b.vy += b.gravity * dt;
+  if (b.drag) { const k = Math.max(0, 1 - b.drag * dt); b.vx *= k; b.vy *= k; }
+  if (b.update) b.update(b, dt);
 }
 
 // logical size of each projectile sprite (height, or length for the laser) and where its head sits
@@ -864,6 +868,7 @@ function drawEnemyShot(ctx, b) {
 }
 
 export function drawBullet(ctx, b) {
+  if (b.draw) return b.draw(ctx, b); // stage-specific shots bring their own look
   const kind = b.kind;
   if (kind === 'enemy') return drawEnemyShot(ctx, b);
   const f = frame('bullet', kind);
@@ -935,14 +940,14 @@ function drawBulletLegacy(ctx, b) {
   ctx.restore();
 }
 
-function enemyShot(game, x, y, ang, speed = 210, r = 4.5) {
+export function enemyShot(game, x, y, ang, speed = 210, r = 4.5) {
   game.ebullets.push({ x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, t: 0, kind: 'enemy', r });
   sfx.enemyShot();
 }
 
 // ======================= ENEMIES =======================
 
-class Enemy {
+export class Enemy {
   constructor(game, x, y, w, h, hp) {
     Object.assign(this, { game, x, y, w, h, hp, maxHp: hp, vx: 0, vy: 0, t: 0, flash: 0, dead: false, facing: -1 });
   }
@@ -1086,9 +1091,9 @@ export class Rat extends Enemy {
 // ---- more Red Mouse soldier types: each looks and behaves differently, so the player has to read the field ----
 // muzzle / hand points on the generated frames (x from centre towards facing, y from the top of the hitbox)
 // (measured on the generated frames the same way as RAT_MUZZLE)
-const RAT_POINTS = { gunner: { x: 39, y: 21 }, grenadier: { x: 22, y: 9 }, sniper: { x: 48, y: 14 } };
+export const RAT_POINTS = { gunner: { x: 39, y: 21 }, grenadier: { x: 22, y: 9 }, sniper: { x: 48, y: 14 } };
 
-class RatSoldier extends Enemy {
+export class RatSoldier extends Enemy {
   constructor(game, x, groundY, w, h, hp, score) {
     super(game, x, groundY - h, w, h, hp);
     this.score = score;
@@ -1507,6 +1512,7 @@ const FORT = { x: -10, y: -24, h: 344 };
 export class BossWall extends Enemy {
   constructor(game, x) {
     super(game, x, 0, 160, 300, 1);
+    this.isWall = true;
     this.score = 0;
     this.parts = [];
     this.dropT = 3;
@@ -1812,13 +1818,14 @@ export class FloatText {
   }
 }
 
-const FREED_ART = { cat05: 'freed_runner', cat04: 'freed_bat', cat06: 'freed_ghost', cat03: 'freed_elite' };
+const FREED_ART = { cat05: 'freed_runner', cat04: 'freed_bat', cat06: 'freed_ghost', cat03: 'freed_elite', cone: 'freed_conecat' };
 
 // A rescued cat: shakes off the mind control in a puff of smoke, then hops away happily.
 export class FreedCat {
   constructor(game, sprite, x, y, h, o = {}) {
     Object.assign(this, { game, sprite, x, y, h, t: 0, dead: false, life: o.life ?? 2.6 });
     this.key = FREED_ART[sprite];
+    this.floor = y;
     this.daze = o.happy ? 0 : 0.5;
     this.dir = o.dir ?? (Math.random() < 0.5 ? -1 : 1);
     this.vx = 0;
@@ -1836,7 +1843,8 @@ export class FreedCat {
     this.vy += 900 * dt;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
-    if (this.y > 300 && this.vy > 0 && this.t < this.life) { this.y = 300; this.vy = -280; }
+    const floor = this.floor ?? 300;
+    if (this.y > floor && this.vy > 0 && this.t < this.life) { this.y = floor; this.vy = -280; }
     if (this.t > this.life) this.dead = true;
   }
   draw(ctx) {
@@ -1847,7 +1855,7 @@ export class FreedCat {
       const ref = this.key === 'freed_elite' ? 220 : 110;
       drawFrame(ctx, f, this.x + jitter, this.y, this.h / ref, { flip: this.dir, alpha });
     } else {
-      const img = this.game.img[this.sprite];
+      const img = this.game.img[this.sprite] || this.game.img.cat05;
       const w = (img.width * this.h) / img.height;
       ctx.save();
       ctx.globalAlpha = alpha;

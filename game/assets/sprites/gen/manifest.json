@@ -3643,6 +3643,246 @@
    }
   ]
  },
+ "nurse": {
+  "idle": [
+   {
+    "file": "nurse_idle_0.png",
+    "w": 111,
+    "h": 92,
+    "ax": 0.484
+   }
+  ],
+  "throw": [
+   {
+    "file": "nurse_throw_0.png",
+    "w": 116,
+    "h": 92,
+    "ax": 0.508
+   }
+  ]
+ },
+ "shield": {
+  "walk": [
+   {
+    "file": "shield_walk_0.png",
+    "w": 131,
+    "h": 96,
+    "ax": 0.525
+   },
+   {
+    "file": "shield_walk_1.png",
+    "w": 123,
+    "h": 96,
+    "ax": 0.502
+   }
+  ],
+  "fire": [
+   {
+    "file": "shield_fire_0.png",
+    "w": 143,
+    "h": 98,
+    "ax": 0.618
+   }
+  ]
+ },
+ "spray": {
+  "idle": [
+   {
+    "file": "spray_idle_0.png",
+    "w": 140,
+    "h": 92,
+    "ax": 0.594
+   }
+  ],
+  "spray": [
+   {
+    "file": "spray_spray_0.png",
+    "w": 158,
+    "h": 92,
+    "ax": 0.642
+   }
+  ]
+ },
+ "conecat": {
+  "walk": [
+   {
+    "file": "conecat_walk_0.png",
+    "w": 107,
+    "h": 112,
+    "ax": 0.489
+   },
+   {
+    "file": "conecat_walk_1.png",
+    "w": 108,
+    "h": 112,
+    "ax": 0.504
+   }
+  ],
+  "yowl": [
+   {
+    "file": "conecat_yowl_0.png",
+    "w": 121,
+    "h": 112,
+    "ax": 0.628
+   }
+  ]
+ },
+ "freed_conecat": {
+  "daze": [
+   {
+    "file": "freed_conecat_daze_0.png",
+    "w": 90,
+    "h": 110,
+    "ax": 0.359
+   }
+  ],
+  "happy": [
+   {
+    "file": "freed_conecat_happy_0.png",
+    "w": 81,
+    "h": 92,
+    "ax": 0.435
+   }
+  ]
+ },
+ "headnurse": {
+  "idle": [
+   {
+    "file": "headnurse_idle_0.png",
+    "w": 244,
+    "h": 253,
+    "ax": 0.538
+   }
+  ],
+  "charge": [
+   {
+    "file": "headnurse_charge_0.png",
+    "w": 411,
+    "h": 181,
+    "ax": 0.588
+   }
+  ],
+  "throw": [
+   {
+    "file": "headnurse_throw_0.png",
+    "w": 250,
+    "h": 200,
+    "ax": 0.578
+   }
+  ]
+ },
+ "surgeon": {
+  "body": [
+   {
+    "file": "surgeon_body_0.png",
+    "w": 376,
+    "h": 700,
+    "ax": 0.499
+   }
+  ]
+ },
+ "surgeon_parts": {
+  "lamp": [
+   {
+    "file": "surgeon_parts_lamp_0.png",
+    "w": 98,
+    "h": 111,
+    "ax": 0.497
+   }
+  ],
+  "arm": [
+   {
+    "file": "surgeon_parts_arm_0.png",
+    "w": 172,
+    "h": 56,
+    "ax": 0.859
+   }
+  ],
+  "cannon": [
+   {
+    "file": "surgeon_parts_cannon_0.png",
+    "w": 137,
+    "h": 74,
+    "ax": 0.742
+   }
+  ],
+  "jar": [
+   {
+    "file": "surgeon_parts_jar_0.png",
+    "w": 92,
+    "h": 110,
+    "ax": 0.538
+   }
+  ],
+  "jarhurt": [
+   {
+    "file": "surgeon_parts_jarhurt_0.png",
+    "w": 94,
+    "h": 110,
+    "ax": 0.538
+   }
+  ]
+ },
+ "hshot": {
+  "dart": [
+   {
+    "file": "hshot_dart_0.png",
+    "w": 75,
+    "h": 23,
+    "ax": 0.324
+   }
+  ],
+  "gas": [
+   {
+    "file": "hshot_gas_0.png",
+    "w": 67,
+    "h": 64,
+    "ax": 0.498
+   }
+  ],
+  "pill": [
+   {
+    "file": "hshot_pill_0.png",
+    "w": 63,
+    "h": 48,
+    "ax": 0.436
+   },
+   {
+    "file": "hshot_pill_1.png",
+    "w": 62,
+    "h": 70,
+    "ax": 0.482
+   }
+  ]
+ },
+ "emitter": {
+  "idle": [
+   {
+    "file": "emitter_idle_0.png",
+    "w": 144,
+    "h": 64,
+    "ax": 0.48
+   }
+  ],
+  "fire": [
+   {
+    "file": "emitter_fire_0.png",
+    "w": 161,
+    "h": 64,
+    "ax": 0.479
+   }
+  ]
+ },
+ "gurney": {
+  "body": [
+   {
+    "file": "gurney_body_0.png",
+    "w": 270,
+    "h": 80,
+    "ax": 0.5
+   }
+  ]
+ },
  "gun": {
   "blaze": [
    {
@@ -3834,6 +4074,21 @@
   },
   "ground": {
    "file": "ground.png",
+   "w": 256,
+   "h": 256
+  },
+  "bg2_far": {
+   "file": "bg2_far.jpg",
+   "w": 1440,
+   "h": 720
+  },
+  "bg2_mid": {
+   "file": "bg2_mid.png",
+   "w": 1662,
+   "h": 300
+  },
+  "floor2": {
+   "file": "floor2.jpg",
    "w": 256,
    "h": 256
   },

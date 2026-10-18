@@ -239,6 +239,34 @@ def cut_smoke(im, i):
 sheet("boss_parts", 5, [("boss", k) for k in ("pod", "barrel", "podbroken", "core", "corehurt")], 0, 80, merge=12,
       min_area=300, post=cut_smoke)
 sheet("ratking", 1, [("ratking", "body")], 0, 320)
+
+# ---- stage 2: pet hospital ----
+def keep_largest(im, i=0):
+    """Keep only the biggest connected piece: drops thrown syringes, speed lines and puffs drawn
+    off the character (the game draws its own shots and effects)."""
+    a = np.asarray(im).copy()
+    lab, n = ndi.label(a[..., 3] > 0)
+    if n > 1:
+        sizes = ndi.sum(a[..., 3] > 0, lab, index=np.arange(1, n + 1))
+        a[..., 3] = np.where(lab == np.argmax(sizes) + 1, a[..., 3], 0)
+    out = Image.fromarray(a, "RGBA")
+    return out.crop(out.getbbox())
+
+
+sheet("rat_nurse", 2, [("nurse", "idle"), ("nurse", "throw")], 0, 92, merge=24, post=keep_largest)
+sheet("rat_shield", 3, [("shield", "walk"), ("shield", "walk"), ("shield", "fire")], 0, 96, merge=16)
+sheet("rat_spray", 2, [("spray", "idle"), ("spray", "spray")], 0, 92, merge=24, post=keep_largest)
+sheet("conecat", 3, [("conecat", "walk"), ("conecat", "walk"), ("conecat", "yowl")], "median", 112)
+sheet("freed_conecat", 2, [("freed_conecat", "daze"), ("freed_conecat", "happy")], "median", 110)
+sheet("headnurse", 3, [("headnurse", "idle"), ("headnurse", "charge"), ("headnurse", "throw")], "median", 200, merge=16,
+      post=keep_largest)
+sheet("surgeon", 1, [("surgeon", "body")], 0, 700, holes=5000)
+sheet("surgeon_parts", 5, [("surgeon_parts", k) for k in ("lamp", "arm", "cannon", "jar", "jarhurt")], 3, 110, merge=12,
+      min_area=300)
+sheet("hosp_shots", 4, [("hshot", "dart"), ("hshot", "gas"), ("hshot", "pill"), ("hshot", "pill")], 2, 48, merge=14,
+      min_area=200)
+sheet("laser_emitter", 2, [("emitter", "idle"), ("emitter", "fire")], 0, 64, merge=14)
+sheet("gurney", 1, [("gurney", "body")], 0, 80)
 sheet("guns", 2, [("gun", "blaze"), ("gun", "gulp")], 0, 26)
 # one gun per pickup weapon (N keeps gun_blaze / gun_gulp), all drawn at one scale on the sheet
 sheet("weapons", 4, [("gun", k) for k in ("S", "M", "L", "F")], "median", 40)
@@ -277,6 +305,9 @@ def layer(raw, name, height, cut=False):
 layer("bg_far", "bg_far", 720)
 layer("bg_mid", "bg_mid", 300, cut=True)
 layer("ground", "ground", 256)
+layer("bg2_far", "bg2_far", 720)
+layer("bg2_mid", "bg2_mid", 300, cut=True)
+layer("floor2", "floor2", 256)
 layer("title", "title", 720)
 layer("cover_bg", "cover_bg", 720)
 # character-select portraits are plain cut-outs at a fixed height (not part of the manifest frames)

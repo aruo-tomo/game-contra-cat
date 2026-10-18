@@ -1,11 +1,12 @@
-// Automated playthrough of stage 1 with a scripted bot, to check the stage can be finished
-// and to measure difficulty. Usage: node tests/autoplay.cjs [players=1] [speed=4]
+// Automated playthrough of a stage with a scripted bot, to check the stage can be finished
+// and to measure difficulty. Usage: node tests/autoplay.cjs [players=1] [speed=4] [auto|aim] [stage=1]
 const { chromium } = require('playwright');
 const URL = process.env.GAME_URL || 'http://localhost:8765/index.html';
 const players = Number(process.argv[2] || 1);
 const speed = Number(process.argv[3] || 4);
 // 'auto': the bot only moves and jumps; the game's auto-aim does the shooting
 const autoAim = process.argv[4] === 'auto';
+const stage = Number(process.argv[5] || 1);
 
 (async () => {
   const browser = await chromium.launch();
@@ -13,7 +14,7 @@ const autoAim = process.argv[4] === 'auto';
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto(URL);
+  await page.goto(stage > 1 ? `${URL}?stage=${stage}` : URL);
   await page.waitForFunction(() => window.__game);
   await page.click('[data-mode="classic"]');
   await page.click(players > 1 ? '#btn2p' : '#btn1p');
@@ -47,8 +48,12 @@ const autoAim = process.argv[4] === 'auto';
           }
           const ahead = pl.x + pl.w + 26;
           const pit = g.groundTopAt(ahead) == null && !g.level.platforms().some((q) => ahead > q.x && ahead < q.x + q.w && q.y > pl.y);
-          const runnerClose = g.enemies.some((e) => e.constructor.name === 'Runner' && Math.abs(e.cx - pl.cx) < 50);
-          const wantJump = pl.onGround && (pit || runnerClose || Math.random() < 0.01);
+          const runnerClose = g.enemies.some((e) => e.constructor.name === 'Runner' && Math.abs(e.cx - pl.cx) < 50)
+            // what a player would see coming and hop: a charging boss, a sound wave rolling along the floor
+            || g.enemies.some((e) => e.dashing && Math.abs(e.cx - pl.cx) < 140)
+            || g.ebullets.some((b) => b.kind === 'wave' && Math.abs(b.x - pl.cx) < 60);
+          // walls and steps (the lift shaft up to the upper ward): jump at them
+          const wantJump = pl.onGround && (pit || runnerClose || (pl.hitWall && mx) || Math.random() < 0.01);
           const jump = wantJump && !prevJump;
           prevJump = wantJump;
           if (autoAim) return { mx, down: false, up: false, aim: null, autoAim: true, fire: 'auto', jump, jumpHeld: true, dash: false, skill: pl.energy >= 50, lock: false, pause: false, assist: 0 };
@@ -65,10 +70,10 @@ const autoAim = process.argv[4] === 'auto';
     const s = await page.evaluate(() => {
       const g = window.__game;
       const log = window.__log;
-      for (const m of [1000, 2000, 3000, 4000, 5000, 6000]) if (g.cam.x >= m && !log.marks[m]) log.marks[m] = +g.time.toFixed(1);
-      if (g.lock && g.lock.x === 3300 && !log.eliteStart) log.eliteStart = g.time;
+      for (const m of [1000, 2000, 3000, 4000, 5000, 6000, 7000]) if (g.cam.x >= m && !log.marks[m]) log.marks[m] = +g.time.toFixed(1);
+      if (g.lock && g.lock.x === g.stage.midbossCamx && !log.eliteStart) log.eliteStart = g.time;
       if (log.eliteStart && !g.lock && !log.elite) log.elite = +(g.time - log.eliteStart).toFixed(1);
-      if (g.lock && g.lock.x === 6400 && !log.bossStart) log.bossStart = g.time;
+      if (g.lock && g.lock.x === g.stage.bossCamx && !log.bossStart) log.bossStart = g.time;
       return { state: g.state, cam: Math.round(g.cam.x), time: +g.time.toFixed(1), deaths: g.deaths, hurts: log.hurts, freed: g.freed, spawned: g.catSpawned, score: g.score };
     });
     const line = `${s.state} cam=${s.cam} t=${s.time}s hurts=${s.hurts} deaths=${s.deaths}`;

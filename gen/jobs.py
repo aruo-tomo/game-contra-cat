@@ -375,3 +375,74 @@ JOBS11 = [
          "scope pressed to its red eye. Frames: 1) kneeling, aiming the long rifle perfectly level, very still; "
          "2) the same pose with a sharp small yellow muzzle flash and the rifle kicking up slightly."),
 ]
+
+# --- pass 12: stage 2, the pet-hospital corridor taken over by the Red Mouse army ---
+HOSP = ("Setting: a cartoon PET HOSPITAL that the Red Mouse army has taken over: pale grey-green tiled walls, cream doors with round windows, "
+        "red cross signs, small red rat-face army flags. ")
+JOBS12 = [
+    dict(name="rat_nurse", refs=["raw/rat.png", "raw/rat_gunner.png"], prompt=STYLE + BG + sheet(2, "LEFT") + RAT_BASE +
+         "This one is a NURSE MEDIC: a small white nurse cap with a red cross instead of the bandana, a cream apron over the belt, "
+         "no gun; it holds a big syringe with a red liquid in one paw. "
+         "Frames: 1) standing, holding the big syringe up beside its head like a dart, sly grin; "
+         "2) mid overhand throw, arm swung forward high, the syringe just leaving its paw pointing forward."),
+    dict(name="rat_shield", refs=["raw/rat.png", "raw/rat_gunner.png"], prompt=STYLE + BG + sheet(3, "LEFT") + RAT_BASE +
+         "This one is a SHIELD guard: the yellow helmet from the second reference, carrying a big tall rectangular grey-green metal riot shield "
+         "made from a hospital X-ray light box (it shows a white cat skeleton X-ray picture and a red cross), held in front of its whole body; "
+         "a small grey pistol in the other paw. Frames: 1) and 2) walking forward crouched behind the shield, legs alternating; "
+         "3) shield swung aside, leaning out and firing the pistol forward with a small yellow muzzle flash."),
+    dict(name="rat_spray", refs=["raw/rat.png", "raw/rat_gunner.png"], prompt=STYLE + BG + sheet(2, "LEFT") + RAT_BASE +
+         "This one is a DISINFECTANT SPRAYER: a grey-green gas mask with round glass eyes over its face, a mustard-yellow pressure tank on "
+         "its back connected by a hose to a long spray wand held forward. Frames: 1) standing, wand pointed forward; "
+         "2) spraying: a short puff of green mist just leaving the nozzle, body braced."),
+    dict(name="conecat", refs=["refs/cat05.png", "raw/runner.png"], prompt=STYLE + BG + sheet(3, "LEFT") +
+         "Character: the screaming red cat from the references (tall pointy ears, one big yellow eye and one small white crazy eye, "
+         "cream belly, red and yellow striped tail) as a brainwashed hospital PATIENT: it wears a big cream plastic cone collar "
+         "(Elizabethan cone) around its neck and a white bandage around one leg. It stands UPRIGHT on two legs. "
+         "Frames: 1) and 2) a stomping walk, legs alternating; 3) yowling extremely loudly into the cone, which acts like a megaphone, "
+         "curved sound lines blasting out of the cone."),
+    dict(name="freed_conecat", refs=["refs/cat05.png", "raw/freed_runner.png"], prompt=STYLE + BG + sheet(2, "RIGHT") +
+         "Character: the red cat from the references (tall pointy ears, red body, cream belly, red and yellow striped tail) still wearing a "
+         "cream plastic cone collar, but no longer screaming. " + FREED),
+    dict(name="headnurse", refs=["raw/rat.png", "raw/elite.png"], prompt=STYLE + BG + sheet(3, "LEFT") + RAT_BASE.replace("It stands upright. ", "") +
+         "This one is the HEAD NURSE, a mid-boss: a HUGE fat rat twice as big and round as the others, a tall white nurse cap with a red cross, "
+         "a cream nurse dress with a red belt, round spectacles over its red eye, carrying a gigantic syringe as long as its body like a lance. "
+         "Frames: 1) standing menacingly, the giant syringe held upright; 2) charging forward low, the giant syringe thrust straight out in front "
+         "like a jousting lance, speed lines behind; 3) throwing three small syringes at once in a fan from its paw, mouth open shouting."),
+    dict(name="surgeon", refs=["raw/fortress.png", "raw/rat.png"], prompt=STYLE + BG +
+         "Portrait canvas. One tall object filling the full height: the stage 2 boss, a giant Red Mouse SURGERY MACHINE built into a hospital "
+         "operating-room wall: grey-green riveted metal cabinet with pipes, dials and a red rat-face emblem, a small red rat army flag on top. "
+         "On its LEFT side: one empty dark round socket at about 25% of the height, one empty dark square socket at about 50% of the height, "
+         "and one larger empty round socket at about 75% of the height (sockets are empty holes, nothing inside them)."),
+    dict(name="surgeon_parts", refs=["raw/boss_parts.png", "raw/rat.png"], prompt=STYLE + BG + row(5) +
+         "Five separate parts for a Red Mouse surgery-machine boss, all at the same scale, thick black ink outlines, grey-green metal, "
+         "coral red, mustard yellow and black (no white fills): "
+         "1) a round operating-room surgical LAMP head seen from the front, mustard-yellow glowing glass with a riveted grey-green rim; "
+         "2) a long jointed grey-green robot ARM in side view pointing LEFT, perfectly horizontal, ending in a big shiny scalpel blade; "
+         "3) a short fat grey-green cannon in side view pointing LEFT that ends in a big syringe needle, red liquid inside; "
+         "4) a round glass jar on a metal base holding a small angry rat doctor wearing a surgical mask and head mirror, looking LEFT; "
+         "5) the same glass jar cracked in a star pattern, the rat doctor dizzy and scared."),
+    dict(name="hosp_shots", refs=["raw/enemy_shots.png", "refs/sheet.png"], prompt=STYLE + BG + row(4) +
+         "Four Red Mouse army enemy projectiles in the SAME dark style as the attached shots (mostly black and coral red, thick ink outlines, "
+         "nothing yellow or cream, no glow): 1) a small syringe dart flying RIGHT, black body, red liquid, sharp needle tip, tiny black tail fins; "
+         "2) a round puffy cloud of poison gas, murky dark grey-green with black outline and a small red skull-rat symbol; "
+         "3) a fat black medicine capsule pill bomb with a red half and a short sparking fuse; "
+         "4) the same pill bomb rotated 45 degrees, fuse spark bigger."),
+    dict(name="laser_emitter", refs=["raw/turret.png", "refs/sheet.png"], prompt=STYLE + BG + row(2) +
+         "Two wall-mounted Red Mouse security laser emitters, grey-green riveted metal boxes with a red rat-face emblem, side view, "
+         "the lens points RIGHT: 1) idle, the round lens dark red; 2) firing, the lens glowing bright red with short spiky rays."),
+    dict(name="gurney", refs=["raw/turret.png", "refs/sheet.png"], prompt=STYLE + BG +
+         "One object centered, side view: a hospital gurney trolley on four small black castor wheels, a flat cream mattress on top, "
+         "grey-green metal frame, a small red cross on its side, a red rat army sticker. Perfectly horizontal and much wider than tall."),
+    dict(name="bg2_far", refs=["raw/bg_far.png", "refs/sheet.png"], prompt=STYLE + HOSP +
+         "Wide side-scrolling game background, far layer, landscape canvas: the long back wall of a hospital ward seen from the side: tall "
+         "windows showing a night city with a mustard moon, grey-green tiled lower wall, cream upper wall, hanging ward curtains, red cross signs, "
+         "pipes along the ceiling, a few red rat-face army banners. Low contrast and soft so the foreground stays readable. No characters, no text."),
+    dict(name="bg2_mid", refs=["raw/bg_mid.png", "refs/sheet.png"], prompt=STYLE + BG + HOSP +
+         "Wide side-scrolling game background, middle layer, landscape canvas: a long hospital corridor wall running across the full width: "
+         "cream swinging doors with round porthole windows, an IV drip stand, an empty wheelchair, a red cross sign, a cat X-ray light box, "
+         "a poster of a happy cat. The wall occupies only the bottom 45% of the canvas and its bottom edge touches the bottom of the canvas; "
+         "everything above is the plain background. No text, no characters."),
+    dict(name="floor2", refs=["raw/ground.png"], prompt=STYLE +
+         "Square canvas, a seamless tileable texture filling the whole canvas edge to edge: hospital floor of large pale grey-green square "
+         "linoleum tiles with thin darker grout lines and paper grain, flat and low contrast. No outline, no objects."),
+]
