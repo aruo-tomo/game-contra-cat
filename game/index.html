@@ -358,7 +358,29 @@
   .lang-en .story-skip, .lang-en .story-next { font-family: Bangers, var(--display); font-weight: 400; letter-spacing: 0.05em; }
   @media (prefers-reduced-motion: reduce) { .story-panel.in, .story-panel.in img, .story-cap, .story-say, .story-tails .tail { animation: none; } }
 
-  @container (max-height: 420px) {
+  /* brand footer under the title bar, and the copyright card */
+  .cover-foot {
+    flex-basis: 100%; display: flex; align-items: center; gap: 1.2cqw; flex-wrap: wrap;
+    margin-top: 0.2cqh; padding-top: 0.9cqh; border-top: 1px solid rgba(239,234,223,0.18);
+    font-size: clamp(9px, 1.8cqh, 13px); font-weight: 700; color: rgba(239,234,223,0.72);
+  }
+  .foot-logo { height: clamp(9px, 1.9cqh, 14px); width: auto; opacity: 0.9; }
+  .foot-link {
+    margin-left: auto; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 0.2em;
+  }
+  .foot-link:hover, .foot-link:focus-visible { color: var(--yellow); }
+  .legal { width: min(100%, 36em); }
+  .legal-logo { display: block; width: min(46%, 16em); height: auto; margin: 0 auto 0.6em; }
+  .legal h2 { margin-bottom: 0.1em; }
+  .legal-by { margin: 0 0 0.9em; font-weight: 900; letter-spacing: 0.02em; }
+  .legal p { margin: 0 0 0.7em; line-height: 1.55; }
+
+  @media (max-height: 480px) {
+    .legal { padding: 0.9em 1.3em; font-size: 0.9em; }
+    .legal-logo { width: min(30%, 9em); margin-bottom: 0.3em; }
+    .legal p { margin-bottom: 0.45em; line-height: 1.4; }
+    .legal .row { margin-top: 0.4em; }
     .lang-en .logo-tag { font-size: clamp(10px, 2.3cqh, 14px); }
     .lang-en .bar-label { display: none; }
   }
@@ -431,6 +453,26 @@
           <button type="button" class="bar-btn" id="btnStory" data-i18n="title.story">睇故事</button>
           <button type="button" class="bar-btn" id="btnSettings" data-i18n="title.settings">設定同操作說明</button>
           <span class="best" id="titleBest"></span>
+          <div class="cover-foot">
+            <img class="foot-logo" src="assets/brand/aruo-entertainment-inline-white.svg" alt="aruo entertainment" width="1771" height="186">
+            <span data-i18n="foot.line">© 2026 Aruo Co. Ltd. 版權所有</span>
+            <button type="button" class="foot-link" id="btnCopyright" data-i18n="foot.link">版權資料</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="copyright" class="screen" hidden>
+      <div class="card legal">
+        <img class="legal-logo" src="assets/brand/aruo-entertainment.svg" alt="aruo entertainment" width="1771" height="836">
+        <h2 data-i18n="legal.title">版權資料</h2>
+        <p class="legal-by" data-i18n="legal.by">aruo entertainment by Aruo Co. Ltd</p>
+        <p data-i18n="legal.copy">《喵斗羅 Meow-Tra》© 2026 Aruo Co. Ltd. 版權所有。</p>
+        <p data-i18n="legal.marks">遊戲名稱、角色（火斑、大口、赤鼠帝國等）、美術、音樂同程式碼均屬 Aruo Co. Ltd. 所有。未經書面許可，不得複製、修改、發佈或作商業用途。</p>
+        <p data-i18n="legal.homage">本遊戲向經典橫向捲軸射擊遊戲致敬，與 Konami 或《魂斗羅》版權持有人並無關連，亦未獲其認可。</p>
+        <p class="fine" data-i18n="legal.fonts">字體：Bungee、Bangers、Noto Sans HK（SIL Open Font License），經 Google Fonts 提供。</p>
+        <div class="row">
+          <button type="button" class="btn" id="btnCopyrightDone" data-i18n="set.done">完成</button>
         </div>
       </div>
     </section>

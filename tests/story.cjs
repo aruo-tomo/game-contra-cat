@@ -74,6 +74,17 @@ const visibleChinese = () => [...document.querySelectorAll('body *')]
   const kept = await page.evaluate(() => document.querySelector('#btn1p span').textContent);
   check('language toggle to Chinese, remembered on reload', r.solo === '單人出擊' && kept === '單人出擊', JSON.stringify({ ...r, kept }));
 
+  // brand footer on the title screen and the copyright page (Chinese here, English below)
+  r = await page.evaluate(() => ({ logo: document.querySelector('.foot-logo').complete && document.querySelector('.foot-logo').naturalWidth > 0, line: document.querySelector('.cover-foot').textContent.replace(/\s+/g, ' ').trim() }));
+  await page.click('#btnCopyright');
+  const legal = await page.evaluate(() => ({ open: !document.getElementById('copyright').hidden, by: document.querySelector('.legal-by').textContent, logo: document.querySelector('.legal-logo').naturalWidth > 0 }));
+  await page.click('#btnCopyrightDone');
+  const back = await page.evaluate(() => !document.getElementById('title').hidden);
+  check('footer: aruo entertainment logo and copyright; copyright page opens and closes', r.logo && /© 2026 Aruo Co\. Ltd/.test(r.line) && legal.open && legal.logo && legal.by === 'aruo entertainment by Aruo Co. Ltd' && back, JSON.stringify({ ...r, ...legal, back }));
+  await page.goto(BASE + '?lang=en');
+  await page.waitForFunction(() => window.__game);
+  r = await page.evaluate(() => document.querySelector('.cover-foot').textContent.replace(/\s+/g, ' ').trim());
+  check('English footer', /All rights reserved\./.test(r) && /Copyright/.test(r), r);
   check('no console errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
   console.log(results.join('\n'));
