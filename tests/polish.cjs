@@ -45,7 +45,7 @@ const check = (name, ok, info = '') => results.push(`${ok ? 'PASS' : 'FAIL'} ${n
   await page.mouse.move(pc.x * scale + 300, pc.y * scale - 300);
   await sleep(100);
   const diag = await page.evaluate(() => __game.players[0].pose().f.file);
-  check('aim poses (up / diagonal)', /aimup|gripup/.test(up) && /aimdiag|gripdiag/.test(diag), `${up} ${diag}`);
+  check('aim poses (up / diagonal)', /aimup|gripup|hold.up/.test(up) && /aimdiag|gripdiag|hold.diag/.test(diag), `${up} ${diag}`);
 
   // hurt pose
   r = await page.evaluate(() => { const p = __game.players[0]; p.inv = 0; p.catnip = 0; p.dashT = 0; p.hp = 3; p.hurt(); return p.pose().f.file; });

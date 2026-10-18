@@ -238,3 +238,56 @@ JOBS7 = [
          "red veins, a small glossy highlight; "
          "5) the same porthole, its glass cracked in a star pattern and the red eye squinting in pain."),
 ]
+
+# --- pass 8: heroes drawn really holding each gun (like the character-select art), no compositing ---
+GUNS = {
+    "blaze": "the chunky mustard-yellow toy blaster with red trim and a fish-shaped muzzle",
+    "gulp": "the chunky coral-red toy blaster with yellow trim and a black paw print on its side",
+    "S": "the stubby hairball shotgun with three short fat barrels and a fluffy red pom-pom on top",
+    "M": "the chunky cat-litter machine gun with a round grey-green drum magazine underneath and a long perforated barrel",
+    "L": "the long cream laser-pointer rifle with a small scope and a round red lens at the tip",
+    "F": "the catnip flamethrower with a round mustard-yellow fuel tank on top and a flared grey-green nozzle",
+}
+HOLD = ("It holds {gun} from the second reference image firmly in BOTH front paws, like a cartoon action hero on a poster: "
+        "the rear paw wraps around the gun's pistol grip with a finger on the trigger, the front paw holds the underside of the gun "
+        "further forward. The gun is in front of the body, drawn big, crisp and detailed, exactly the same design and colours as the "
+        "gun reference in every frame. No muzzle flash, no bullets, no speed lines. "
+        "Clean flat colour fills: no smudges, no stray marks, no sweat drops, no sparkles or little motion ticks around the head. ")
+# Gulp drifted into a furry, scratchy look; pin it to the smooth, thick-lined original (and its in-game grip sprites)
+GULP_CLEAN = ("Draw the grey-green cat exactly like the references: a SMOOTH rounded head and body silhouette with clean, very THICK, "
+              "smooth black outlines, the same as the third reference image. NOT furry, NOT scratchy: no fur tufts, no spiky cheek fur, "
+              "no hairy or sketchy edges, no thin hatching lines. ")
+
+HOLD_MODEL = {"blaze": "hold_blaze_N", "gulp": "hold_gulp_S"}
+
+
+def hold_jobs(key, desc, ref, w):
+    desc = desc.replace("front paws free (it holds no weapon). ", "")
+    gun = GUNS[key if w == "N" else w]
+    hold = HOLD.format(gun=gun) + (GULP_CLEAN if key == "gulp" else "")
+    refs = [ref, f"refs/gun_{key if w == 'N' else w}.png"] + (["raw/gulp_grip.png"] if key == "gulp" else [])
+    # every gun's sheet copies the approved look (Blaze holding N, Gulp holding S) so the hero doesn't change
+    # face or build when it picks up another weapon
+    model = HOLD_MODEL[key]
+    if f"hold_{key}_{w}" != model:
+        refs = [ref, refs[1], f"raw/{model}.png"]
+        hold += ("The cat must look EXACTLY like the cat in the third reference image — the same character from the same sprite set: "
+                 "the same body shape and proportions, the same face, eyes and viewing angle, the same thick smooth black outlines, "
+                 "colours and texture. Only the gun is different. ")
+    return [
+        dict(name=f"hold_{key}_{w}", refs=refs, prompt=STYLE + BG + sheet(6) + desc + hold +
+             "Frames, left to right: 1) standing, gun level and pointing straight FORWARD at shoulder height; "
+             "2) standing, gun pointing diagonally UP-FORWARD at 45 degrees; 3) standing, gun pointing straight UP above the head; "
+             "4) standing, gun pointing diagonally DOWN-FORWARD at 45 degrees; 5) crouching very low and flat, gun level pointing FORWARD; "
+             "6) mid-jump with legs tucked up, gun level pointing FORWARD."),
+        # run cycles drifted into a slim, thin-lined, different-faced cat: match the standing sheet of the same gun
+        dict(name=f"holdrun_{key}_{w}", refs=[ref, refs[1], f"raw/hold_{key}_{w}.png"], prompt=STYLE + BG + sheet(6) + desc + hold +
+             "The cat must look EXACTLY like the cat in the third reference image — the same character from the same sprite set: "
+             "the same chubby body shape and proportions, the same face and eyes, the same thick smooth black outlines, colours and texture, "
+             "holding the same gun the same way. Not slimmer, not taller, not a different cartoon style. "
+             "The background must be the plain cream colour, not transparent. " +
+             "Frames: a 6-frame running cycle, legs alternating clearly, slight body bob, the gun held steady, level and pointing FORWARD."),
+    ]
+
+JOBS8 = [j for key, desc, ref in (("blaze", BLAZE, "refs/cat01.png"), ("gulp", GULP, "refs/cat02.png"))
+         for w in ("N", "S", "M", "L", "F") for j in hold_jobs(key, desc, ref, w)]

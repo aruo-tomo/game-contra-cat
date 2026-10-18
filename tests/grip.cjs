@@ -1,4 +1,4 @@
-// Heroes hold the current weapon in their paws. Usage: node tests/grip.cjs
+// Heroes are drawn holding the current weapon (hold frames). Usage: node tests/grip.cjs
 const { chromium } = require('playwright');
 const URL = process.env.GAME_URL || 'http://localhost:8765/index.html';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -24,35 +24,35 @@ const check = (name, ok, info = '') => results.push(`${ok ? 'PASS' : 'FAIL'} ${n
   });
   await sleep(150);
 
-  let r = await page.evaluate(() => { const p = __game.players[0]; const h = p.heldGun(); return { pose: p.pose().f.file, gun: h && h.gun.file }; });
-  check('standing: empty-paw grip pose holding the starting gun', /gripfwd/.test(r.pose) && /gun_blaze/.test(r.gun), JSON.stringify(r));
+  let r = await page.evaluate(() => { const p = __game.players[0]; return { pose: p.pose().f.file, hold: p.pose().hold }; });
+  check('standing: drawn holding the starting blaster', r.hold && /holdNfwd/.test(r.pose), JSON.stringify(r));
 
   // every weapon has its own gun in the paws
   r = await page.evaluate(() => {
     const p = __game.players[0];
-    return ['N', 'S', 'M', 'L', 'F'].map((t) => { p.weapon = { type: t, lvl: 1 }; return p.heldGun().gun.file; });
+    return ['N', 'S', 'M', 'L', 'F'].map((t) => { p.weapon = { type: t, lvl: 1 }; return p.pose().f.file; });
   });
-  check('switching weapon changes the gun in the paws', new Set(r).size === 5 && /gun_S/.test(r[1]) && /gun_F/.test(r[4]), JSON.stringify(r));
+  check('switching weapon changes the gun in the paws', new Set(r).size === 5 && ['N', 'S', 'M', 'L', 'F'].every((t, i) => r[i].includes(`hold${t}fwd`)), JSON.stringify(r));
 
   // picking up an item swaps the gun too
-  r = await page.evaluate(() => { const p = __game.players[0]; p.weapon = { type: 'N', lvl: 1 }; p.pickup('L'); return p.heldGun().gun.file; });
-  check('pickup L: holds the laser-pointer rifle', /gun_L/.test(r), r);
+  r = await page.evaluate(() => { const p = __game.players[0]; p.weapon = { type: 'N', lvl: 1 }; p.pickup('L'); return p.pose().f.file; });
+  check('pickup L: holds the laser-pointer rifle', /holdLfwd/.test(r), r);
 
   // shots leave the gun's muzzle, which is in front of the paws
   await page.evaluate(() => { const p = __game.players[0]; p.weapon = { type: 'M', lvl: 1 }; __game.bullets = []; p.cool = 0; __in.fire = true; });
   await sleep(40);
   r = await page.evaluate(() => {
     const p = __game.players[0]; __in.fire = false;
-    const b = __game.bullets[0]; const m = p.lastMuzzle; const h = p.heldGun();
-    return b && m ? { dx: +(b.x - m.x).toFixed(1), dy: +(b.y - m.y).toFixed(1), ahead: +(m.x - h.paw.x).toFixed(1), bx: b.x - p.cx } : null;
+    const b = __game.bullets[0]; const m = p.lastMuzzle;
+    return b && m ? { dy: +(b.y - m.y).toFixed(1), ahead: +(m.x - p.cx).toFixed(1) } : null;
   });
-  check('bullet starts at the muzzle, in front of the paws', r && Math.abs(r.dy) < 6 && r.ahead > 8, JSON.stringify(r));
+  check('bullet starts at the muzzle, well in front of the body', r && Math.abs(r.dy) < 6 && r.ahead > 15, JSON.stringify(r));
 
   // aiming up: up pose, muzzle above the head
   await page.evaluate(() => { __in.aim = { x: 0, y: -1 }; });
   await sleep(120);
   r = await page.evaluate(() => { const p = __game.players[0]; return { pose: p.pose().f.file, my: p.muzzle().y, top: p.y }; });
-  check('aim up: gripup pose, muzzle above the head', /gripup/.test(r.pose) && r.my < r.top, JSON.stringify(r));
+  check('aim up: holding the gun up, muzzle above the head', /holdMup/.test(r.pose) && r.my < r.top, JSON.stringify(r));
 
   // running: the gun moves with the paws from frame to frame
   await page.evaluate(() => { __in.aim = { x: 1, y: 0 }; __in.mx = 1; });
@@ -64,7 +64,7 @@ const check = (name, ok, info = '') => results.push(`${ok ? 'PASS' : 'FAIL'} ${n
     ys.push(+s.y.toFixed(1)); files.add(s.f);
   }
   await page.evaluate(() => { __in.mx = 0; });
-  check('running: run-cycle grip frames, gun bobs with the paws', [...files].every((f) => /griprun/.test(f)) && Math.max(...ys) - Math.min(...ys) > 0.5, JSON.stringify({ ys, frames: files.size }));
+  check('running: run-cycle frames holding the gun, muzzle bobs with them', [...files].every((f) => /holdMrun/.test(f)) && files.size > 2 && Math.max(...ys) - Math.min(...ys) > 0.5, JSON.stringify({ ys, frames: files.size }));
 
   // facing left: gun mirrored in front, muzzle on the left
   await page.evaluate(() => { __in.aim = { x: -1, y: 0 }; });
@@ -75,10 +75,11 @@ const check = (name, ok, info = '') => results.push(`${ok ? 'PASS' : 'FAIL'} ${n
   // the gun is put away for hurt, dash and the roll
   r = await page.evaluate(() => {
     const p = __game.players[0]; const out = {};
-    p.hurtT = 0.3; out.hurt = !!p.heldGun(); p.hurtT = 0;
-    p.dashT = 0.2; out.dash = !!p.heldGun(); p.dashT = 0;
-    p.spin = 0.5; out.roll = !!p.heldGun(); p.spin = 0;
-    out.normal = !!p.heldGun();
+    const armed = () => !!(p.pose().hold || p.pose().gun);
+    p.hurtT = 0.3; out.hurt = armed(); p.hurtT = 0;
+    p.dashT = 0.2; out.dash = armed(); p.dashT = 0;
+    p.spin = 0.5; out.roll = armed(); p.spin = 0;
+    out.normal = armed();
     return out;
   });
   check('no gun while hurt, dashing or rolling', !r.hurt && !r.dash && !r.roll && r.normal, JSON.stringify(r));

@@ -86,6 +86,30 @@ for hero in ("blaze", "gulp"):
         for f in manifest.get(hero, {}).get(anim, []):
             gx, gy = paw_centre(alpha(f["file"]), ang, *region)
             grips.setdefault(hero, {}).setdefault(anim, []).append(dict(gx=round(gx, 3), gy=round(gy, 3), ang=ang))
+# heroes drawn holding a gun: the muzzle is the tip of the silhouette furthest along the aim
+HOLD_POSES = {"fwd": (0, 0.8), "diag": (-45, 0.8), "up": (-90, 1.0), "down": (45, 0.85), "crouch": (0, 1.0),
+              "jump": (0, 0.8), "run": (0, 0.75)}
+
+
+def muzzle_tip(a, ang, max_y):
+    h, w = a.shape
+    ys, xs = np.nonzero(a)
+    keep = ys < max_y * h
+    ys, xs = ys[keep], xs[keep]
+    d = (math.cos(math.radians(ang)), math.sin(math.radians(ang)))
+    p = xs * d[0] + ys * d[1]
+    cap = p >= p.max() - 6  # the barrel's end face
+    return round(float(xs[cap].mean() / w), 3), round(float(ys[cap].mean() / h), 3)
+
+
+for hero in ("blaze", "gulp"):
+    for anim, frames in manifest.get(hero, {}).items():
+        if not anim.startswith("hold"):
+            continue
+        ang, max_y = HOLD_POSES[anim[5:]]
+        for f in frames:
+            mx, my = muzzle_tip(alpha(f["file"]), ang, max_y)
+            grips.setdefault(hero, {}).setdefault(anim, []).append(dict(mx=mx, my=my, ang=ang))
 for kind, frames in manifest.get("gun", {}).items():
     grips.setdefault("gun", {})[kind] = [gun_points(alpha(f["file"])) for f in frames]
 
@@ -97,12 +121,17 @@ for key, anims in grips.items():
     for anim, pts in anims.items():
         for f, pt in zip(manifest[key][anim], pts):
             im = Image.open(SPR / f["file"]).convert("RGBA")
-            k = 2 if "gx" in pt else 5
+            k = 5 if "hx" in pt else 1 if "gx" not in pt else 2
             im = im.resize((im.width * k, im.height * k))
             bg = Image.new("RGBA", (im.width + 40, im.height + 40), (200, 220, 255, 255))
             bg.alpha_composite(im, (20, 20))
             d = ImageDraw.Draw(bg)
-            if "gx" in pt:
+            if "gx" not in pt and "hx" not in pt:
+                x, y = 20 + pt["mx"] * im.width, 20 + pt["my"] * im.height
+                a = math.radians(pt["ang"])
+                d.line((x, y, x + 40 * math.cos(a), y + 40 * math.sin(a)), fill=(240, 180, 0, 255), width=3)
+                d.ellipse((x - 5, y - 5, x + 5, y + 5), fill=(0, 0, 255, 255))
+            elif "gx" in pt:
                 x, y = 20 + pt["gx"] * im.width, 20 + pt["gy"] * im.height
                 a = math.radians(pt["ang"])
                 d.line((x, y, x + 40 * math.cos(a), y + 40 * math.sin(a)), fill=(240, 180, 0, 255), width=3)

@@ -31,7 +31,9 @@ def remove_bg(im, tol=48, cut_all=False, holes=0):
         rgba = np.asarray(im)
         edge = np.concatenate([rgba[0, :, 3], rgba[-1, :, 3], rgba[:, 0, 3], rgba[:, -1, 3]])
         if (edge == 0).mean() > 0.5:  # already cut out by the generator: keep its alpha
-            return rgba.copy()
+            out = rgba.copy()
+            out[..., 3] = np.where(out[..., 3] < 32, 0, out[..., 3])  # drop the faint haze round the edges
+            return out
     rgb = np.asarray(im.convert("RGB")).astype(np.int32)
     border = np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]])
     ref = np.median(border, axis=0)
@@ -119,14 +121,20 @@ def save(img, name, scale):
 manifest = {}
 
 
-def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500, post=None, cut_all=False, holes=0):
+def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500, post=None, cut_all=False, holes=0, extra=None):
     """names: list of (anim, frame_index) per frame; ref_index: frame (or 'median') that defines the scale."""
     path = GEN / "raw" / f"{raw}.png"
     if not path.exists():
         print(f"missing {path}")
         return
     print(raw)
-    fr = frames(remove_bg(Image.open(path), cut_all=cut_all, holes=holes), n, merge=merge, min_area=min_area)
+    rgba = remove_bg(Image.open(path), cut_all=cut_all, holes=holes)
+    fr = frames(rgba, n, merge=merge, min_area=min_area)
+    # frames drawn close together can merge into one blob: retry with a smaller merge distance
+    for m in (6, 4, 2):
+        if len(fr) == n or m >= merge:
+            continue
+        fr = frames(rgba, n, merge=m, min_area=min_area)
     if post:
         fr = [post(f, i) for i, f in enumerate(fr)]
     if not fr:
@@ -136,10 +144,12 @@ def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500, post=None, c
     scale = ref_h / base
     for (key, anim), img in zip(names, fr):
         entry = save(img, f"{key}_{anim}_{len(manifest.setdefault(key, {}).setdefault(anim, []))}", scale)
+        entry.update(extra or {})
         manifest[key][anim].append(entry)
 
 
 HERO_H = 128  # standing height in pixels (drawn at 2x)
+HOLD_H = 256  # standing height of the held-gun frames
 for hero in ("blaze", "gulp"):
     sheet(f"{hero}_run", 6, [(hero, "run")] * 6, "median", HERO_H)
     sheet(f"{hero}_pose", 4, [(hero, "idle"), (hero, "jump"), (hero, "ball"), (hero, "crouch")], 0, HERO_H)
@@ -150,6 +160,12 @@ for hero in ("blaze", "gulp"):
     sheet(f"{hero}_aim", 3, [(hero, "aimup"), (hero, "aimdiag"), (hero, "hurt")], 1, 140)
     # empty paws clenched round an invisible pistol grip; the game draws the current weapon in them
     sheet(f"{hero}_grip", 6, [(hero, a) for a in ("gripfwd", "gripdiag", "gripup", "gripdown", "gripcrouch", "gripjump")], 0, HERO_H)
+    # drawn holding each gun (N = the hero's own blaster), at twice the resolution so the guns stay crisp;
+    # k tells the game to draw them at half scale
+    for w in ("N", "S", "M", "L", "F"):
+        sheet(f"hold_{hero}_{w}", 6, [(hero, f"hold{w}{p}") for p in ("fwd", "diag", "up", "down", "crouch", "jump")], 0,
+              HOLD_H, extra={"k": HERO_H / HOLD_H})
+        sheet(f"holdrun_{hero}_{w}", 6, [(hero, f"hold{w}run")] * 6, "median", HOLD_H, merge=6, extra={"k": HERO_H / HOLD_H})
     sheet(f"{hero}_griprun", 6, [(hero, "griprun")] * 6, "median", HERO_H, merge=6)  # tails nearly touch
 
 sheet("ghost", 2, [("ghost", "float")] * 2, "median", 108)
