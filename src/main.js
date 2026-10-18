@@ -727,7 +727,7 @@ function circleHit(b, r) {
 
 // ---------------- screens & menus ----------------
 
-const screens = ['title', 'pause', 'over', 'clear', 'settings'];
+const screens = ['title', 'pause', 'over', 'clear', 'settings', 'copyright'];
 function showScreen(name) {
   for (const s of screens) $(s).hidden = s !== name;
   $('touch').hidden = !(isTouch && name === null && game && game.state === 'play');
@@ -931,6 +931,8 @@ $('btn1p').addEventListener('click', () => startWithStory(1));
 $('btn2p').addEventListener('click', () => startWithStory(2));
 $('btnStory').addEventListener('click', () => playStory(() => showScreen('title')));
 $('btnSettings').addEventListener('click', () => { renderSettings(); renderOptions(); showScreen('settings'); });
+$('btnCopyright').addEventListener('click', () => showScreen('copyright'));
+$('btnCopyrightDone').addEventListener('click', () => showScreen('title'));
 $('btnResume').addEventListener('click', resumeGame);
 $('btnPauseSettings').addEventListener('click', () => { renderSettings(); renderOptions(); showScreen('settings'); });
 $('btnQuit').addEventListener('click', toTitle);
@@ -981,7 +983,7 @@ function frame(now) {
   let joined = game.update(dt);
   // test hook: run extra simulation steps per frame (window.__fast = 4) for automated playthroughs
   for (let k = 1; k < (window.__fast || 1); k++) joined = joined.concat(game.update(dt));
-  if (game.state === 'title' && joined.length && $('settings').hidden && !storyOpen()) startWithStory(1, joined[0]);
+  if (game.state === 'title' && joined.length && $('settings').hidden && $('copyright').hidden && !storyOpen()) startWithStory(1, joined[0]);
   else if (game.state === 'paused' && joined.length) resumeGame();
   else if (game.state === 'play') {
     // pause from a pad's Start button
