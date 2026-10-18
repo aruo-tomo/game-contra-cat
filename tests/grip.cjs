@@ -66,6 +66,20 @@ const check = (name, ok, info = '') => results.push(`${ok ? 'PASS' : 'FAIL'} ${n
   await page.evaluate(() => { __in.mx = 0; });
   check('running: run-cycle frames holding the gun, muzzle bobs with them', [...files].every((f) => /holdMrun/.test(f)) && files.size > 2 && Math.max(...ys) - Math.min(...ys) > 0.5, JSON.stringify({ ys, frames: files.size }));
 
+  // running while aiming 45 up / down: run-and-aim cycles, muzzle above / below the chest
+  for (const [d, ay] of [['up', -0.707], ['down', 0.707]]) {
+    await page.evaluate((ay) => { __in.aim = { x: 0.707, y: ay }; __in.mx = 1; }, ay);
+    const fs = new Set();
+    let my = 0;
+    for (let i = 0; i < 6; i++) {
+      await sleep(45);
+      const q = await page.evaluate(() => { const p = __game.players[0]; return { f: p.pose().f.file, my: p.muzzle().y - p.cy }; });
+      fs.add(q.f); my = q.my;
+    }
+    await page.evaluate(() => { __in.mx = 0; __in.aim = { x: 1, y: 0 }; });
+    check(`running aiming 45 ${d}: run${d} cycle`, [...fs].every((f) => f.includes(`holdMrun${d}`)) && fs.size > 2 && (d === 'up' ? my < -10 : my > 10), JSON.stringify({ frames: [...fs].length, my: Math.round(my) }));
+  }
+
   // facing left: gun mirrored in front, muzzle on the left
   await page.evaluate(() => { __in.aim = { x: -1, y: 0 }; });
   await sleep(120);

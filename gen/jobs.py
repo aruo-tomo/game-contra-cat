@@ -280,6 +280,15 @@ def hold_jobs(key, desc, ref, w):
              "2) standing, gun pointing diagonally UP-FORWARD at 45 degrees; 3) standing, gun pointing straight UP above the head; "
              "4) standing, gun pointing diagonally DOWN-FORWARD at 45 degrees; 5) crouching very low and flat, gun level pointing FORWARD; "
              "6) mid-jump with legs tucked up, gun level pointing FORWARD."),
+        # running while aiming 45 degrees up / down (Contra-style), matched to the standing sheet like the level run
+        *[dict(name=f"holdrun{d}_{key}_{w}", refs=[ref, refs[1], f"raw/hold_{key}_{w}.png"], prompt=STYLE + BG + sheet(6) + desc + hold +
+               "The cat must look EXACTLY like the cat in the third reference image — the same character from the same sprite set: "
+               "the same body shape and proportions, the same face and eyes, the same thick smooth black outlines, colours and texture, "
+               "holding the same gun the same way. Not slimmer, not taller, not a different cartoon style. "
+               "The background must be the plain cream colour, not transparent. "
+               f"Frames: a 6-frame running cycle, legs alternating clearly, slight body bob, while the gun is held steady and pointing "
+               f"diagonally {dd} at 45 degrees in every frame (like frame {fi} of the third reference image, but running).")
+          for d, dd, fi in (("up", "UP-FORWARD", 2), ("down", "DOWN-FORWARD", 4))],
         # run cycles drifted into a slim, thin-lined, different-faced cat: match the standing sheet of the same gun
         dict(name=f"holdrun_{key}_{w}", refs=[ref, refs[1], f"raw/hold_{key}_{w}.png"], prompt=STYLE + BG + sheet(6) + desc + hold +
              "The cat must look EXACTLY like the cat in the third reference image — the same character from the same sprite set: "

@@ -88,7 +88,7 @@ for hero in ("blaze", "gulp"):
             grips.setdefault(hero, {}).setdefault(anim, []).append(dict(gx=round(gx, 3), gy=round(gy, 3), ang=ang))
 # heroes drawn holding a gun: the muzzle is the tip of the silhouette furthest along the aim
 HOLD_POSES = {"fwd": (0, 0.8), "diag": (-45, 0.8), "up": (-90, 1.0), "down": (45, 0.85), "crouch": (0, 1.0),
-              "jump": (0, 0.8), "run": (0, 0.75)}
+              "jump": (0, 0.8), "run": (0, 0.75), "runup": (-45, 0.8), "rundown": (45, 0.85)}
 
 
 def muzzle_tip(a, ang, max_y):

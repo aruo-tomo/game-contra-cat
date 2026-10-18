@@ -258,8 +258,19 @@
     font-size: clamp(12px, 3cqh, 18px); white-space: nowrap;
   }
   #loading {
-    position: absolute; inset: 0; display: grid; place-items: center; font-weight: 900; font-size: 20px; background: var(--paper);
+    position: absolute; inset: 0; z-index: 6; display: grid; place-content: center; justify-items: center; gap: 2.2cqh;
+    background: var(--paper); font-weight: 900; text-align: center; padding: 0 16px;
   }
+  .load-cat { width: clamp(64px, 22cqh, 170px); height: auto; animation: load-hop 0.5s ease-in-out infinite alternate; }
+  @keyframes load-hop { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-2.4cqh) rotate(3deg); } }
+  .load-title { margin: 0; font-size: clamp(30px, 11cqh, 80px); line-height: 1; font-weight: 900; color: var(--yellow);
+    -webkit-text-stroke: 0.07em var(--ink); paint-order: stroke fill; text-shadow: 0.05em 0.05em 0 var(--red), 0.09em 0.09em 0 var(--ink); }
+  .load-bar { width: min(70cqw, 420px); height: clamp(12px, 3.4cqh, 22px); border: 3px solid var(--ink); border-radius: 999px;
+    background: var(--paper-dk); overflow: hidden; box-shadow: 4px 4px 0 var(--ink); }
+  .load-fill { height: 100%; width: 0%; background: var(--yellow); border-right: 3px solid var(--ink); transition: width 0.15s; }
+  .load-text { margin: 0; font-size: clamp(12px, 3cqh, 18px); font-variant-numeric: tabular-nums; }
+  .load-tip { margin: 0; font-size: clamp(10px, 2.4cqh, 15px); font-weight: 700; color: var(--muted); max-width: 32em; }
+  @media (prefers-reduced-motion: reduce) { .load-cat { animation: none; } }
   .stats { display: flex; gap: 1.2em; flex-wrap: wrap; }
   .stat { display: grid; }
   .stat b { font-family: var(--latin); font-weight: 400; font-size: 1.5em; font-variant-numeric: tabular-nums; }
@@ -466,7 +477,15 @@
     </section>
 
     <div id="toast" hidden></div>
-    <div id="loading">載入緊…</div>
+    <div id="loading" role="status" aria-live="polite">
+      <img class="load-cat" src="assets/sprites/cat01.png" alt="">
+      <h1 class="load-title">喵斗羅</h1>
+      <div class="load-bar" role="progressbar" aria-label="載入進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="load-fill" id="loadFill"></div>
+      </div>
+      <p class="load-text" id="loadText">載入緊… 0%</p>
+      <p class="load-tip" id="loadTip">貼士：打敵人儲能量，能量條閃就可以放必殺！</p>
+    </div>
   </div>
   <p class="rotate-hint">打橫部手機玩，畫面會大好多</p>
 </div>

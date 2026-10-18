@@ -11,8 +11,15 @@ const check = (name, ok, info = '') => results.push(`${ok ? 'PASS' : 'FAIL'} ${n
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  // loading screen: visible with a progress bar before the sprites arrive, gone at 100% once they have
+  await page.route('**/manifest.json', async (r) => { await sleep(1200); await r.continue(); });
   await page.goto(URL);
+  await sleep(300);
+  let ld = await page.evaluate(() => ({ shown: !document.getElementById('loading').hidden, bar: !!document.querySelector('#loading .load-fill') }));
   await page.waitForFunction(() => window.__game);
+  const ld2 = await page.evaluate(() => ({ hidden: document.getElementById('loading').hidden, text: document.getElementById('loadText').textContent }));
+  check('loading screen with progress, hidden at 100%', ld.shown && ld.bar && ld2.hidden && /100%/.test(ld2.text), JSON.stringify({ ...ld, ...ld2 }));
+  await page.unroute('**/manifest.json');
   await page.click('#btn1p');
   await sleep(2500); // let the drop-in intro finish
 

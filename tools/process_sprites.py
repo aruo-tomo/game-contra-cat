@@ -140,7 +140,17 @@ def sheet(raw, n, names, ref_index, ref_h, merge=10, min_area=1500, post=None, c
     if not fr:
         return
     hs = sorted(f.height for f in fr)
-    base = hs[len(hs) // 2] if ref_index == "median" else fr[min(ref_index, len(fr) - 1)].height
+    if ref_index == "body":
+        # a gun raised above the head makes the frame taller than the cat: measure only the body side
+        # (left 55% of each right-facing frame) so the hero keeps its size
+        def body_h(f):
+            a = np.asarray(f)[..., 3] > 128
+            rows = np.nonzero(a[:, : int(a.shape[1] * 0.55)].any(1))[0]
+            return rows.max() - rows.min() + 1 if len(rows) else f.height
+        bh = sorted(body_h(f) for f in fr)
+        base = bh[len(bh) // 2]
+    else:
+        base = hs[len(hs) // 2] if ref_index == "median" else fr[min(ref_index, len(fr) - 1)].height
     scale = ref_h / base
     for (key, anim), img in zip(names, fr):
         entry = save(img, f"{key}_{anim}_{len(manifest.setdefault(key, {}).setdefault(anim, []))}", scale)
@@ -166,6 +176,9 @@ for hero in ("blaze", "gulp"):
         sheet(f"hold_{hero}_{w}", 6, [(hero, f"hold{w}{p}") for p in ("fwd", "diag", "up", "down", "crouch", "jump")], 0,
               HOLD_H, extra={"k": HERO_H / HOLD_H})
         sheet(f"holdrun_{hero}_{w}", 6, [(hero, f"hold{w}run")] * 6, "median", HOLD_H, merge=6, extra={"k": HERO_H / HOLD_H})
+        for d in ("up", "down"):  # running while aiming 45 degrees up / down
+            sheet(f"holdrun{d}_{hero}_{w}", 6, [(hero, f"hold{w}run{d}")] * 6, "body", HOLD_H, merge=6,
+                  extra={"k": HERO_H / HOLD_H})
     sheet(f"{hero}_griprun", 6, [(hero, "griprun")] * 6, "median", HERO_H, merge=6)  # tails nearly touch
 
 sheet("ghost", 2, [("ghost", "float")] * 2, "median", 108)
