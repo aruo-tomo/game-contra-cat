@@ -5,7 +5,7 @@
 
 import { t } from './i18n.js';
 import { C, mulberry32, rrect, ink } from './art.js';
-import { SPR } from './sprites.js';
+import { SPR, frame } from './sprites.js';
 import { sfx, startMusic } from './audio.js';
 import { updateMovers } from './level2.js';
 import { BowlCat, Puffer, ScubaRat, Eel, CanRat, PirateCat, RoboKoi } from './enemies3.js';
@@ -113,6 +113,7 @@ export function buildLevel3() {
     movers,
     bubbles,
     temps: [],
+    ripples: [],
     water,
     currents,
     vents,
@@ -148,6 +149,39 @@ class Bubble {
     ctx.strokeStyle = 'rgba(30,30,30,0.7)';
     ctx.stroke();
   }
+}
+
+// a drop of water thrown up by a splash
+class Droplet {
+  constructor(x, y, vx, vy) { Object.assign(this, { x, y, vx, vy, t: 0, dead: false, life: 0.5 + Math.random() * 0.3 }); }
+  update(dt) {
+    this.t += dt;
+    this.vy += 900 * dt;
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    if (this.t > this.life) this.dead = true;
+  }
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.ellipse(this.x, this.y, 2.2, 3.2, Math.atan2(this.vy, this.vx) + Math.PI / 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(245,250,247,0.95)';
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(30,30,30,0.6)';
+    ctx.stroke();
+  }
+}
+
+// a splash where something breaks the surface: a crown of drops and a ripple
+function splash(game, x, y, big) {
+  const n = big ? 14 : 7;
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
+    const sp = (big ? 180 : 120) + Math.random() * 120;
+    game.effects.push(new Droplet(x + (Math.random() - 0.5) * 14, y, Math.cos(a) * sp, Math.sin(a) * sp));
+  }
+  game.level.ripples.push({ x, y, t: 0, life: 0.9 });
+  if (big) sfx.hiss();
 }
 
 // Everything that moves under water leaves a trail of bubbles behind it (more on a swim stroke)
@@ -201,6 +235,18 @@ function update(level, game, dt) {
     }
   }
   trailBubbles(game, dt);
+  // splashes and ripples where heroes and enemies break the surface
+  for (const r of level.ripples) r.t += dt;
+  level.ripples = level.ripples.filter((r) => r.t < r.life);
+  for (const e of [...game.alivePlayers(), ...game.enemies]) {
+    if (e.dead || e.isWall) continue;
+    const wet = !!game.waterAt(e.cx, e.y + e.h * 0.5);
+    if (e.wasWet != null && wet !== e.wasWet) {
+      const w = level.water.find((q) => e.cx >= q.x && e.cx <= q.x + q.w && Math.abs(q.y - (e.y + e.h * 0.5)) < 40);
+      if (w) splash(game, e.cx, w.y, Math.abs(e.vy) > 200);
+    }
+    e.wasWet = wet;
+  }
 }
 
 function closeGate(game, which) {
@@ -243,20 +289,41 @@ function spawn(game, s) {
 
 // ---------- drawing ----------
 
-// a tall layer repeated down the stage, every other copy mirrored top-to-bottom so the seams match
-function drawTiledV(ctx, layer, offset, W, H) {
-  const h = (layer.h * W) / layer.w;
-  const start = Math.floor(offset / h);
-  for (let k = start; k * h - offset < H; k++) {
-    const y = k * h - offset;
-    if (k % 2) {
-      ctx.save();
-      ctx.translate(0, y + h);
-      ctx.scale(1, -1);
-      ctx.drawImage(layer.img, 0, 0, W, h);
-      ctx.restore();
-    } else ctx.drawImage(layer.img, 0, y, W, h);
-  }
+// A tall background repeated down the stage. Only a band of the picture is used (no filter box at the
+// top, no water line / pebble floor at the bottom), and its bottom edge cross-fades into its top so the
+// copies join without a seam (and nothing is ever drawn upside down).
+function seamless(layer, b0, b1) {
+  if (layer.seam) return layer.seam;
+  const img = layer.img;
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  const sy = Math.round(ih * b0);
+  const sh = Math.round(ih * (b1 - b0));
+  const o = Math.round(sh * 0.2);
+  const c = document.createElement('canvas');
+  c.width = iw;
+  c.height = sh - o;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, sy, iw, sh - o, 0, 0, iw, sh - o);
+  const strip = document.createElement('canvas');
+  strip.width = iw;
+  strip.height = o;
+  const sg = strip.getContext('2d');
+  sg.drawImage(img, 0, sy + sh - o, iw, o, 0, 0, iw, o);
+  sg.globalCompositeOperation = 'destination-in';
+  const grad = sg.createLinearGradient(0, 0, 0, o);
+  grad.addColorStop(0, 'rgba(0,0,0,1)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  sg.fillStyle = grad;
+  sg.fillRect(0, 0, iw, o);
+  g.drawImage(strip, 0, 0);
+  layer.seam = c;
+  return c;
+}
+
+function drawSeam(ctx, seam, offset, W, H) {
+  const h = (seam.height * W) / seam.width;
+  for (let k = Math.floor(offset / h); k * h - offset < H; k++) ctx.drawImage(seam, 0, k * h - offset, W, h);
 }
 
 export function drawScenery(ctx, camx, tm, W, H, camy = 0) {
@@ -265,7 +332,7 @@ export function drawScenery(ctx, camx, tm, W, H, camy = 0) {
   const air = SPR.layers.bg3_air;
   const sea = SPR.layers.bg3_far;
   const off = camy * 0.3;
-  if (air && air.img) drawTiledV(ctx, air, off, W, H);
+  if (air && air.img) drawSeam(ctx, seamless(air, 0.14, 0.7), off, W, H);
   // under water the underwater layer shows instead
   if (sea && sea.img) {
     for (const w of buildLevel3Water) {
@@ -276,7 +343,7 @@ export function drawScenery(ctx, camx, tm, W, H, camy = 0) {
       ctx.beginPath();
       ctx.rect(0, Math.max(0, top), W, Math.min(H, bot) - Math.max(0, top));
       ctx.clip();
-      drawTiledV(ctx, sea, off, W, H);
+      drawSeam(ctx, seamless(sea, 0.06, 0.74), off, W, H);
       ctx.restore();
     }
   }
@@ -288,6 +355,12 @@ const buildLevel3Water = buildLevel3().water;
 let rockPat = null;
 function rockPattern(ctx) {
   if (rockPat) return rockPat;
+  const art = SPR.layers.rock3;
+  if (art && art.img) {
+    rockPat = ctx.createPattern(art.img, 'repeat');
+    if (rockPat.setTransform) rockPat.setTransform(new DOMMatrix().scale(0.4));
+    return rockPat;
+  }
   const c = document.createElement('canvas');
   c.width = c.height = 64;
   const g = c.getContext('2d');
@@ -300,129 +373,338 @@ function rockPattern(ctx) {
     g.fillStyle = ['#7A877D', '#A2AC9F', '#6F7C72', '#B79C7A'][i % 4];
     g.fill();
   }
-  rockPat = ctx.createPattern(c, 'repeat');
-  return rockPat;
+  return ctx.createPattern(c, 'repeat');
 }
 
-function drawCoral(ctx, x, y, w, seed) {
-  // a coral shelf: rounded slab with little branches poking up
-  rrect(ctx, x, y, w, 9, 4);
-  ink(ctx, '#E39A8F', 2.5);
+// a rocky coral ledge: the generated piece nearest in width, stretched to fit; its flat top is the platform
+function drawLedge(ctx, x, y, w, seed) {
+  const long = frame('plat3', 'long');
+  const short = frame('plat3', 'short');
+  const f = long && short ? (w > 125 ? long : short) : null;
+  if (f) {
+    const lw = w + 16;
+    const hk = Math.min(lw / f.w, 0.5); // stretched to the ledge's width, but never deeper than this
+    const top = f.top ?? 0.3; // how far down the art its flat walkable top is
+    ctx.drawImage(f.img, x - 8, y - f.h * hk * top, lw, f.h * hk);
+    return;
+  }
+  rrect(ctx, x, y, w, 12, 5);
+  ink(ctx, '#9AA394', 2.5);
+  ctx.fillStyle = '#8DA05A';
+  ctx.fillRect(x + 3, y, w - 6, 3);
   const rnd = mulberry32(seed);
   ctx.beginPath();
-  for (let px = x + 8; px < x + w - 6; px += 14 + rnd() * 10) {
-    const h = 5 + rnd() * 7;
+  for (let px = x + 10; px < x + w - 8; px += 18 + rnd() * 14) {
+    const h = 5 + rnd() * 6;
     ctx.moveTo(px, y + 1);
-    ctx.lineTo(px + (rnd() - 0.5) * 6, y - h);
+    ctx.lineTo(px + (rnd() - 0.5) * 5, y - h);
+    ctx.moveTo(px, y - h * 0.6);
+    ctx.lineTo(px + 4, y - h * 0.9);
   }
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2.5;
   ctx.strokeStyle = C.red;
+  ctx.stroke();
+}
+
+// the waterfall (pushes down) or the filter intake (pulls up)
+function drawCurrent(ctx, c, level, tm, camy, H) {
+  const y0 = Math.max(c.y, camy - 10);
+  const y1 = Math.min(c.y + c.h, camy + H + 10);
+  if (y1 <= y0) return;
+  if (c.dir > 0) {
+    // a sheet of falling water: wobbling edges, streaks at three speeds
+    const edge = (side, y) => c.x + (side > 0 ? c.w : 0) + Math.sin(y * 0.05 + tm * 6 + side) * 3;
+    ctx.beginPath();
+    for (let y = y0; y <= y1; y += 8) ctx.lineTo(edge(-1, y), y);
+    for (let y = y1; y >= y0; y -= 8) ctx.lineTo(edge(1, y), y);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(c.x, 0, c.x + c.w, 0);
+    grad.addColorStop(0, 'rgba(206,224,216,0.55)');
+    grad.addColorStop(0.5, 'rgba(239,244,240,0.7)');
+    grad.addColorStop(1, 'rgba(206,224,216,0.55)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(30,30,30,0.45)';
+    ctx.stroke();
+    ctx.save();
+    ctx.clip();
+    for (const [speed, alpha, width, gap] of [[180, 0.35, 5, 150], [300, 0.6, 2.5, 110], [460, 0.9, 1.5, 90]]) {
+      ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      for (let i = 0; i < 7; i++) {
+        const x = c.x + 8 + i * ((c.w - 16) / 6) + Math.sin(i * 3 + speed) * 4;
+        const phase = ((tm * speed + i * 61 + speed) % gap + gap) % gap;
+        for (let y = y0 - gap + phase; y < y1; y += gap) { ctx.moveTo(x, y); ctx.lineTo(x, y + gap * 0.45); }
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    // foam where the falling water hits a ledge or the pool below
+    const tops = [...level.oneways, ...level.solids.filter((s) => s.kind === 'ground')]
+      .filter((q) => q.x < c.x + c.w && q.x + q.w > c.x && q.y > c.y && q.y < c.y + c.h + 4 && q.y > camy - 20 && q.y < camy + H + 20)
+      .map((q) => q.y);
+    for (const w of level.water) if (Math.abs(w.y - (c.y + c.h)) < 6) tops.push(w.y);
+    for (const ty of tops) drawFoam(ctx, c.x + c.w / 2, ty, c.w * 0.6, tm);
+  } else {
+    // the intake: water swirling upward
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(c.x, y0, c.w, y1 - y0);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(239,234,223,0.12)';
+    ctx.fillRect(c.x, y0, c.w, y1 - y0);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i++) {
+      const phase = ((tm * 140 + i * 40) % 160 + 160) % 160;
+      for (let y = y1 + 20 - phase; y > y0 - 60; y -= 160) {
+        ctx.beginPath();
+        const cx = c.x + c.w / 2 + Math.sin(y * 0.04 + i * 1.6) * (c.w * 0.3);
+        ctx.moveTo(cx - 10, y + 10);
+        ctx.quadraticCurveTo(cx, y - 6, cx + 10, y + 10);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+}
+
+function drawFoam(ctx, x, y, w, tm) {
+  for (let i = 0; i < 9; i++) {
+    const k = i / 8 - 0.5;
+    const bob = Math.sin(tm * 9 + i * 1.7) * 2.5;
+    const r = 5 + ((i * 7) % 4) + Math.sin(tm * 6 + i) * 1.5;
+    ctx.beginPath();
+    ctx.arc(x + k * w, y - 3 + bob - Math.abs(k) * -4, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(250,250,245,0.9)';
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(30,30,30,0.35)';
+    ctx.stroke();
+  }
+  // spray drops thrown up and out
+  for (let i = 0; i < 6; i++) {
+    const ph = (tm * 1.6 + i * 0.37) % 1;
+    const dir = i % 2 ? 1 : -1;
+    const px = x + dir * (w * 0.35 + ph * 22);
+    const py = y - 6 - Math.sin(ph * Math.PI) * 16;
+    ctx.beginPath();
+    ctx.arc(px, py, 1.8 * (1 - ph) + 0.6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fill();
+  }
+}
+
+function drawBubblePlatform(ctx, b, tm) {
+  const wob = Math.sin(tm * 5 + b.x) * 2 + (b.t > 0 ? Math.sin(tm * 50) * b.t * 3 : 0);
+  const cx = b.x + b.w / 2;
+  const cy = b.y + 9;
+  const f = frame('plat3', 'bubble');
+  if (f) {
+    const w = b.w + 18 + wob * 2;
+    const h = (f.h * w) / f.w - wob;
+    ctx.drawImage(f.img, cx - w / 2, b.y - 6, w, h);
+    return;
+  }
+  const g = ctx.createRadialGradient(cx - b.w * 0.2, cy - 6, 2, cx, cy, b.w * 0.6);
+  g.addColorStop(0, 'rgba(255,255,255,0.85)');
+  g.addColorStop(0.5, 'rgba(220,234,228,0.5)');
+  g.addColorStop(1, 'rgba(160,190,178,0.55)');
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, b.w / 2 + wob, 15 - wob * 0.5, 0, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = C.ink;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(cx - b.w * 0.18, cy - 7, b.w * 0.16, 3, -0.2, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+}
+
+// a driftwood raft hung on two ropes from a cable that runs along its path
+function drawRaft(ctx, m, tm) {
+  const railY = m.y - 70;
+  ctx.beginPath();
+  ctx.moveTo(m.x0 - 10, railY);
+  ctx.lineTo(m.x1 + m.w + 10, railY);
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = 'rgba(30,30,30,0.7)';
+  ctx.stroke();
+  for (const ex of [m.x0 - 10, m.x1 + m.w + 10]) {
+    ctx.beginPath();
+    ctx.arc(ex, railY, 4, 0, Math.PI * 2);
+    ink(ctx, '#7A6E62', 1.5);
+  }
+  const f = frame('plat3', 'raft');
+  if (f) {
+    const w = m.w + 14;
+    const h = (f.h * w) / f.w;
+    // the art includes its ropes going up: line its log deck up with the platform top
+    const deck = f.top ?? 0.62;
+    ctx.drawImage(f.img, m.x - 7, m.y - h * deck, w, h);
+    // carry the art's two ropes (at 12% and 86% of its width) on up to the cable
+    ctx.beginPath();
+    for (const k of [0.125, 0.855]) { const rx = m.x - 7 + w * k; ctx.moveTo(rx, m.y - h * deck + 2); ctx.lineTo(rx, railY); }
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = C.ink;
+    ctx.stroke();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = '#D9A441';
+    ctx.stroke();
+    return;
+  }
+  ctx.beginPath();
+  for (const rx of [m.x + 8, m.x + m.w - 8]) { ctx.moveTo(rx, m.y); ctx.lineTo(rx, railY); }
+  ctx.lineWidth = 1.8;
+  ctx.strokeStyle = '#7A5A3C';
+  ctx.stroke();
+  for (let i = 0; i < 2; i++) {
+    rrect(ctx, m.x, m.y + i * 7, m.w, 8, 4);
+    ink(ctx, i ? '#8A6C4E' : '#9B7B5A', 2);
+  }
+  ctx.beginPath();
+  for (let x = m.x + 10; x < m.x + m.w - 6; x += 16) { ctx.moveTo(x, m.y + 3); ctx.lineTo(x + 8, m.y + 3); }
+  ctx.lineWidth = 1;
   ctx.stroke();
 }
 
 export function drawLevel(ctx, level, camx, W, tm = 0, camy = 0) {
   const H = 360;
   const vis = (y, h = 20) => y + h > camy - 20 && y < camy + H + 20;
-  // the waterfall and the intake currents
-  for (const c of level.currents) {
-    if (!vis(c.y, c.h)) continue;
-    const y0 = Math.max(c.y, camy - 10);
-    const y1 = Math.min(c.y + c.h, camy + H + 10);
-    ctx.fillStyle = c.dir > 0 ? 'rgba(220,232,226,0.45)' : 'rgba(239,234,223,0.18)';
-    ctx.fillRect(c.x, y0, c.w, y1 - y0);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(c.x, y0, c.w, y1 - y0);
-    ctx.clip();
-    ctx.strokeStyle = c.dir > 0 ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 9; i++) {
-      const x = c.x + 6 + i * (c.w / 9);
-      const len = 26 + (i % 3) * 10;
-      const phase = ((tm * (c.dir > 0 ? 260 : -160) + i * 57) % 120 + 120) % 120;
-      ctx.beginPath();
-      for (let y = y0 - 120 + phase; y < y1; y += 120) { ctx.moveTo(x, y); ctx.lineTo(x, y + len); }
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
+  for (const c of level.currents) if (vis(c.y, c.h)) drawCurrent(ctx, c, level, tm, camy, H);
   const pat = rockPattern(ctx);
   for (const s of level.solids) {
     if (s.kind !== 'ground' || !vis(s.y, s.h)) continue;
     ctx.fillStyle = s.gate ? '#6F5A44' : pat;
     rrect(ctx, s.x, s.y, s.w, s.h, 6);
     ctx.fill();
+    // shade toward the bottom so the rock has some weight
+    const sh = ctx.createLinearGradient(0, s.y, 0, s.y + s.h);
+    sh.addColorStop(0, 'rgba(255,255,255,0.08)');
+    sh.addColorStop(1, 'rgba(30,30,30,0.25)');
+    ctx.fillStyle = sh;
+    ctx.fill();
     ctx.lineWidth = 3;
     ctx.strokeStyle = C.ink;
     ctx.stroke();
     if (s.gate) {
-      // a wooden hatch slammed shut
       ctx.beginPath();
       for (let x = s.x + 16; x < s.x + s.w; x += 16) { ctx.moveTo(x, s.y + 2); ctx.lineTo(x, s.y + s.h - 2); }
       ctx.lineWidth = 1.5;
       ctx.stroke();
     } else {
-      // moss along the top
+      // a ragged moss edge along the top
+      ctx.beginPath();
+      ctx.moveTo(s.x + 3, s.y);
+      for (let x = s.x + 3; x < s.x + s.w - 3; x += 6) ctx.lineTo(x + 3, s.y + 3 + ((x * 7) % 5));
+      ctx.lineTo(s.x + s.w - 3, s.y);
+      ctx.closePath();
       ctx.fillStyle = '#8DA05A';
-      ctx.fillRect(s.x + 3, s.y, s.w - 6, 4);
+      ctx.fill();
     }
   }
-  level.oneways.forEach((p, i) => { if (vis(p.y)) drawCoral(ctx, p.x, p.y, p.w, i * 7 + 3); });
-  for (const b of level.bubbles) {
-    if (b.state !== 'ok' || !vis(b.y)) continue;
-    const wob = Math.sin(tm * 5 + b.x) * 2 + (b.t > 0 ? Math.sin(tm * 50) * b.t * 3 : 0);
-    ctx.beginPath();
-    ctx.ellipse(b.x + b.w / 2, b.y + 8, b.w / 2 + wob, 14 - wob * 0.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(239,234,223,0.55)';
-    ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = C.ink;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(b.x + b.w * 0.3, b.y + 3, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-  }
-  for (const m of level.movers) {
-    if (!vis(m.y)) continue;
-    rrect(ctx, m.x, m.y, m.w, 12, 6);
-    ink(ctx, '#9B7653', 2.5);
-    ctx.beginPath();
-    ctx.ellipse(m.x + m.w - 6, m.y + 6, 3, 5, 0, 0, Math.PI * 2);
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
+  level.oneways.forEach((p, i) => { if (vis(p.y)) drawLedge(ctx, p.x, p.y, p.w, i * 7 + 3); });
+  for (const b of level.bubbles) if (b.state === 'ok' && vis(b.y)) drawBubblePlatform(ctx, b, tm);
+  for (const m of level.movers) if (vis(m.y, 80)) drawRaft(ctx, m, tm);
+  const harp = frame('ashot', 'harpoon');
   for (const h of level.temps) {
     // a harpoon stuck in the tank wall: something to stand on for a few seconds
     ctx.save();
     if (h.life < 1 && Math.floor(tm * 10) % 2) ctx.globalAlpha = 0.5;
-    rrect(ctx, h.x, h.y - 2, h.w, 5, 2);
-    ink(ctx, '#6F7C75', 2);
+    if (harp) {
+      const w = h.w + 10;
+      ctx.translate(h.left ? h.x + w / 2 - 6 : h.x + w / 2 + 6, h.y + 1);
+      if (h.left) ctx.scale(-1, 1); // the barbed tip is buried in the wall
+      ctx.drawImage(harp.img, -w / 2, -(harp.h * w) / harp.w / 2, w, (harp.h * w) / harp.w);
+    } else {
+      rrect(ctx, h.x, h.y - 2, h.w, 5, 2);
+      ink(ctx, '#6F7C75', 2);
+    }
     ctx.restore();
   }
 }
 
-// drawn over everything: the water itself, with a wavy surface line
+// drawn over everything: the water itself — darker with depth, light rays and moving caustic light
+// under the surface, a bright wavy surface with foam glints, ripples and splashes
 function drawFront(ctx, level, camx, W, tm, camy) {
   const H = 360;
   for (const w of level.water) {
     const y0 = Math.max(w.y, camy - 10);
     const y1 = Math.min(w.y + w.h, camy + H + 10);
     if (y1 <= y0) continue;
-    ctx.fillStyle = 'rgba(94,127,114,0.22)';
+    const grad = ctx.createLinearGradient(0, w.y, 0, w.y + 420);
+    grad.addColorStop(0, 'rgba(120,160,146,0.16)');
+    grad.addColorStop(1, 'rgba(52,84,74,0.34)');
+    ctx.fillStyle = grad;
     ctx.fillRect(w.x, y0, w.w, y1 - y0);
-    if (w.y > camy - 10 && w.y < camy + H) {
+    if (w.y > camy - 200 && w.y < camy + H + 10) {
+      // light rays slanting down from the surface, swaying
+      ctx.save();
       ctx.beginPath();
-      for (let x = 0; x <= W; x += 8) ctx.lineTo(x, w.y + Math.sin(x * 0.05 + tm * 3) * 2.5);
+      ctx.rect(w.x, w.y, w.w, Math.min(w.h, 260));
+      ctx.clip();
+      for (let i = 0; i < 5; i++) {
+        const x = 40 + i * 140 + Math.sin(tm * 0.6 + i * 2) * 30;
+        const g = ctx.createLinearGradient(0, w.y, 0, w.y + 230);
+        g.addColorStop(0, 'rgba(255,250,230,0.22)');
+        g.addColorStop(1, 'rgba(255,250,230,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(x, w.y);
+        ctx.lineTo(x + 34, w.y);
+        ctx.lineTo(x + 80, w.y + 240);
+        ctx.lineTo(x + 20, w.y + 240);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // caustics: a net of thin bright wavy lines just under the surface
+      ctx.strokeStyle = 'rgba(255,255,240,0.25)';
+      ctx.lineWidth = 1.3;
+      for (let r = 0; r < 6; r++) {
+        const yy = w.y + 18 + r * 22;
+        ctx.beginPath();
+        for (let x = 0; x <= W; x += 10) ctx.lineTo(x, yy + Math.sin(x * 0.06 + tm * 2 + r) * 4 + Math.sin(x * 0.13 - tm * 1.3) * 2);
+        ctx.globalAlpha = 1 - r / 6;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      // the surface: a light band above the wave line, then the ink line and moving glints
+      const wave = (x, k = 0) => w.y + Math.sin(x * 0.045 + tm * 2.6 + k) * 2.2 + Math.sin(x * 0.11 - tm * 1.7 + k) * 1.2;
+      ctx.beginPath();
+      ctx.moveTo(0, w.y + 10);
+      for (let x = 0; x <= W; x += 6) ctx.lineTo(x, wave(x));
+      ctx.lineTo(W, w.y + 10);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(232,242,236,0.45)';
+      ctx.fill();
+      ctx.beginPath();
+      for (let x = 0; x <= W; x += 6) ctx.lineTo(x, wave(x));
       ctx.lineWidth = 2.5;
-      ctx.strokeStyle = 'rgba(30,30,30,0.6)';
+      ctx.strokeStyle = 'rgba(30,30,30,0.7)';
       ctx.stroke();
-      ctx.beginPath();
-      for (let x = 0; x <= W; x += 8) ctx.lineTo(x, w.y + 4 + Math.sin(x * 0.05 + tm * 3 + 1) * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-      ctx.stroke();
+      for (let i = 0; i < 14; i++) {
+        const x = ((i * 53 + tm * 30) % (W + 40)) - 20;
+        ctx.beginPath();
+        ctx.moveTo(x, wave(x, 0.4) + 4);
+        ctx.lineTo(x + 10 + (i % 3) * 4, wave(x + 10, 0.4) + 4);
+        ctx.stroke();
+      }
     }
+  }
+  for (const r of level.ripples) {
+    const k = r.t / r.life;
+    ctx.beginPath();
+    ctx.ellipse(r.x, r.y + 1, 8 + k * 46, 2 + k * 5, 0, 0, Math.PI * 2);
+    ctx.lineWidth = 2 * (1 - k) + 0.5;
+    ctx.strokeStyle = `rgba(255,255,255,${0.9 * (1 - k)})`;
+    ctx.stroke();
   }
 }
 
