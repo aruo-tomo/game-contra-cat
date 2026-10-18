@@ -17,6 +17,20 @@ if not s.startswith('<!doctype'):
                   '<style>:root{color-scheme:dark}body{margin:0}</style>', 1)
     open('index.html', 'w').write(s)
 PY
+# every release loads its code and sprite list under a version tag, so a browser holding the
+# previous release's files in its cache (GitHub Pages keeps them 10 minutes) can't mix old and new
+VERSION=$(git -C "$ROOT" rev-parse --short HEAD) python3 - <<'PY'
+import os, re, glob
+v = os.environ['VERSION']
+s = open('index.html').read()
+s = s.replace('src="src/main.js"', f'src="src/main.js?v={v}"')
+open('index.html', 'w').write(s)
+for f in glob.glob('src/*.js'):
+    s = open(f).read()
+    s = re.sub(r"(from\s+'\./[\w-]+\.js)'", rf"\1?v={v}'", s)
+    s = s.replace("BASE + 'manifest.json'", f"BASE + 'manifest.json?v={v}'")
+    open(f, 'w').write(s)
+PY
 touch .nojekyll
 git add -A
 git commit -q -m "Publish game for GitHub Pages"
