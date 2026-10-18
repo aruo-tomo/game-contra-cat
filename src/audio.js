@@ -100,6 +100,16 @@ export const sfx = {
   },
   enemyShot: () => tone({ type: 'square', f0: 320, f1: 180, dur: 0.08, vol: 0.06 }),
   hit: () => tone({ f0: 180, f1: 90, dur: 0.05, vol: 0.12 }),
+  // stage 2: a shot glancing off a shield, laser charge / fire, gas hiss, the cone cat's yowl, a nurse's heal
+  clink: () => { tone({ type: 'triangle', f0: 2200, f1: 1600, dur: 0.06, vol: 0.09 }); tone({ type: 'triangle', f0: 3100, dur: 0.04, vol: 0.05, at: 0.03 }); },
+  charge: () => tone({ type: 'sawtooth', f0: 200, f1: 900, dur: 0.5, vol: 0.06 }),
+  laser: () => { tone({ type: 'sawtooth', f0: 900, f1: 600, dur: 0.4, vol: 0.1 }); noise({ dur: 0.3, vol: 0.12, freq: 3000 }); },
+  hiss: () => noise({ dur: 0.45, vol: 0.14, freq: 5000 }),
+  yowl() {
+    tone({ type: 'sawtooth', f0: 380, f1: 720, dur: 0.18, vol: 0.12 });
+    tone({ type: 'sawtooth', f0: 720, f1: 260, dur: 0.35, vol: 0.12, at: 0.18 });
+  },
+  heal: () => [880, 1175].forEach((f, i) => tone({ type: 'sine', f0: f, dur: 0.1, vol: 0.1, at: i * 0.08 })),
   boom(big) {
     noise({ dur: big ? 0.7 : 0.3, vol: big ? 0.5 : 0.3, freq: big ? 900 : 1600 });
     tone({ type: 'triangle', f0: big ? 120 : 200, f1: 40, dur: big ? 0.6 : 0.25, vol: 0.3 });

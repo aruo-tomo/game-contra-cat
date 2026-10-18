@@ -10,7 +10,8 @@ import {
 import { setupTouch } from './touch.js';
 import { loadSprites } from './sprites.js';
 import { options, saveOptions, ASSIST_MULT, rankFor, saveBest, loadBest } from './options.js';
-import { buildLevel1, updateBridges, drawScenery, drawLevel, WALL_X } from './level1.js';
+import { STAGE1 } from './level1.js';
+import { STAGE2 } from './level2.js';
 import {
   Player, Runner, Rat, Turret, Bat, Ghost, Elite, BossWall, Capsule, Item, Gunner, Grenadier, Charger, Sniper,
   Particle, FloatText, FreedCat, Debris, FxAnim, overlap, updateBullet, drawBullet, SKILL_COST,
@@ -35,6 +36,7 @@ const isTouch = window.matchMedia('(pointer: coarse)').matches;
 if (isTouch) setupTouch($('touch'));
 
 const FREED_LINES = [t('freed.1'), t('freed.2'), t('freed.3'), t('freed.4')];
+const STAGES = [STAGE1, STAGE2];
 
 // ---------------- game ----------------
 
@@ -53,16 +55,31 @@ class Game {
     this.ebullets = [];
     this.items = [];
     this.effects = [];
-    this.level = buildLevel1();
+    this.stageIdx = 0;
+    this.stage = STAGES[0];
+    this.level = this.stage.build();
   }
 
   start(opts) {
     this.opts = opts;
     this.classic = opts.difficulty === 'classic';
     this.startLives = opts.konami ? 30 : this.classic ? 3 : 9;
-    this.level = buildLevel1();
-    this.cam = { x: 0 };
     this.players = [];
+    this.score = 0;
+    this.continues = 3;
+    this.enterStage(opts.stage || 0);
+    opts.ctls.forEach((ctl, i) => this.addPlayer(i, ctl));
+    this.state = 'play';
+    sfx.start();
+    setTimeout(() => { if (this.state === 'play' && !this.bossTarget) startMusic('stage'); }, 900);
+  }
+
+  // reset the world for stage i; players (lives, weapons) carry over when they already exist
+  enterStage(i) {
+    this.stageIdx = i;
+    this.stage = STAGES[i];
+    this.level = this.stage.build();
+    this.cam = { x: 0 };
     this.enemies = [];
     this.bullets = [];
     this.ebullets = [];
@@ -74,22 +91,69 @@ class Game {
     this.bossTarget = null;
     this.banner = null;
     this.bannerQ = [];
-    this.say(t('say.stage1'), 2.0);
+    this.say(t(`say.stage${this.stage.n}`), 2.0);
     this.say(t('say.go'), 1.0);
     this.hitStop = 0;
     this.look = 0;
     this.deaths = 0;
     this.catSpawned = 0;
-    this.score = 0;
+    this.stageScore0 = this.score;
     this.freed = 0;
-    this.continues = 3;
     this.shakeAmt = 0;
     this.time = 0;
     this.overT = 0;
-    opts.ctls.forEach((ctl, i) => this.addPlayer(i, ctl));
+  }
+
+  hasNextStage() { return this.stageIdx + 1 < STAGES.length; }
+
+  // after a clear: same heroes, same lives and guns, next stage; they drop in from the sky again
+  nextStage() {
+    if (!this.hasNextStage()) return;
+    this.enterStage(this.stageIdx + 1);
+    for (const p of this.players) {
+      if (!p) continue;
+      if (p.state === 'out') p.lives = 1;
+      p.state = 'alive';
+      p.hp = p.maxHp;
+      p.x = 80 + p.idx * 40;
+      p.y = -60 - p.idx * 30;
+      p.vx = 0;
+      p.vy = 0;
+      p.inv = 2;
+      p.locks = [];
+      p.skillT = 0;
+      p.setCrouch(false);
+    }
     this.state = 'play';
     sfx.start();
     setTimeout(() => { if (this.state === 'play' && !this.bossTarget) startMusic('stage'); }, 900);
+  }
+
+  // mid-boss arena: camera locks, WARNING, boss music; onKill unlocks when it falls
+  startMidBoss(e, camx, title) {
+    this.lock = { x: camx };
+    e.delay = 1.6;
+    e.midboss = true;
+    this.addEnemy(e);
+    this.bossTarget = e;
+    this.say('WARNING', 1.6, 'warn');
+    this.say(title, 1.6);
+    sfx.siren();
+    startMusic('boss');
+  }
+
+  // stage boss built into the right wall: its parts carry the hit points; bossTarget is its core
+  startBoss(wall, camx, title, coreName) {
+    this.lock = { x: camx };
+    this.enemies.push(wall);
+    wall.init();
+    for (const part of wall.parts) part.cool += 2.2;
+    this.say('WARNING', 2.2, 'warn');
+    sfx.siren();
+    this.bossTarget = wall.parts.find((p) => p.kind === 'core');
+    this.bossTarget.boss = coreName;
+    this.say(title, 1.8);
+    startMusic('boss');
   }
 
   addPlayer(idx, ctl) {
@@ -221,32 +285,9 @@ class Game {
       }
       case 'bat': this.addEnemy(new Bat(this, right, s.y)); break;
       case 'ghost': this.addEnemy(new Ghost(this, right, s.y)); break;
-      case 'elite': {
-        this.lock = { x: s.camx };
-        const e = new Elite(this, s.camx + 440);
-        e.delay = 1.6;
-        this.addEnemy(e);
-        this.bossTarget = e;
-        this.say('WARNING', 1.6, 'warn');
-        this.say(t('say.midboss'), 1.6);
-        sfx.siren();
-        startMusic('boss');
-        break;
-      }
-      case 'boss': {
-        this.lock = { x: s.camx };
-        const b = new BossWall(this, WALL_X);
-        this.enemies.push(b);
-        b.init();
-        for (const part of b.parts) part.cool += 2.2;
-        this.say('WARNING', 2.2, 'warn');
-        sfx.siren();
-        this.bossTarget = b.parts.find((p) => p.kind === 'core');
-        this.bossTarget.boss = t('boss.fortress');
-        this.say(t('say.fortress'), 1.8);
-        startMusic('boss');
-        break;
-      }
+      case 'elite': this.startMidBoss(new Elite(this, s.camx + 440), s.camx, t('say.midboss')); break;
+      case 'boss': this.startBoss(new BossWall(this, this.stage.wallX), s.camx, t('say.fortress'), t('boss.fortress')); break;
+      default: if (this.stage.spawn) this.stage.spawn(this, s);
     }
   }
 
@@ -261,7 +302,7 @@ class Game {
     }
     if (e.cat) {
       this.freed++;
-      const h = e instanceof Elite ? 100 : 48;
+      const h = e.freedH || (e instanceof Elite ? 100 : 48);
       this.effects.push(new FreedCat(this, e.cat, e.cx, e.y + e.h, h));
       this.text(e.cx, e.y - 6, FREED_LINES[this.freed % FREED_LINES.length], C.greenDk);
       sfx.meow();
@@ -272,11 +313,11 @@ class Game {
       if (e.villain && !e.kind) { this.text(e.cx, e.y - 6, t('squeak'), C.ink); sfx.squeak(); }
       this.shake(e.kind ? 8 : 3);
     }
-    if (e instanceof Elite) {
+    if (e.midboss) {
       this.lock = null;
       this.bossTarget = null;
-      this.items.push(new Item(this, e.cx, e.y, 'F'));
-      this.say(t('say.eliteFreed'), 2);
+      this.items.push(new Item(this, e.cx, e.y, e.dropItem || 'F'));
+      this.say(e.freedLine || t('say.eliteFreed'), 2);
       this.freeze(0.25);
       this.shake(10);
       startMusic('stage');
@@ -297,11 +338,16 @@ class Game {
     const s = Math.round(this.time);
     const fmt = (n) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
     const freedRate = this.catSpawned ? this.freed / this.catSpawned : 0;
-    const rank = rankFor({ time: this.time, deaths: this.deaths, freedRate, score: this.score });
-    this.result = { score: this.score, time: s, deaths: this.deaths, freed: this.freed, freedRate, rank };
-    const prev = loadBest();
-    const isBest = saveBest({ score: this.score, rank, time: s });
-    $('clearScore').textContent = String(this.score).padStart(6, '0');
+    const stageScore = this.score - this.stageScore0;
+    const rank = rankFor({ time: this.time, deaths: this.deaths, freedRate, score: stageScore });
+    this.result = { stage: this.stage.n, score: this.score, stageScore, time: s, deaths: this.deaths, freed: this.freed, freedRate, rank };
+    const prev = loadBest(this.stage.n);
+    const isBest = saveBest({ score: stageScore, rank, time: s }, this.stage.n);
+    if (this.hasNextStage() && options.unlocked < this.stage.n + 1) { options.unlocked = this.stage.n + 1; saveOptions(); }
+    $('clearTitle').textContent = t(`clear.title${this.stage.n}`);
+    $('clearText').textContent = t(`clear.text${this.stage.n}`);
+    $('btnNext').hidden = !this.hasNextStage();
+    $('clearScore').textContent = String(stageScore).padStart(6, '0');
     $('clearFreed').textContent = `${this.freed}／${this.catSpawned}`;
     $('clearTime').textContent = fmt(s);
     $('clearDeaths').textContent = this.deaths;
@@ -408,7 +454,7 @@ class Game {
       }
     }
 
-    updateBridges(this.level, this.alivePlayers(), dt, (seg) => {
+    this.stage.update(this.level, this, dt, (seg) => {
       sfx.bridge();
       this.effects.push(new FxAnim('explosion', 'boom', seg.x + 20, seg.y, 0.45, 0.4));
       for (let i = 0; i < 3; i++) this.effects.push(new Debris(seg.x + 20, seg.y));
@@ -430,6 +476,7 @@ class Game {
       for (const p of this.alivePlayers()) {
         if (Math.hypot(p.cx - b.x, p.y + p.h - 6 - b.y) < 30 && !p.trySwallow(b) && p.catnip <= 0) p.hurt();
       }
+      if (b.onBurst) b.onBurst(this, b);
     }
     for (const it of this.items) it.update(dt);
     for (const fx of this.effects) fx.update(dt);
@@ -439,7 +486,7 @@ class Game {
     const off = (b) => b.dead || b.x < this.cam.x - 50 || b.x > this.cam.x + W + 50 || b.y < -80 || b.y > 420 || b.t > 3;
     this.bullets = this.bullets.filter((b) => !off(b));
     this.ebullets = this.ebullets.filter((b) => !off(b));
-    this.enemies = this.enemies.filter((e) => !e.dead || (e instanceof BossWall && e.dying > 0));
+    this.enemies = this.enemies.filter((e) => !e.dead || (e.isWall && e.dying > 0));
     this.items = this.items.filter((i) => !i.dead);
     this.effects = this.effects.filter((f) => !f.dead);
 
@@ -467,6 +514,13 @@ class Game {
     for (const b of this.bullets) {
       for (const e of this.enemies) {
         if (!e.hittable() || !circleHit(b, e)) continue;
+        // shields: the shot bounces off with a spark and does nothing
+        if (e.blocks && e.blocks(b)) {
+          b.dead = true;
+          this.effects.push(new FxAnim('impact', 'hit', b.x, b.y, 0.12, 0.28, { rot: Math.random() * 6 }));
+          sfx.clink ? sfx.clink() : sfx.hit();
+          break;
+        }
         if (b.pierce) {
           if (b.pierce.has(e)) continue;
           b.pierce.add(e);
@@ -485,9 +539,9 @@ class Game {
         if (b.dead) continue;
         if (p.trySwallow(b)) { b.dead = true; continue; }
         if (!circleHit(b, box)) continue;
-        if (p.catnip > 0) { b.dead = true; continue; }
+        if (p.catnip > 0) { if (!b.linger) b.dead = true; continue; }
         if (p.inv > 0 || p.dashT > 0) continue;
-        b.dead = true;
+        if (!b.linger) b.dead = true;
         if (b.bomb) { this.effects.push(new FxAnim('explosion', 'boom', b.x, b.y - 6, 0.4, 0.42)); sfx.boom(false); }
         else this.effects.push(new FxAnim('impact', 'hit', b.x, b.y, 0.18, 0.45, { rot: Math.random() * 6 }));
         p.hurt();
@@ -509,18 +563,19 @@ class Game {
     const sx = (Math.random() - 0.5) * this.shakeAmt;
     const sy = (Math.random() - 0.5) * this.shakeAmt;
     const camx = Math.round(this.cam.x);
-    drawScenery(ctx, camx, this.t, W, H);
+    this.stage.drawScenery(ctx, camx, this.t, W, H);
 
     ctx.save();
     ctx.translate(-camx + sx, sy);
-    drawLevel(ctx, this.level, camx, W);
-    for (const e of this.enemies) if (e instanceof BossWall) e.draw(ctx);
+    this.stage.drawLevel(ctx, this.level, camx, W, this.t);
+    for (const e of this.enemies) if (e.isWall) e.draw(ctx);
     for (const it of this.items) it.draw(ctx);
-    for (const e of this.enemies) if (!(e instanceof BossWall) && !e.dead) e.draw(ctx);
+    for (const e of this.enemies) if (!e.isWall && !e.dead) e.draw(ctx);
     for (const p of this.players) if (p) p.draw(ctx);
     for (const b of this.bullets) drawBullet(ctx, b);
     for (const b of this.ebullets) drawBullet(ctx, b);
     for (const f of this.effects) f.draw(ctx);
+    if (this.stage.drawFront) this.stage.drawFront(ctx, this.level, camx, W, this.t);
     this.drawLockMarks();
     ctx.restore();
 
@@ -737,7 +792,12 @@ function showScreen(name) {
   if (first && !isTouch) first.focus({ preventScroll: true });
 }
 
-const prefs = { mode: options.mode || (isTouch ? 'touch' : 'pc'), difficulty: 'nine', konami: false, char: options.char === 1 ? 1 : 0 };
+// ?stage=2 starts straight at that stage (for testing and sharing); otherwise any stage cleared before can be picked
+const stageParam = Math.max(0, Math.min(STAGES.length, Number(new URLSearchParams(location.search).get('stage')) || 0));
+const prefs = {
+  mode: options.mode || (isTouch ? 'touch' : 'pc'), difficulty: 'nine', konami: false, char: options.char === 1 ? 1 : 0,
+  stage: stageParam ? stageParam - 1 : 0,
+};
 
 function toast(text) {
   const t = $('toast');
@@ -756,6 +816,11 @@ function renderPicks() {
     b.querySelector('.pick-badge').textContent = mine ? 'P1' : 'P2';
   }
   const best = loadBest();
+  $('stageSeg').hidden = $('stageLabel').hidden = options.unlocked < 2 && !stageParam;
+  for (const b of document.querySelectorAll('[data-stage]')) {
+    b.setAttribute('aria-pressed', String(Number(b.dataset.stage) === prefs.stage));
+    b.disabled = Number(b.dataset.stage) + 1 > Math.max(options.unlocked, stageParam || 1);
+  }
   $('titleBest').textContent = best ? t('title.best', { score: String(best.score).padStart(6, '0'), rank: best.rank }) : '';
 }
 document.querySelectorAll('.pick').forEach((b) => b.addEventListener('click', () => {
@@ -794,7 +859,7 @@ function startGame(players, padIndex = null) {
   }
   // P1 plays the chosen cat; P2 always gets the other one
   const chars = [prefs.char, 1 - prefs.char];
-  game.start({ ctls, chars, mode: prefs.mode, difficulty: prefs.difficulty, konami: prefs.konami });
+  game.start({ ctls, chars, mode: prefs.mode, difficulty: prefs.difficulty, konami: prefs.konami, stage: prefs.stage });
   prefs.konami = false;
   showScreen(null);
   // first game with keys or touch and auto-aim on: say what it does
@@ -915,6 +980,7 @@ document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('clic
     renderSettings();
   }
 }));
+document.querySelectorAll('[data-stage]').forEach((b) => b.addEventListener('click', () => { prefs.stage = Number(b.dataset.stage); renderPicks(); }));
 document.querySelectorAll('[data-diff]').forEach((b) => b.addEventListener('click', () => { prefs.difficulty = b.dataset.diff; renderSegments(); }));
 // the first time a game starts the opening story plays (skippable); automated runs skip it unless ?story=1
 const storyParam = new URLSearchParams(location.search).get('story');
@@ -938,7 +1004,8 @@ $('btnPauseSettings').addEventListener('click', () => { renderSettings(); render
 $('btnQuit').addEventListener('click', toTitle);
 $('btnContinue').addEventListener('click', () => { initAudio(); game.continueGame(); showScreen(null); });
 $('btnOverTitle').addEventListener('click', toTitle);
-$('btnAgain').addEventListener('click', () => startGame(game.players.filter(Boolean).length));
+$('btnAgain').addEventListener('click', () => { prefs.stage = game.stageIdx; startGame(game.players.filter(Boolean).length); });
+$('btnNext').addEventListener('click', () => { game.nextStage(); showScreen(null); });
 $('btnClearTitle').addEventListener('click', toTitle);
 $('btnPause').addEventListener('click', () => (game.state === 'paused' ? resumeGame() : pauseGame()));
 $('btnMute').addEventListener('click', () => {

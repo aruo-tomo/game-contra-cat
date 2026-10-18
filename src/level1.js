@@ -331,3 +331,16 @@ function drawPlank(ctx, x, y, w) {
   ctx.strokeStyle = C.plankDk;
   ctx.stroke();
 }
+
+// Stage description used by the game loop (see level2.js for the same shape).
+export const STAGE1 = {
+  n: 1,
+  build: buildLevel1,
+  wallX: WALL_X,
+  update(level, game, dt, onCrumble) { updateBridges(level, game.alivePlayers(), dt, onCrumble); },
+  drawScenery,
+  drawLevel,
+  // the arena where the mid-boss fight locks the camera (used by the autoplay bot)
+  midbossCamx: 3300,
+  bossCamx: 6400,
+};

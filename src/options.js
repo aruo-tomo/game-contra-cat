@@ -4,7 +4,7 @@
 const OPT_KEY = 'contracat.options.v1';
 const BEST_KEY = 'contracat.best.v1';
 
-export const DEFAULT_OPTIONS = { music: 0.7, sfx: 0.9, shake: true, assist: 'normal', mode: null, char: 0, autoAim: true, autoAimTipSeen: false };
+export const DEFAULT_OPTIONS = { music: 0.7, sfx: 0.9, shake: true, assist: 'normal', mode: null, char: 0, autoAim: true, autoAimTipSeen: false, unlocked: 1 };
 export const ASSIST_MULT = { off: 0, normal: 1, strong: 1.6 };
 
 function read(key) {
@@ -23,13 +23,15 @@ function write(key, value) {
 export const options = { ...DEFAULT_OPTIONS, ...(read(OPT_KEY) || {}) };
 export function saveOptions() { write(OPT_KEY, options); }
 
-export function loadBest() { return read(BEST_KEY); }
+// best result per stage (stage 1 keeps the original key so old records survive)
+const bestKey = (stage = 1) => (stage === 1 ? BEST_KEY : `contracat.best.s${stage}.v1`);
+export function loadBest(stage = 1) { return read(bestKey(stage)); }
 
 // Keeps the higher score; returns true when this run is a new best.
-export function saveBest(run) {
-  const best = loadBest();
+export function saveBest(run, stage = 1) {
+  const best = loadBest(stage);
   if (best && best.score >= run.score) return false;
-  write(BEST_KEY, run);
+  write(bestKey(stage), run);
   return true;
 }
 

@@ -445,6 +445,11 @@
             <button type="button" data-diff="nine" data-i18n="diff.nine">九命貓</button>
             <button type="button" data-diff="classic" data-i18n="diff.classic">經典</button>
           </div>
+          <span class="bar-label" data-i18n="bar.stage" id="stageLabel" hidden>關卡</span>
+          <div class="seg" role="group" aria-label="關卡" data-i18n-aria="bar.stage" id="stageSeg" hidden>
+            <button type="button" data-stage="0">1</button>
+            <button type="button" data-stage="1">2</button>
+          </div>
           <span class="bar-label" data-i18n="bar.lang">語言</span>
           <div class="seg" role="group" aria-label="語言 Language">
             <button type="button" data-lang="zh" lang="zh-HK">中文</button>
@@ -504,8 +509,8 @@
         <div class="clear-head">
           <div class="rank" id="clearRank" data-rank="C">C</div>
           <div>
-            <h2 data-i18n="clear.title">第一關完成！</h2>
-            <p data-i18n="clear.text">貓抓板要塞倒咗。下一站：寵物醫院走廊（製作中）。</p>
+            <h2 id="clearTitle">第一關完成！</h2>
+            <p id="clearText"></p>
           </div>
         </div>
         <div class="stats">
@@ -517,6 +522,7 @@
         <p class="fine" id="clearBest"></p>
         <p class="fine" data-i18n="clear.rankInfo">評級：4 分鐘內過關、冇倒下、解放七成以上嘅貓、30000 分以上，每達成一項加一級（C → S）。</p>
         <div class="row">
+          <button type="button" class="btn red" id="btnNext" data-i18n="clear.next">下一關</button>
           <button type="button" class="btn" id="btnAgain" data-i18n="clear.again">再玩一次</button>
           <button type="button" class="btn alt" id="btnClearTitle" data-i18n="pause.quit">返回標題</button>
         </div>
