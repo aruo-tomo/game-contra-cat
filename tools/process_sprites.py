@@ -267,6 +267,24 @@ sheet("hosp_shots", 4, [("hshot", "dart"), ("hshot", "gas"), ("hshot", "pill"), 
       min_area=200)
 sheet("laser_emitter", 2, [("emitter", "idle"), ("emitter", "fire")], 0, 64, merge=14)
 sheet("gurney", 1, [("gurney", "body")], 0, 80)
+
+# ---- stage 3: fish-tank falls ----
+sheet("koi_boss", 4, [("koi", k) for k in ("swim", "mouth", "leap", "broken")], 0, 200, merge=16, post=keep_largest)
+sheet("pirate_cat", 4, [("pirate", k) for k in ("idle", "slash", "swing", "jump")], "median", 200, merge=16, post=keep_largest)
+sheet("bowlcat", 3, [("bowlcat", "walk"), ("bowlcat", "walk"), ("bowlcat", "throw")], "median", 112, merge=16, post=keep_largest)
+sheet("freed_bowlcat", 2, [("freed_bowlcat", "daze"), ("freed_bowlcat", "happy")], "median", 110)
+sheet("freed_pirate", 2, [("freed_pirate", "daze"), ("freed_pirate", "happy")], "median", 220)
+sheet("puffer", 2, [("puffer", "small"), ("puffer", "big")], 0, 64, merge=14)
+sheet("scuba_rat", 2, [("scuba", "aim"), ("scuba", "fire")], 0, 92, merge=24, post=keep_largest)
+sheet("eel", 2, [("eel", "peek"), ("eel", "zap")], 0, 64, merge=14)
+sheet("can_rat", 2, [("canrat", "idle"), ("canrat", "roll")], 0, 92, merge=24, post=keep_largest)
+sheet("aqua_shots", 6, [("ashot", k) for k in ("bone", "harpoon", "water", "torpedo", "can", "anchor")], 4, 48, merge=14,
+      min_area=200)
+# swimming with each gun (diving helmet, air tank), drawn at the held-gun resolution
+for hero in ("blaze", "gulp"):
+    for w in ("N", "S", "M", "L", "F"):
+        sheet(f"swim_{hero}_{w}", 4, [(hero, f"hold{w}swim"), (hero, f"hold{w}swim"), (hero, f"hold{w}swimup"),
+              (hero, f"hold{w}swimdown")], "median", 150, merge=10, extra={"k": HERO_H / HOLD_H})
 sheet("guns", 2, [("gun", "blaze"), ("gun", "gulp")], 0, 26)
 # one gun per pickup weapon (N keeps gun_blaze / gun_gulp), all drawn at one scale on the sheet
 sheet("weapons", 4, [("gun", k) for k in ("S", "M", "L", "F")], "median", 40)
@@ -308,6 +326,8 @@ layer("ground", "ground", 256)
 layer("bg2_far", "bg2_far", 720)
 layer("bg2_mid", "bg2_mid", 300, cut=True)
 layer("floor2", "floor2", 256)
+layer("bg3_far", "bg3_far", 1200)
+layer("bg3_air", "bg3_air", 1200)
 layer("title", "title", 720)
 layer("cover_bg", "cover_bg", 720)
 # character-select portraits are plain cut-outs at a fixed height (not part of the manifest frames)

@@ -446,3 +446,108 @@ JOBS12 = [
          "Square canvas, a seamless tileable texture filling the whole canvas edge to edge: hospital floor of large pale grey-green square "
          "linoleum tiles with thin darker grout lines and paper grain, flat and low contrast. No outline, no objects."),
 ]
+
+# --- pass 13: stage 3, the giant fish-tank waterfall (a vertical climb); bosses are creatures, not towers ---
+TANK = ("Setting: inside a giant home aquarium that the Red Mouse army has taken over: a tall waterfall pouring down from a filter, "
+        "aquarium pebbles, rocks, water plants, bubbles, a sunken toy castle ornament. Water is drawn in grey-green and cream streaks "
+        "(no blue), in the same limited palette. ")
+JOBS13 = [
+    dict(name="koi_boss", refs=["raw/fortress.png", "raw/rat.png", "raw/elite.png"], prompt=STYLE + BG + sheet(4, "LEFT") +
+         "Character: the stage 3 boss, a GIANT ROBOT KOI CARP built by the Red Mouse army: a long chunky koi body with coral-red and cream "
+         "koi patches, riveted grey-green metal armour plates on its back and head, big flowing fins and tail, one huge glowing red rat eye, "
+         "a wide mouth full of metal teeth. A small Red Mouse ADMIRAL rides on its back: the same grey rat as the second reference with a "
+         "black bicorne hat with a red rat emblem, a red coat and a spyglass. The koi is much wider than tall and fills each frame. "
+         "Frames: 1) swimming forward horizontally, mouth closed, fins waving; 2) the same pose with the mouth stretched wide open, "
+         "a glow deep inside its throat, cheeks bulging, about to blast water; 3) leaping in a tight C-shaped arc, body curled, tail "
+         "flicking water drops; 4) battle-damaged: armour plates torn off, sparks, a cracked glowing red core showing in its side, "
+         "the admiral furious waving the spyglass."),
+    dict(name="pirate_cat", refs=["refs/cat04.png", "raw/elite.png"], prompt=STYLE + BG + sheet(4, "LEFT") +
+         "Character: the stage 3 mid-boss, a big burly brainwashed PIRATE CAPTAIN CAT: grey-green fur with dark tabby stripes like the "
+         "first reference, a black eyepatch, one red spiral hypnotised eye, a red pirate coat with yellow buttons, a black tricorn hat, a "
+         "curved cutlass in one paw and a heavy black iron anchor on a chain over its shoulder. It stands UPRIGHT on two legs, about twice "
+         "as bulky as a normal cat. Frames: 1) standing menacingly, cutlass raised, anchor on shoulder; 2) dashing forward low with a huge "
+         "cutlass slash, speed lines behind; 3) swinging the anchor round overhead on its chain, about to hurl it; 4) leaping high in the "
+         "air, cutlass held up, coat flapping."),
+    dict(name="bg3_far", refs=["raw/bg2_far.png", "refs/sheet.png"], prompt=STYLE + TANK +
+         "Tall PORTRAIT canvas: a vertical side-scrolling game background, far layer. Inside the giant aquarium looking at its back wall: "
+         "a tall waterfall pouring from the very top to the very bottom down the middle, mossy rocks and tall water plants on both sides, "
+         "rising bubbles, a toy sunken castle half hidden on one side, a red Red Mouse army flag stuck in a rock, faint aquarium glass "
+         "reflections. The top edge and bottom edge look alike so it can repeat vertically. Low contrast and soft so the foreground "
+         "stays readable. No characters, no text."),
+]
+
+# --- pass 14: stage 3 is part climb, part dive. Under water the heroes wear a fishbowl diving helmet and an air
+# tank and swim, still holding (and firing) the current gun; one sheet per hero per gun, like the held-gun sheets ---
+DIVE = ("It is UNDER WATER: it wears a big round clear glass fishbowl diving helmet over its whole head (the face and eyes clearly "
+        "visible through the glass, a thick black outline round the glass, a small shine highlight, a brass rim at the neck) and a "
+        "small mustard-yellow oxygen tank strapped on its back with a short hose to the helmet. It SWIMS with its body stretched out "
+        "HORIZONTALLY, legs kicking behind like a frog, tail streaming back. ")
+
+def swim_job(key, desc, ref, w):
+    desc = desc.replace("front paws free (it holds no weapon). ", "").replace("stands and runs UPRIGHT ON TWO HIND LEGS like a cartoon commando, ", "")
+    gun = GUNS[key if w == "N" else w]
+    hold = HOLD.format(gun=gun) + (GULP_CLEAN if key == "gulp" else "")
+    return dict(name=f"swim_{key}_{w}", refs=[ref, f"refs/gun_{key if w == 'N' else w}.png", f"raw/hold_{key}_{w}.png"],
+                prompt=STYLE + BG + sheet(4) + desc + DIVE + hold +
+                "The cat must look EXACTLY like the cat in the third reference image — the same face, eyes, colours, thick smooth "
+                "black outlines and texture, holding the same gun the same way — only now swimming. No bubbles, no water lines. "
+                "Frames, left to right: 1) swimming horizontally, legs kicked back, gun level pointing straight FORWARD; "
+                "2) the same with the legs drawn in for the next kick (swim cycle), gun level pointing FORWARD; "
+                "3) body tilted nose-up, gun pointing diagonally UP-FORWARD at 45 degrees; "
+                "4) body tilted nose-down, gun pointing diagonally DOWN-FORWARD at 45 degrees.")
+
+JOBS14 = [swim_job(key, desc, ref, w) for key, desc, ref in (("blaze", BLAZE, "refs/cat01.png"), ("gulp", GULP, "refs/cat02.png"))
+          for w in ("N", "S", "M", "L", "F")] + [
+    dict(name="bg3_air", refs=["raw/bg3_far.png", "raw/bg2_far.png"], prompt=STYLE + TANK +
+         "Tall PORTRAIT canvas: a vertical side-scrolling game background, far layer, ABOVE THE WATER LINE inside the giant aquarium: "
+         "tall stacked rock towers and driftwood rising out of the water, a big toy pirate shipwreck ornament on one side, the filter "
+         "waterfall pouring down the middle from a black filter box at the top, the tank's glass walls with soft reflections, a few red "
+         "Red Mouse army flags planted on the rocks — each flag shows the army's emblem exactly like the flag in the second reference: "
+         "an ANGRY RAT FACE with a pointed snout, whiskers and slanted eyes; never a round head with two round ears (no mouse-ear "
+         "silhouette, nothing like any famous cartoon mouse) — the dim room behind the glass. Same style and palette as the first reference. "
+         "The top edge and bottom edge look alike so it can repeat vertically. Low contrast and soft. No characters, no text."),
+    dict(name="bowlcat", refs=["refs/cat04.png", "raw/conecat.png"], prompt=STYLE + BG + sheet(3, "LEFT") +
+         "Character: a brainwashed cat (the grey-green cat from the first reference without its wings: huge yellow eyes turned to red "
+         "hypnotised spirals, small fangs, cream belly) wearing a round clear glass FISHBOWL helmet over its head with a tiny orange "
+         "goldfish swimming inside it, and a red scarf. The fishbowl is MUCH BIGGER than the head and its whole head — ears, "
+         "snout, nose, mouth, fangs and whiskers — is completely INSIDE the glass, well clear of the bowl's outline: nothing pokes "
+         "out through the glass. The cat's face is seen through the glass. It stands UPRIGHT on two legs, same size as the cat in the second reference. "
+         "It throws fishbones like boomerangs. Frames: 1) and 2) a sneaky walk, legs alternating, a fish skeleton bone held in one paw; "
+         "3) mid sidearm throw, arm swung forward, the bone just leaving its paw spinning."),
+]
+
+# --- pass 15: the rest of stage 3's cast ---
+JOBS15 = [
+    dict(name="puffer", refs=["raw/turret.png", "raw/enemy_shots.png"], prompt=STYLE + BG + row(2) +
+         "A Red Mouse army ROBOT PUFFERFISH MINE, side view facing LEFT, both at the same scale: riveted grey-green metal body, "
+         "one big glowing red rat eye, small fins and a tiny propeller tail, a red rat-face emblem on its side. "
+         "1) normal: a small round fish with short stubby spikes folded flat; "
+         "2) inflated: blown up into a huge round ball twice as big, long sharp black spikes sticking out all round, eye glowing angrily."),
+    dict(name="scuba_rat", refs=["raw/rat.png", "raw/rat_gunner.png"], prompt=STYLE + BG + sheet(2, "LEFT") + RAT_BASE +
+         "This one is a SCUBA DIVER: a round diving mask over its red eye, a snorkel, a mustard-yellow air tank on its back, black "
+         "flippers on its feet, holding a long grey-green harpoon gun with a barbed harpoon loaded at the front. "
+         "Frames: 1) standing braced, aiming the harpoon gun level forward; 2) the harpoon just fired (gun empty), recoil, a small "
+         "yellow puff at the muzzle."),
+    dict(name="eel", refs=["raw/turret.png", "raw/laser_emitter.png"], prompt=STYLE + BG + row(2) +
+         "The HEAD of a Red Mouse army ROBOT EEL, side view facing RIGHT, both at the same scale: a long rounded grey-green riveted "
+         "metal snout with a red stripe, one glowing red eye, a jaw of sharp metal teeth, a little ribbed neck at the back edge. "
+         "1) mouth closed, eye dim, sneaky; 2) mouth wide open, yellow electric sparks crackling between its teeth, eye blazing red."),
+    dict(name="can_rat", refs=["raw/rat.png", "raw/rat_grenadier.png"], prompt=STYLE + BG + sheet(2, "LEFT") + RAT_BASE +
+         "This one is a SAILOR: a white sailor cap with a red band instead of the bandana, a striped neckerchief, no gun; it rolls big "
+         "round tins of fish food. Frames: 1) holding a big round silver tin of cat food with a red fish label up in both paws, grinning; "
+         "2) bent low, bowling the tin forward along the ground with both paws, the tin just leaving its paws."),
+    dict(name="freed_bowlcat", refs=["raw/bowlcat.png", "raw/freed_runner.png"], prompt=STYLE + BG + sheet(2, "RIGHT") +
+         "Character: the grey-green cat from the first reference, the glass fishbowl helmet now off and held under one arm (the little "
+         "goldfish still inside it), eyes back to normal big yellow cat eyes, red scarf. " + FREED),
+    dict(name="freed_pirate", refs=["raw/pirate_cat.png", "raw/freed_elite.png"], prompt=STYLE + BG + sheet(2, "RIGHT") +
+         "Character: the burly grey-green tabby pirate captain cat from the first reference (red coat, tricorn hat, eyepatch), the "
+         "red hypnotised spiral gone from its eye, no cutlass or anchor any more. " + FREED),
+    dict(name="aqua_shots", refs=["raw/enemy_shots.png", "raw/hosp_shots.png"], prompt=STYLE + BG + row(6) +
+         "Six Red Mouse army projectiles in the SAME dark style as the attached shots (thick ink outlines, black, grey-green and coral "
+         "red, no glow): 1) a white fish skeleton bone (head, spine and ribs, tail) seen from the side, used as a boomerang; "
+         "2) a barbed metal harpoon flying RIGHT with a short frayed rope at its back; "
+         "3) a fat drop of murky grey-green water flying RIGHT with a short splash tail; "
+         "4) a small black torpedo flying RIGHT with a red rat-face nose and a tiny propeller; "
+         "5) a round silver tin of cat food with a red fish label, side view, like a wheel; "
+         "6) a heavy black iron ship's anchor with a ring on top."),
+]

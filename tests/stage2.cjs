@@ -192,7 +192,7 @@ const reset = (camx = 600) => {
   await page.evaluate(() => __game.bossTarget.damage(9999, __game.players[0]));
   await sleep(4300);
   r = await page.evaluate(() => ({ state: __game.state, title: document.getElementById('clearTitle').textContent, next: !document.getElementById('btnNext').hidden }));
-  check('breaking the jar clears stage 2 (last stage: no next button)', r.state === 'clear' && /2/.test(r.title) && !r.next, JSON.stringify(r));
+  check('breaking the jar clears stage 2 and offers stage 3', r.state === 'clear' && /2/.test(r.title) && r.next, JSON.stringify(r));
 
   // English text for the new stage
   await page.goto(URL + '?stage=2&lang=en');

@@ -6,7 +6,7 @@
 - `gdd/`：遊戲設計文件（`index.src.html` 係原稿，`index.html` 由佢加地圖生成）
 - `gen/`：Codex 圖像生成（`jobs.py` 係 prompt 清單，`run_jobs.py` 平行生成，`raw/` 係原圖）
 - `tools/`：`crop_chars.py`（裁原始設計圖）、`process_sprites.py`（去背、切格、出 manifest）、`stage_map.mjs`（第一關地圖 SVG）
-- 關卡：`game/src/level1.js`、`level2.js`（幾何、spawn 腳本、背景，各自 export 一個 `STAGEn`）；第二關新敵人同 Boss 喺 `enemies2.js`
+- 關卡：`game/src/level1.js`、`level2.js`、`level3.js`（幾何、spawn 腳本、背景，各自 export 一個 `STAGEn`，`vertical: true` 係向上爬）；各關新敵人同 Boss 喺 `enemies2.js`、`enemies3.js`
 - `tests/`：Playwright 測試
 
 ## 本地執行
@@ -20,7 +20,7 @@ ES modules 要經 HTTP 載入，直接開檔案唔得。
 
 語言：右下「語言」揀中文／EN，或者喺網址加 `?lang=en`（畀外國朋友用）。
 
-關卡：第一關過咗之後可以撳「下一關」直接打第二關（寵物醫院走廊），標題畫面亦會出「關卡」揀選；網址加 `?stage=2` 可以直接由第二關開始。開場漫畫第一次開波先播，標題畫面「睇故事」可以重睇。
+關卡：每過一關可以撳「下一關」直接打落去（第二關寵物醫院走廊、第三關大魚缸瀑布），過咗嘅關卡會喺標題畫面「關卡」度揀得返；網址加 `?stage=2`／`?stage=3` 可以直接由嗰關開始。第三關係向上爬嘅直向關卡，有兩段潛水（撳跳＝向上划，留意氧氣條）。開場漫畫第一次開波先播，標題畫面「睇故事」可以重睇。
 
 ## 測試
 
@@ -34,6 +34,7 @@ node tests/skills.cjs      # 必殺準備提示、三眼光炮射穿全畫面、
 node tests/grip.cjs        # 主角畫成揸住當前武器、換槍換圖、子彈由槍口出、受傷衝刺翻滾收槍
 node tests/story.cjs       # 英文版、開場漫畫（6 格、第二次開波跳過、睇故事掣）、語言切換
 node tests/enemies.cjs     # 機槍兵、投彈兵、狙擊兵、衝鋒兵、撲人尖叫貓、盤旋插落蝙蝠貓
+node tests/stage3.cjs      # 第三關：直向鏡頭、游水同氧氣、泡泡、水流、魚缸頭貓、河豚水雷、潛水鼠、電鰻、滾罐頭鼠、海盜船長貓、機械錦鯉三個階段
 node tests/stage2.cjs      # 第二關：接關、揀關、護士鼠、盾牌鼠、噴霧鼠、伊莉莎伯圈貓、天花鼠、激光閘、牆身激光、升降機、病床車、護士長、手術機械人
 node tests/autoplay.cjs 1 4 [auto] [關卡]   # 機械人自動通關（人數、加速倍數、auto＝只行同跳、第幾關），輸出每段用時同受傷次數
 ```
