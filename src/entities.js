@@ -515,21 +515,27 @@ export class Player {
     slot = slot.slice(4); // gripfwd -> fwd
     if (!this.onGround) return { slot: slot === 'fwd' ? 'jump' : slot, i: 0, breathe: false };
     if (this.crouch) return { slot: 'crouch', i: 0, breathe: false };
-    if (Math.abs(this.vx) > 20 && slot === 'fwd') return { slot: 'run', i: this.anim * 13, breathe: false };
+    if (Math.abs(this.vx) > 20) {
+      // running: level, or the run-and-aim-diagonally cycles (straight up / down keep the standing pose)
+      const run = { fwd: 'run', diag: 'runup', down: 'rundown' }[slot];
+      if (run) return { slot: run, i: this.anim * 13, breathe: false, fallback: slot };
+    }
     return { slot, i: 0, breathe: slot === 'fwd' };
   }
 
   // Frame drawn holding the current weapon (hold{type}{slot}, e.g. holdMdiag); null without the art.
   holdPose() {
-    const { slot, i, breathe } = this.aimSlot();
-    const f = frame(this.char.id, `hold${this.weapon.type}${slot}`, i);
+    const { slot, i, breathe, fallback } = this.aimSlot();
+    const key = this.char.id;
+    const t = this.weapon.type;
+    const f = frame(key, `hold${t}${slot}`, i) || (fallback && frame(key, `hold${t}${fallback}`));
     return f && f.mx != null ? { f, hold: true, breathe } : null;
   }
 
   // Empty-pawed grip frame for the current aim and state, holding the current weapon; null without the art.
   gripPose() {
-    const { slot, i, breathe } = this.aimSlot();
-    const f = frame(this.char.id, `grip${slot}`, i);
+    const { slot, i, breathe, fallback } = this.aimSlot();
+    const f = frame(this.char.id, `grip${slot}`, i) || (fallback && frame(this.char.id, `grip${fallback}`));
     return f && f.gx != null ? { f, gun: true, breathe } : null;
   }
 

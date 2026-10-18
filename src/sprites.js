@@ -15,7 +15,8 @@ function loadImage(src) {
 }
 
 // Missing manifest is not fatal: the game falls back to the single reference images.
-export async function loadSprites() {
+// onProgress(done, total) is called as each image arrives, for the loading screen.
+export async function loadSprites(onProgress = () => {}) {
   let manifest;
   try {
     const r = await fetch(BASE + 'manifest.json');
@@ -39,7 +40,9 @@ export async function loadSprites() {
     SPR.layers[name] = { ...l, img: null };
     jobs.push(loadImage(BASE + l.file).then((im) => { SPR.layers[name].img = im; }));
   }
-  await Promise.all(jobs);
+  let done = 0;
+  onProgress(0, jobs.length);
+  await Promise.all(jobs.map((j) => j.then(() => onProgress(++done, jobs.length))));
   SPR.ready = true;
   return SPR;
 }

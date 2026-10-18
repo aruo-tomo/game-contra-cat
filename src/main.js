@@ -947,7 +947,24 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-Promise.all([loadImages(), loadSprites(), document.fonts ? document.fonts.ready : null]).then(([img]) => {
+// loading screen: progress over every sprite image, with a rotating tip while it fills
+const TIPS = [
+  '貼士：打敵人儲能量，能量條閃就可以放必殺！',
+  '貼士：射爆飛天罐頭，執武器字母換槍。',
+  '貼士：雙人模式，隊友倒地就企喺佢隔籬一秒，舔醒佢。',
+  '貼士：衝刺嗰一下係無敵嘅，用嚟穿過子彈。',
+];
+let tipI = 0;
+const tipTimer = setInterval(() => { $('loadTip').textContent = TIPS[++tipI % TIPS.length]; }, 2500);
+function loadProgress(done, total) {
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  $('loadFill').style.width = `${pct}%`;
+  $('loadFill').parentElement.setAttribute('aria-valuenow', String(pct));
+  $('loadText').textContent = `載入緊… ${pct}%（${done}／${total}）`;
+}
+
+Promise.all([loadImages(), loadSprites(loadProgress), document.fonts ? document.fonts.ready : null]).then(([img]) => {
+  clearInterval(tipTimer);
   game = new Game(img);
   window.__game = game;
   renderSegments();
@@ -955,5 +972,6 @@ Promise.all([loadImages(), loadSprites(), document.fonts ? document.fonts.ready 
   showScreen('title');
   requestAnimationFrame(frame);
 }).catch((err) => {
-  $('loading').textContent = err.message + '，請重新載入。';
+  clearInterval(tipTimer);
+  $('loadText').textContent = err.message + '，請重新載入。';
 });
