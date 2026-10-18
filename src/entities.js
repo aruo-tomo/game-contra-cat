@@ -158,6 +158,9 @@ export class Player {
     this.cool -= dt;
 
     let mx = c.lock ? 0 : c.mx;
+    // hypnotised: left and right are swapped for a moment
+    this.confused = Math.max(0, (this.confused || 0) - dt);
+    if (this.confused > 0) mx = -mx;
     const swallowing = this.char.id === 'gulp' && this.skillT > 0;
     // under water (stage 3's dives): swim strokes instead of jumps, slow sinking, an air supply
     const wasWater = this.inWater;
@@ -504,6 +507,7 @@ export class Player {
     this.vy = 0;
     this.inv = 2.5;
     this.air = 1;
+    this.confused = 0;
     this.h = 46;
     this.crouch = false;
   }
@@ -627,6 +631,31 @@ export class Player {
       x: paw.x + this.facing * (mx * Math.cos(la) - my * Math.sin(la)),
       y: paw.y + mx * Math.sin(la) + my * Math.cos(la),
     };
+  }
+
+  confuse(s) {
+    if (this.state !== 'alive' || this.catnip > 0) return;
+    if (!(this.confused > 0)) this.game.text(this.cx, this.y - 14, t('hypno.hit'), C.red);
+    this.confused = Math.max(this.confused || 0, s);
+    sfx.hiss();
+  }
+
+  // hypnotised: red spirals circling the head, and the controls are swapped
+  drawDizzy(ctx) {
+    const g = this.game;
+    for (let i = 0; i < 2; i++) {
+      const a = g.t * 5 + i * Math.PI;
+      const x = this.cx + Math.cos(a) * 14;
+      const y = this.y - 6 + Math.sin(a) * 4;
+      ctx.beginPath();
+      for (let k = 0; k < 14; k++) {
+        const r = k * 0.45;
+        ctx.lineTo(x + Math.cos(k * 0.9 + g.t * 8) * r, y + Math.sin(k * 0.9 + g.t * 8) * r);
+      }
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = C.red;
+      ctx.stroke();
+    }
   }
 
   // under water: a glass helmet when the swim art isn't there, and the air meter over the head
@@ -760,6 +789,7 @@ export class Player {
     if (showGun && !gunBehind) this.drawGunArm(ctx, gun, ang);
     ctx.restore();
     if (this.inWater || this.air < 1) this.drawDiveGear(ctx, pose);
+    if (this.confused > 0) this.drawDizzy(ctx);
 
     if (this.char.id === 'gulp' && this.skillT > 0) {
       if (!frame('skill', 'vortex')) {
@@ -1895,7 +1925,7 @@ export class FloatText {
   }
 }
 
-const FREED_ART = { cat05: 'freed_runner', cat04: 'freed_bat', cat06: 'freed_ghost', cat03: 'freed_elite', cone: 'freed_conecat', bowl: 'freed_bowlcat', pirate: 'freed_pirate' };
+const FREED_ART = { cat05: 'freed_runner', cat04: 'freed_bat', cat06: 'freed_ghost', cat03: 'freed_elite', cone: 'freed_conecat', bowl: 'freed_bowlcat', pirate: 'freed_pirate', hypno: 'freed_hypnocat' };
 
 // A rescued cat: shakes off the mind control in a puff of smoke, then hops away happily.
 export class FreedCat {

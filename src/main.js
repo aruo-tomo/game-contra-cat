@@ -13,6 +13,7 @@ import { options, saveOptions, ASSIST_MULT, rankFor, saveBest, loadBest } from '
 import { STAGE1 } from './level1.js';
 import { STAGE2 } from './level2.js';
 import { STAGE3 } from './level3.js';
+import { STAGE4 } from './level4.js';
 import {
   Player, Runner, Rat, Turret, Bat, Ghost, Elite, BossWall, Capsule, Item, Gunner, Grenadier, Charger, Sniper,
   Particle, FloatText, FreedCat, Debris, FxAnim, overlap, updateBullet, drawBullet, SKILL_COST,
@@ -37,7 +38,7 @@ const isTouch = window.matchMedia('(pointer: coarse)').matches;
 if (isTouch) setupTouch($('touch'));
 
 const FREED_LINES = [t('freed.1'), t('freed.2'), t('freed.3'), t('freed.4')];
-const STAGES = [STAGE1, STAGE2, STAGE3];
+const STAGES = [STAGE1, STAGE2, STAGE3, STAGE4];
 
 // ---------------- game ----------------
 
@@ -449,7 +450,10 @@ class Game {
     // camera only scrolls forward, and stops at boss arenas
     const alive = this.alivePlayers();
     const maxCam = this.lock && this.lock.x != null ? this.lock.x : this.level.width - W;
-    if (alive.length && this.vertical) {
+    if (alive.length && this.stage.camera) {
+      // stages with their own camera rules (stage 4: corridors joined by a lift shaft)
+      this.stage.camera(this, alive, dt);
+    } else if (alive.length && this.vertical) {
       // climbing: follow the highest hero upward, never back down; a boss arena stops it
       const leader = alive.reduce((a, b) => (b.y < a.y ? b : a));
       const minCam = this.lock && this.lock.y != null ? this.lock.y : 0;
@@ -475,7 +479,7 @@ class Game {
     while (this.spawnIdx < sp.length) {
       const s = sp[this.spawnIdx];
       // x: right edge of the view reaches it; camx: camera reaches it; yt: (climbing) top of the view reaches it; camy: camera climbs to it
-      const ready = s.camy != null ? this.cam.y <= s.camy + 1 : s.yt != null ? this.cam.y - 30 <= s.yt : s.camx != null ? this.cam.x >= s.camx - 1 : this.cam.x + W + 30 >= s.x;
+      const ready = s.yb != null ? this.cam.y + H + 30 >= s.yb : s.camy != null ? this.cam.y <= s.camy + 1 : s.yt != null ? this.cam.y - 30 <= s.yt : s.camx != null ? this.cam.x >= s.camx - 1 : this.cam.x + W + 30 >= s.x;
       if (!ready) break;
       this.spawn(s);
       this.spawnIdx++;
@@ -587,6 +591,8 @@ class Game {
         if (p.trySwallow(b)) { b.dead = true; continue; }
         if (!circleHit(b, box)) continue;
         if (p.catnip > 0) { if (!b.linger) b.dead = true; continue; }
+        // hypnosis rings don't hurt: they scramble the controls for a moment
+        if (b.harmless) { if (p.inv <= 0 && p.dashT <= 0) { b.dead = true; b.onHit(p); } continue; }
         if (p.inv > 0 || p.dashT > 0) continue;
         if (!b.linger) b.dead = true;
         if (b.bomb) { this.effects.push(new FxAnim('explosion', 'boom', b.x, b.y - 6, 0.4, 0.42)); sfx.boom(false); }
