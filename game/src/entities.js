@@ -123,6 +123,12 @@ export class Player {
   get cx() { return this.x + this.w / 2; }
   get cy() { return this.y + this.h * 0.45; }
 
+  setSwim(on) {
+    if (on === !!this.swimBox || this.crouch) return;
+    this.swimBox = on;
+    if (on) { this.y += 16; this.h = 30; } else { this.y -= 16; this.h = 46; }
+  }
+
   setCrouch(on) {
     if (on === this.crouch) return;
     this.crouch = on;
@@ -233,6 +239,8 @@ export class Player {
       this.vy = Math.max(-300, Math.min(c.down ? 190 : 110, this.vy + (c.down ? 700 : 420) * dt));
       moveBody(this, dt, g.level, false);
     } else moveBody(this, dt, g.level, this.dashT <= 0);
+    // swimming: a long, low body, so a flat hitbox
+    this.setSwim(this.inWater);
     // breaking the surface on a stroke pops the hero up out of the water, high enough to reach a ledge
     if (wasWater && !(g.waterAt && g.waterAt(this.cx, this.y + this.h * 0.35)) && this.vy < -60) this.vy = -540;
     this.stroke = Math.max(0, (this.stroke || 0) - dt);
@@ -508,6 +516,7 @@ export class Player {
     this.inv = 2.5;
     this.air = 1;
     this.confused = 0;
+    this.swimBox = false;
     this.h = 46;
     this.crouch = false;
   }
@@ -559,8 +568,8 @@ export class Player {
     const la = this.localAim();
     let [slot] = GRIP_DIRS.reduce((best, d) => (Math.abs(d[1] - la) < Math.abs(best[1] - la) ? d : best));
     slot = slot.slice(4); // gripfwd -> fwd
-    if (this.inWater && !this.onGround) {
-      // swimming poses: level (a 2-frame kick, faster on a stroke), or tilted up / down
+    if (this.inWater) {
+      // swimming poses (also when resting on the bottom: it hovers just above it): level (a 2-frame kick, faster on a stroke), or tilted up / down
       const swim = { fwd: 'swim', diag: 'swimup', up: 'swimup', down: 'swimdown' }[slot];
       return { slot: swim, i: this.anim * (this.stroke > 0 ? 9 : 4), breathe: false, fallback: slot === 'fwd' ? 'jump' : slot };
     }

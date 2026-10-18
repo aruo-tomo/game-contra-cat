@@ -280,6 +280,15 @@ sheet("eel", 2, [("eel", "peek"), ("eel", "zap")], 0, 64, merge=14)
 sheet("can_rat", 2, [("canrat", "idle"), ("canrat", "roll")], 0, 92, merge=24, post=keep_largest)
 sheet("aqua_shots", 6, [("ashot", k) for k in ("bone", "harpoon", "water", "torpedo", "can", "anchor")], 4, 48, merge=14,
       min_area=200)
+# stage 3 platform pieces: long and short rock ledges, a hanging raft, a bubble. "top" = how far down each piece its
+# flat walkable surface is (the first row that spans most of the piece: corals and ropes stick up above it)
+sheet("plat3", 4, [("plat3", k) for k in ("long", "short", "raft", "bubble")], 0, 110, merge=14, min_area=300)
+for entry in manifest.get("plat3", {}).values():
+    for e in entry:
+        a = np.asarray(Image.open(OUT / e["file"]))[..., 3] > 128
+        rows = a.sum(1)
+        e["top"] = round(float(np.argmax(rows >= 0.6 * rows.max()) / a.shape[0]), 3)
+
 # ---- stage 4: pet hospital basement ----
 sheet("spider_mech", 4, [("spider", k) for k in ("walk", "rear", "ceiling", "pod")], 0, 200, merge=16)
 sheet("drill_boss", 3, [("drill", k) for k in ("idle", "lunge", "throw")], 0, 200, merge=16, post=keep_largest)
@@ -290,11 +299,12 @@ sheet("tesla_rat", 2, [("teslarat", "idle"), ("teslarat", "zap")], 0, 92, merge=
 sheet("spiderbot", 3, [("spiderbot", "crawl"), ("spiderbot", "crawl"), ("spiderbot", "drop")], 0, 48, merge=12)
 sheet("pod", 2, [("pod", "tank"), ("pod", "broken")], 0, 128, merge=16)
 sheet("lab_shots", 3, [("lshot", k) for k in ("saw", "flame", "ring")], 0, 48, merge=14, min_area=200)
-# swimming with each gun (diving helmet, air tank), drawn at the held-gun resolution
+# swimming with each gun (diving helmet, air tank), drawn at the held-gun resolution; sized so the helmeted
+# head and the gun match the standing frames (the swimmer is long and low, so it is centred, not foot-anchored)
 for hero in ("blaze", "gulp"):
     for w in ("N", "S", "M", "L", "F"):
         sheet(f"swim_{hero}_{w}", 4, [(hero, f"hold{w}swim"), (hero, f"hold{w}swim"), (hero, f"hold{w}swimup"),
-              (hero, f"hold{w}swimdown")], "median", 150, merge=10, extra={"k": HERO_H / HOLD_H})
+              (hero, f"hold{w}swimdown")], "median", 262, merge=10, extra={"k": HERO_H / HOLD_H, "ax": 0.5})
 sheet("guns", 2, [("gun", "blaze"), ("gun", "gulp")], 0, 26)
 # one gun per pickup weapon (N keeps gun_blaze / gun_gulp), all drawn at one scale on the sheet
 sheet("weapons", 4, [("gun", k) for k in ("S", "M", "L", "F")], "median", 40)
@@ -338,6 +348,7 @@ layer("bg2_mid", "bg2_mid", 300, cut=True)
 layer("floor2", "floor2", 256)
 layer("bg3_far", "bg3_far", 1200)
 layer("bg3_air", "bg3_air", 1200)
+layer("rock3", "rock3", 256)
 layer("bg4_far", "bg4_far", 720)
 layer("bg4_mid", "bg4_mid", 300, cut=True)
 layer("bg4_shaft", "bg4_shaft", 1200)

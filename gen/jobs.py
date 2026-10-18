@@ -619,3 +619,20 @@ JOBS17 = [
          "'B2' style sign without letters (just stripes). The top edge and bottom edge look alike so it can repeat vertically. "
          "Low contrast and soft. No characters, no text."),
 ]
+
+# --- pass 18: stage 3 detail: real platforms instead of flat bars ---
+JOBS18 = [
+    dict(name="plat3", refs=["raw/bg3_air.png", "raw/bg3_far.png"], prompt=STYLE + BG + TANK + row(4) +
+         "Four separate side-view game PLATFORM pieces for the fish-tank stage, each much wider than tall, each with a perfectly FLAT, "
+         "level walkable top edge, drawn in the same style and palette as the references: "
+         "1) a LONG ledge of porous grey aquarium lava rock, its flat top covered in short green moss with two or three small coral-red "
+         "branching corals and a few pebbles on top, rough rocky underside tapering down; "
+         "2) a SHORT version of the same rocky coral ledge; "
+         "3) a DRIFTWOOD raft: two or three weathered grey-brown driftwood logs lashed together with rope, a little green moss, "
+         "hanging from two ropes that go straight up from its ends; "
+         "4) a big shiny floating AIR BUBBLE, a flattened sphere, clear with a soft grey-green tint, a bright white highlight and a thin "
+         "rainbow-free edge, thick black outline."),
+    dict(name="rock3", refs=["raw/bg3_air.png"], prompt=STYLE +
+         "Square canvas, a seamless tileable texture filling the whole canvas edge to edge: porous grey aquarium lava rock with small "
+         "holes and cracks, patches of green moss and a few small pebbles, flat and fairly low contrast. No outline, no objects."),
+]
