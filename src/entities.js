@@ -491,6 +491,8 @@ export class Player {
     if (this.hurtT > 0) return { f: frame(key, 'hurt') };
     if (this.dashT > 0) return { f: frame(key, 'dash') };
     if (this.spin) return { f: frame(key, 'ball'), anchor: 'center' };
+    const hold = this.holdPose();
+    if (hold) return hold;
     const grip = this.gripPose();
     if (grip) return grip;
     if (!this.onGround) return { f: frame(key, 'jump') };
@@ -506,24 +508,28 @@ export class Player {
     return Math.atan2(this.aim.y, Math.max(0, this.aim.x * this.facing));
   }
 
+  // Which aiming pose the aim and state call for: fwd / diag / up / down, or jump / crouch / run (run cycles).
+  aimSlot() {
+    const la = this.localAim();
+    let [slot] = GRIP_DIRS.reduce((best, d) => (Math.abs(d[1] - la) < Math.abs(best[1] - la) ? d : best));
+    slot = slot.slice(4); // gripfwd -> fwd
+    if (!this.onGround) return { slot: slot === 'fwd' ? 'jump' : slot, i: 0, breathe: false };
+    if (this.crouch) return { slot: 'crouch', i: 0, breathe: false };
+    if (Math.abs(this.vx) > 20 && slot === 'fwd') return { slot: 'run', i: this.anim * 13, breathe: false };
+    return { slot, i: 0, breathe: slot === 'fwd' };
+  }
+
+  // Frame drawn holding the current weapon (hold{type}{slot}, e.g. holdMdiag); null without the art.
+  holdPose() {
+    const { slot, i, breathe } = this.aimSlot();
+    const f = frame(this.char.id, `hold${this.weapon.type}${slot}`, i);
+    return f && f.mx != null ? { f, hold: true, breathe } : null;
+  }
+
   // Empty-pawed grip frame for the current aim and state, holding the current weapon; null without the art.
   gripPose() {
-    const key = this.char.id;
-    const la = this.localAim();
-    let [anim] = GRIP_DIRS.reduce((best, d) => (Math.abs(d[1] - la) < Math.abs(best[1] - la) ? d : best));
-    let i = 0;
-    let breathe = false;
-    if (!this.onGround) {
-      if (anim === 'gripfwd') anim = 'gripjump';
-    } else if (this.crouch) {
-      anim = 'gripcrouch';
-    } else if (Math.abs(this.vx) > 20 && anim === 'gripfwd') {
-      anim = 'griprun';
-      i = this.anim * 13;
-    } else {
-      breathe = anim === 'gripfwd';
-    }
-    const f = frame(key, anim, i);
+    const { slot, i, breathe } = this.aimSlot();
+    const f = frame(this.char.id, `grip${slot}`, i);
     return f && f.gx != null ? { f, gun: true, breathe } : null;
   }
 
@@ -552,6 +558,13 @@ export class Player {
 
   // muzzle tip of the gun in the paws, in world space
   muzzle() {
+    const pose = this.pose();
+    if (pose.hold) {
+      const f = pose.f;
+      const s = HERO_SCALE * this.char.size * (f.k || 1);
+      const bottom = this.y + this.h + 1 + (pose.breathe ? Math.sin(this.game.t * 3) * 0.6 : 0);
+      return { x: this.cx + this.facing * (f.mx - f.ax) * f.w * s, y: bottom - (1 - f.my) * f.h * s };
+    }
     const h = this.heldGun();
     if (!h) return null;
     const { gun, paw, gs, off, la } = h;
@@ -600,7 +613,7 @@ export class Player {
     if (this.state === 'out' || this.state === 'dead') return;
     const pose = this.pose();
     if (!pose.f) return this.drawLegacy(ctx);
-    const scale = HERO_SCALE * this.char.size;
+    const scale = HERO_SCALE * this.char.size * (pose.f.k || 1); // held-gun frames are 2x resolution
 
     for (const tr of this.trail) {
       ctx.globalAlpha = tr.a * 0.5;

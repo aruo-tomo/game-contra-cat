@@ -184,6 +184,676 @@
     "ang": 0
    }
   ],
+  "holdNfwd": [
+   {
+    "file": "blaze_holdNfwd_0.png",
+    "w": 296,
+    "h": 256,
+    "ax": 0.354,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.493,
+    "ang": 0
+   }
+  ],
+  "holdNdiag": [
+   {
+    "file": "blaze_holdNdiag_0.png",
+    "w": 285,
+    "h": 273,
+    "ax": 0.36,
+    "k": 0.5,
+    "mx": 0.963,
+    "my": 0.029,
+    "ang": -45
+   }
+  ],
+  "holdNup": [
+   {
+    "file": "blaze_holdNup_0.png",
+    "w": 189,
+    "h": 404,
+    "ax": 0.498,
+    "k": 0.5,
+    "mx": 0.63,
+    "my": 0.01,
+    "ang": -90
+   }
+  ],
+  "holdNdown": [
+   {
+    "file": "blaze_holdNdown_0.png",
+    "w": 292,
+    "h": 254,
+    "ax": 0.52,
+    "k": 0.5,
+    "mx": 0.968,
+    "my": 0.773,
+    "ang": 45
+   }
+  ],
+  "holdNcrouch": [
+   {
+    "file": "blaze_holdNcrouch_0.png",
+    "w": 350,
+    "h": 158,
+    "ax": 0.518,
+    "k": 0.5,
+    "mx": 0.986,
+    "my": 0.628,
+    "ang": 0
+   }
+  ],
+  "holdNjump": [
+   {
+    "file": "blaze_holdNjump_0.png",
+    "w": 285,
+    "h": 230,
+    "ax": 0.387,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.452,
+    "ang": 0
+   }
+  ],
+  "holdNrun": [
+   {
+    "file": "blaze_holdNrun_0.png",
+    "w": 297,
+    "h": 256,
+    "ax": 0.413,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.477,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdNrun_1.png",
+    "w": 286,
+    "h": 251,
+    "ax": 0.338,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.498,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdNrun_2.png",
+    "w": 265,
+    "h": 252,
+    "ax": 0.326,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.492,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdNrun_3.png",
+    "w": 279,
+    "h": 250,
+    "ax": 0.409,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.51,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdNrun_4.png",
+    "w": 283,
+    "h": 258,
+    "ax": 0.327,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.489,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdNrun_5.png",
+    "w": 269,
+    "h": 260,
+    "ax": 0.33,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.495,
+    "ang": 0
+   }
+  ],
+  "holdSfwd": [
+   {
+    "file": "blaze_holdSfwd_0.png",
+    "w": 276,
+    "h": 256,
+    "ax": 0.361,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.538,
+    "ang": 0
+   }
+  ],
+  "holdSdiag": [
+   {
+    "file": "blaze_holdSdiag_0.png",
+    "w": 272,
+    "h": 268,
+    "ax": 0.372,
+    "k": 0.5,
+    "mx": 0.921,
+    "my": 0.061,
+    "ang": -45
+   }
+  ],
+  "holdSup": [
+   {
+    "file": "blaze_holdSup_0.png",
+    "w": 190,
+    "h": 384,
+    "ax": 0.498,
+    "k": 0.5,
+    "mx": 0.557,
+    "my": 0.008,
+    "ang": -90
+   }
+  ],
+  "holdSdown": [
+   {
+    "file": "blaze_holdSdown_0.png",
+    "w": 257,
+    "h": 261,
+    "ax": 0.559,
+    "k": 0.5,
+    "mx": 0.931,
+    "my": 0.831,
+    "ang": 45
+   }
+  ],
+  "holdScrouch": [
+   {
+    "file": "blaze_holdScrouch_0.png",
+    "w": 327,
+    "h": 142,
+    "ax": 0.559,
+    "k": 0.5,
+    "mx": 0.986,
+    "my": 0.677,
+    "ang": 0
+   }
+  ],
+  "holdSjump": [
+   {
+    "file": "blaze_holdSjump_0.png",
+    "w": 266,
+    "h": 245,
+    "ax": 0.45,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.6,
+    "ang": 0
+   }
+  ],
+  "holdSrun": [
+   {
+    "file": "blaze_holdSrun_0.png",
+    "w": 263,
+    "h": 251,
+    "ax": 0.435,
+    "k": 0.5,
+    "mx": 0.981,
+    "my": 0.565,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdSrun_1.png",
+    "w": 260,
+    "h": 258,
+    "ax": 0.4,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.567,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdSrun_2.png",
+    "w": 256,
+    "h": 252,
+    "ax": 0.431,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.567,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdSrun_3.png",
+    "w": 256,
+    "h": 254,
+    "ax": 0.363,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.568,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdSrun_4.png",
+    "w": 267,
+    "h": 256,
+    "ax": 0.415,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.567,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdSrun_5.png",
+    "w": 250,
+    "h": 258,
+    "ax": 0.374,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.562,
+    "ang": 0
+   }
+  ],
+  "holdMfwd": [
+   {
+    "file": "blaze_holdMfwd_0.png",
+    "w": 302,
+    "h": 256,
+    "ax": 0.344,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.444,
+    "ang": 0
+   }
+  ],
+  "holdMdiag": [
+   {
+    "file": "blaze_holdMdiag_0.png",
+    "w": 305,
+    "h": 293,
+    "ax": 0.33,
+    "k": 0.5,
+    "mx": 0.967,
+    "my": 0.046,
+    "ang": -45
+   }
+  ],
+  "holdMup": [
+   {
+    "file": "blaze_holdMup_0.png",
+    "w": 213,
+    "h": 411,
+    "ax": 0.453,
+    "k": 0.5,
+    "mx": 0.717,
+    "my": 0.008,
+    "ang": -90
+   }
+  ],
+  "holdMdown": [
+   {
+    "file": "blaze_holdMdown_0.png",
+    "w": 287,
+    "h": 246,
+    "ax": 0.525,
+    "k": 0.5,
+    "mx": 0.968,
+    "my": 0.762,
+    "ang": 45
+   }
+  ],
+  "holdMcrouch": [
+   {
+    "file": "blaze_holdMcrouch_0.png",
+    "w": 354,
+    "h": 150,
+    "ax": 0.422,
+    "k": 0.5,
+    "mx": 0.987,
+    "my": 0.542,
+    "ang": 0
+   }
+  ],
+  "holdMjump": [
+   {
+    "file": "blaze_holdMjump_0.png",
+    "w": 292,
+    "h": 217,
+    "ax": 0.409,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.471,
+    "ang": 0
+   }
+  ],
+  "holdMrun": [
+   {
+    "file": "blaze_holdMrun_0.png",
+    "w": 320,
+    "h": 251,
+    "ax": 0.389,
+    "k": 0.5,
+    "mx": 0.986,
+    "my": 0.461,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdMrun_1.png",
+    "w": 296,
+    "h": 256,
+    "ax": 0.345,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.453,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdMrun_2.png",
+    "w": 299,
+    "h": 246,
+    "ax": 0.372,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.483,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdMrun_3.png",
+    "w": 302,
+    "h": 256,
+    "ax": 0.378,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.473,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdMrun_4.png",
+    "w": 299,
+    "h": 257,
+    "ax": 0.288,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.467,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdMrun_5.png",
+    "w": 301,
+    "h": 256,
+    "ax": 0.37,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.468,
+    "ang": 0
+   }
+  ],
+  "holdLfwd": [
+   {
+    "file": "blaze_holdLfwd_0.png",
+    "w": 305,
+    "h": 256,
+    "ax": 0.345,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.505,
+    "ang": 0
+   }
+  ],
+  "holdLdiag": [
+   {
+    "file": "blaze_holdLdiag_0.png",
+    "w": 286,
+    "h": 285,
+    "ax": 0.358,
+    "k": 0.5,
+    "mx": 0.963,
+    "my": 0.032,
+    "ang": -45
+   }
+  ],
+  "holdLup": [
+   {
+    "file": "blaze_holdLup_0.png",
+    "w": 191,
+    "h": 410,
+    "ax": 0.498,
+    "k": 0.5,
+    "mx": 0.701,
+    "my": 0.009,
+    "ang": -90
+   }
+  ],
+  "holdLdown": [
+   {
+    "file": "blaze_holdLdown_0.png",
+    "w": 297,
+    "h": 255,
+    "ax": 0.52,
+    "k": 0.5,
+    "mx": 0.963,
+    "my": 0.808,
+    "ang": 45
+   }
+  ],
+  "holdLcrouch": [
+   {
+    "file": "blaze_holdLcrouch_0.png",
+    "w": 353,
+    "h": 158,
+    "ax": 0.528,
+    "k": 0.5,
+    "mx": 0.987,
+    "my": 0.639,
+    "ang": 0
+   }
+  ],
+  "holdLjump": [
+   {
+    "file": "blaze_holdLjump_0.png",
+    "w": 274,
+    "h": 231,
+    "ax": 0.407,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.516,
+    "ang": 0
+   }
+  ],
+  "holdLrun": [
+   {
+    "file": "blaze_holdLrun_0.png",
+    "w": 301,
+    "h": 256,
+    "ax": 0.394,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.521,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdLrun_1.png",
+    "w": 288,
+    "h": 256,
+    "ax": 0.383,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.503,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdLrun_2.png",
+    "w": 291,
+    "h": 253,
+    "ax": 0.415,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.517,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdLrun_3.png",
+    "w": 291,
+    "h": 256,
+    "ax": 0.4,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.502,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdLrun_4.png",
+    "w": 287,
+    "h": 253,
+    "ax": 0.392,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.517,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdLrun_5.png",
+    "w": 282,
+    "h": 261,
+    "ax": 0.433,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.513,
+    "ang": 0
+   }
+  ],
+  "holdFfwd": [
+   {
+    "file": "blaze_holdFfwd_0.png",
+    "w": 311,
+    "h": 256,
+    "ax": 0.344,
+    "k": 0.5,
+    "mx": 0.986,
+    "my": 0.493,
+    "ang": 0
+   }
+  ],
+  "holdFdiag": [
+   {
+    "file": "blaze_holdFdiag_0.png",
+    "w": 285,
+    "h": 279,
+    "ax": 0.347,
+    "k": 0.5,
+    "mx": 0.925,
+    "my": 0.048,
+    "ang": -45
+   }
+  ],
+  "holdFup": [
+   {
+    "file": "blaze_holdFup_0.png",
+    "w": 193,
+    "h": 411,
+    "ax": 0.498,
+    "k": 0.5,
+    "mx": 0.687,
+    "my": 0.008,
+    "ang": -90
+   }
+  ],
+  "holdFdown": [
+   {
+    "file": "blaze_holdFdown_0.png",
+    "w": 296,
+    "h": 254,
+    "ax": 0.516,
+    "k": 0.5,
+    "mx": 0.934,
+    "my": 0.805,
+    "ang": 45
+   }
+  ],
+  "holdFcrouch": [
+   {
+    "file": "blaze_holdFcrouch_0.png",
+    "w": 358,
+    "h": 151,
+    "ax": 0.525,
+    "k": 0.5,
+    "mx": 0.987,
+    "my": 0.589,
+    "ang": 0
+   }
+  ],
+  "holdFjump": [
+   {
+    "file": "blaze_holdFjump_0.png",
+    "w": 266,
+    "h": 225,
+    "ax": 0.4,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.496,
+    "ang": 0
+   }
+  ],
+  "holdFrun": [
+   {
+    "file": "blaze_holdFrun_0.png",
+    "w": 295,
+    "h": 258,
+    "ax": 0.419,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.533,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdFrun_1.png",
+    "w": 300,
+    "h": 254,
+    "ax": 0.366,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.511,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdFrun_2.png",
+    "w": 299,
+    "h": 245,
+    "ax": 0.397,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.534,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdFrun_3.png",
+    "w": 296,
+    "h": 250,
+    "ax": 0.364,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.538,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdFrun_4.png",
+    "w": 303,
+    "h": 263,
+    "ax": 0.36,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.525,
+    "ang": 0
+   },
+   {
+    "file": "blaze_holdFrun_5.png",
+    "w": 288,
+    "h": 256,
+    "ax": 0.395,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.539,
+    "ang": 0
+   }
+  ],
   "griprun": [
    {
     "file": "blaze_griprun_0.png",
@@ -423,6 +1093,676 @@
     "ax": 0.44,
     "gx": 0.907,
     "gy": 0.501,
+    "ang": 0
+   }
+  ],
+  "holdNfwd": [
+   {
+    "file": "gulp_holdNfwd_0.png",
+    "w": 201,
+    "h": 256,
+    "ax": 0.399,
+    "k": 0.5,
+    "mx": 0.976,
+    "my": 0.391,
+    "ang": 0
+   }
+  ],
+  "holdNdiag": [
+   {
+    "file": "gulp_holdNdiag_0.png",
+    "w": 189,
+    "h": 256,
+    "ax": 0.403,
+    "k": 0.5,
+    "mx": 0.95,
+    "my": 0.079,
+    "ang": -45
+   }
+  ],
+  "holdNup": [
+   {
+    "file": "gulp_holdNup_0.png",
+    "w": 154,
+    "h": 316,
+    "ax": 0.434,
+    "k": 0.5,
+    "mx": 0.835,
+    "my": 0.014,
+    "ang": -90
+   }
+  ],
+  "holdNdown": [
+   {
+    "file": "gulp_holdNdown_0.png",
+    "w": 185,
+    "h": 226,
+    "ax": 0.35,
+    "k": 0.5,
+    "mx": 0.954,
+    "my": 0.699,
+    "ang": 45
+   }
+  ],
+  "holdNcrouch": [
+   {
+    "file": "gulp_holdNcrouch_0.png",
+    "w": 275,
+    "h": 121,
+    "ax": 0.437,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.55,
+    "ang": 0
+   }
+  ],
+  "holdNjump": [
+   {
+    "file": "gulp_holdNjump_0.png",
+    "w": 197,
+    "h": 196,
+    "ax": 0.44,
+    "k": 0.5,
+    "mx": 0.973,
+    "my": 0.475,
+    "ang": 0
+   }
+  ],
+  "holdNrun": [
+   {
+    "file": "gulp_holdNrun_0.png",
+    "w": 243,
+    "h": 257,
+    "ax": 0.474,
+    "k": 0.5,
+    "mx": 0.981,
+    "my": 0.434,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdNrun_1.png",
+    "w": 210,
+    "h": 256,
+    "ax": 0.36,
+    "k": 0.5,
+    "mx": 0.977,
+    "my": 0.439,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdNrun_2.png",
+    "w": 200,
+    "h": 256,
+    "ax": 0.377,
+    "k": 0.5,
+    "mx": 0.977,
+    "my": 0.439,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdNrun_3.png",
+    "w": 236,
+    "h": 252,
+    "ax": 0.464,
+    "k": 0.5,
+    "mx": 0.981,
+    "my": 0.447,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdNrun_4.png",
+    "w": 210,
+    "h": 255,
+    "ax": 0.397,
+    "k": 0.5,
+    "mx": 0.978,
+    "my": 0.435,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdNrun_5.png",
+    "w": 213,
+    "h": 255,
+    "ax": 0.463,
+    "k": 0.5,
+    "mx": 0.978,
+    "my": 0.44,
+    "ang": 0
+   }
+  ],
+  "holdSfwd": [
+   {
+    "file": "gulp_holdSfwd_0.png",
+    "w": 247,
+    "h": 256,
+    "ax": 0.346,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.394,
+    "ang": 0
+   }
+  ],
+  "holdSdiag": [
+   {
+    "file": "gulp_holdSdiag_0.png",
+    "w": 246,
+    "h": 295,
+    "ax": 0.309,
+    "k": 0.5,
+    "mx": 0.928,
+    "my": 0.045,
+    "ang": -45
+   }
+  ],
+  "holdSup": [
+   {
+    "file": "gulp_holdSup_0.png",
+    "w": 158,
+    "h": 363,
+    "ax": 0.502,
+    "k": 0.5,
+    "mx": 0.654,
+    "my": 0.011,
+    "ang": -90
+   }
+  ],
+  "holdSdown": [
+   {
+    "file": "gulp_holdSdown_0.png",
+    "w": 241,
+    "h": 258,
+    "ax": 0.458,
+    "k": 0.5,
+    "mx": 0.923,
+    "my": 0.711,
+    "ang": 45
+   }
+  ],
+  "holdScrouch": [
+   {
+    "file": "gulp_holdScrouch_0.png",
+    "w": 314,
+    "h": 144,
+    "ax": 0.408,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.555,
+    "ang": 0
+   }
+  ],
+  "holdSjump": [
+   {
+    "file": "gulp_holdSjump_0.png",
+    "w": 240,
+    "h": 220,
+    "ax": 0.441,
+    "k": 0.5,
+    "mx": 0.981,
+    "my": 0.411,
+    "ang": 0
+   }
+  ],
+  "holdSrun": [
+   {
+    "file": "gulp_holdSrun_0.png",
+    "w": 287,
+    "h": 255,
+    "ax": 0.429,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.419,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdSrun_1.png",
+    "w": 268,
+    "h": 258,
+    "ax": 0.355,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.418,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdSrun_2.png",
+    "w": 254,
+    "h": 256,
+    "ax": 0.364,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.428,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdSrun_3.png",
+    "w": 268,
+    "h": 256,
+    "ax": 0.434,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.416,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdSrun_4.png",
+    "w": 272,
+    "h": 247,
+    "ax": 0.412,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.432,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdSrun_5.png",
+    "w": 258,
+    "h": 257,
+    "ax": 0.399,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.427,
+    "ang": 0
+   }
+  ],
+  "holdMfwd": [
+   {
+    "file": "gulp_holdMfwd_0.png",
+    "w": 253,
+    "h": 256,
+    "ax": 0.339,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.337,
+    "ang": 0
+   }
+  ],
+  "holdMdiag": [
+   {
+    "file": "gulp_holdMdiag_0.png",
+    "w": 257,
+    "h": 301,
+    "ax": 0.312,
+    "k": 0.5,
+    "mx": 0.965,
+    "my": 0.039,
+    "ang": -45
+   }
+  ],
+  "holdMup": [
+   {
+    "file": "gulp_holdMup_0.png",
+    "w": 164,
+    "h": 357,
+    "ax": 0.5,
+    "k": 0.5,
+    "mx": 0.746,
+    "my": 0.009,
+    "ang": -90
+   }
+  ],
+  "holdMdown": [
+   {
+    "file": "gulp_holdMdown_0.png",
+    "w": 255,
+    "h": 257,
+    "ax": 0.317,
+    "k": 0.5,
+    "mx": 0.966,
+    "my": 0.634,
+    "ang": 45
+   }
+  ],
+  "holdMcrouch": [
+   {
+    "file": "gulp_holdMcrouch_0.png",
+    "w": 336,
+    "h": 134,
+    "ax": 0.427,
+    "k": 0.5,
+    "mx": 0.986,
+    "my": 0.526,
+    "ang": 0
+   }
+  ],
+  "holdMjump": [
+   {
+    "file": "gulp_holdMjump_0.png",
+    "w": 261,
+    "h": 215,
+    "ax": 0.415,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.388,
+    "ang": 0
+   }
+  ],
+  "holdMrun": [
+   {
+    "file": "gulp_holdMrun_0.png",
+    "w": 271,
+    "h": 247,
+    "ax": 0.405,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.384,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdMrun_1.png",
+    "w": 265,
+    "h": 257,
+    "ax": 0.299,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.368,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdMrun_2.png",
+    "w": 246,
+    "h": 252,
+    "ax": 0.306,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.375,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdMrun_3.png",
+    "w": 271,
+    "h": 252,
+    "ax": 0.409,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.375,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdMrun_4.png",
+    "w": 256,
+    "h": 256,
+    "ax": 0.307,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.369,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdMrun_5.png",
+    "w": 251,
+    "h": 259,
+    "ax": 0.329,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.364,
+    "ang": 0
+   }
+  ],
+  "holdLfwd": [
+   {
+    "file": "gulp_holdLfwd_0.png",
+    "w": 279,
+    "h": 256,
+    "ax": 0.31,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.334,
+    "ang": 0
+   }
+  ],
+  "holdLdiag": [
+   {
+    "file": "gulp_holdLdiag_0.png",
+    "w": 256,
+    "h": 299,
+    "ax": 0.318,
+    "k": 0.5,
+    "mx": 0.962,
+    "my": 0.028,
+    "ang": -45
+   }
+  ],
+  "holdLup": [
+   {
+    "file": "gulp_holdLup_0.png",
+    "w": 163,
+    "h": 387,
+    "ax": 0.498,
+    "k": 0.5,
+    "mx": 0.754,
+    "my": 0.008,
+    "ang": -90
+   }
+  ],
+  "holdLdown": [
+   {
+    "file": "gulp_holdLdown_0.png",
+    "w": 253,
+    "h": 258,
+    "ax": 0.497,
+    "k": 0.5,
+    "mx": 0.961,
+    "my": 0.737,
+    "ang": 45
+   }
+  ],
+  "holdLcrouch": [
+   {
+    "file": "gulp_holdLcrouch_0.png",
+    "w": 352,
+    "h": 144,
+    "ax": 0.355,
+    "k": 0.5,
+    "mx": 0.987,
+    "my": 0.524,
+    "ang": 0
+   }
+  ],
+  "holdLjump": [
+   {
+    "file": "gulp_holdLjump_0.png",
+    "w": 288,
+    "h": 218,
+    "ax": 0.377,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.393,
+    "ang": 0
+   }
+  ],
+  "holdLrun": [
+   {
+    "file": "gulp_holdLrun_0.png",
+    "w": 288,
+    "h": 256,
+    "ax": 0.364,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.378,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdLrun_1.png",
+    "w": 271,
+    "h": 254,
+    "ax": 0.303,
+    "k": 0.5,
+    "mx": 0.982,
+    "my": 0.375,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdLrun_2.png",
+    "w": 277,
+    "h": 257,
+    "ax": 0.299,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.369,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdLrun_3.png",
+    "w": 290,
+    "h": 260,
+    "ax": 0.373,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.372,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdLrun_4.png",
+    "w": 295,
+    "h": 245,
+    "ax": 0.296,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.365,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdLrun_5.png",
+    "w": 281,
+    "h": 252,
+    "ax": 0.333,
+    "k": 0.5,
+    "mx": 0.984,
+    "my": 0.37,
+    "ang": 0
+   }
+  ],
+  "holdFfwd": [
+   {
+    "file": "gulp_holdFfwd_0.png",
+    "w": 277,
+    "h": 256,
+    "ax": 0.324,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.383,
+    "ang": 0
+   }
+  ],
+  "holdFdiag": [
+   {
+    "file": "gulp_holdFdiag_0.png",
+    "w": 263,
+    "h": 307,
+    "ax": 0.305,
+    "k": 0.5,
+    "mx": 0.935,
+    "my": 0.044,
+    "ang": -45
+   }
+  ],
+  "holdFup": [
+   {
+    "file": "gulp_holdFup_0.png",
+    "w": 163,
+    "h": 347,
+    "ax": 0.502,
+    "k": 0.5,
+    "mx": 0.739,
+    "my": 0.01,
+    "ang": -90
+   }
+  ],
+  "holdFdown": [
+   {
+    "file": "gulp_holdFdown_0.png",
+    "w": 267,
+    "h": 258,
+    "ax": 0.317,
+    "k": 0.5,
+    "mx": 0.933,
+    "my": 0.695,
+    "ang": 45
+   }
+  ],
+  "holdFcrouch": [
+   {
+    "file": "gulp_holdFcrouch_0.png",
+    "w": 352,
+    "h": 142,
+    "ax": 0.379,
+    "k": 0.5,
+    "mx": 0.987,
+    "my": 0.559,
+    "ang": 0
+   }
+  ],
+  "holdFjump": [
+   {
+    "file": "gulp_holdFjump_0.png",
+    "w": 270,
+    "h": 220,
+    "ax": 0.4,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.42,
+    "ang": 0
+   }
+  ],
+  "holdFrun": [
+   {
+    "file": "gulp_holdFrun_0.png",
+    "w": 304,
+    "h": 255,
+    "ax": 0.455,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.404,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdFrun_1.png",
+    "w": 303,
+    "h": 262,
+    "ax": 0.414,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.404,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdFrun_2.png",
+    "w": 274,
+    "h": 245,
+    "ax": 0.454,
+    "k": 0.5,
+    "mx": 0.983,
+    "my": 0.44,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdFrun_3.png",
+    "w": 302,
+    "h": 256,
+    "ax": 0.439,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.415,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdFrun_4.png",
+    "w": 294,
+    "h": 262,
+    "ax": 0.41,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.405,
+    "ang": 0
+   },
+   {
+    "file": "gulp_holdFrun_5.png",
+    "w": 293,
+    "h": 255,
+    "ax": 0.445,
+    "k": 0.5,
+    "mx": 0.985,
+    "my": 0.404,
     "ang": 0
    }
   ],
@@ -1025,7 +2365,7 @@
   "beam": [
    {
     "file": "skill_beam_0.png",
-    "w": 527,
+    "w": 550,
     "h": 56,
     "ax": 0.5
    }
