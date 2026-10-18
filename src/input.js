@@ -2,27 +2,28 @@
 // { mx, down, up, aim, fire, jump, jumpHeld, dash, skill, lock, pause, assist }
 // Game code reads only these actions, never key codes.
 
+import { t } from './i18n.js';
 import { getTouchState } from './touch.js';
 import { options } from './options.js';
 
 const STORE_KEY = 'contracat.bindings.v1';
 
 export const ACTION_LABELS = {
-  left: '向左',
-  right: '向右',
-  up: '向上瞄準',
-  down: '伏低／落平台',
-  jump: '跳（再撳一次＝二段跳）',
-  dash: '閃避衝刺',
-  skill: '專屬技',
-  lock: '鎖定站位（只轉方向）',
-  pause: '暫停',
+  left: t('act.left'),
+  right: t('act.right'),
+  up: t('act.up'),
+  down: t('act.down'),
+  jump: t('act.jump'),
+  dash: t('act.dash'),
+  skill: t('act.skill'),
+  lock: t('act.lock'),
+  pause: t('act.pause'),
 };
 
 export const PROFILE_LABELS = {
-  pc: '鍵盤＋滑鼠',
-  classic1: '經典鍵盤 P1',
-  classic2: '經典鍵盤 P2',
+  pc: t('prof.pc'),
+  classic1: t('prof.classic1'),
+  classic2: t('prof.classic2'),
 };
 
 export const DEFAULT_BINDINGS = {
@@ -61,12 +62,12 @@ export const getBindings = () => bindings;
 
 // What to press for the skill, shown when it becomes ready; `short` fits the HUD
 export function skillKeyLabel(ctl, short = false) {
-  const key = (code) => (short ? keyName(code).replace('數字鍵 ', 'Num') : keyName(code));
-  if (!ctl) return '技';
-  if (ctl.kind === 'mouse') return short ? key(bindings.pc.skill[0]) : `${key(bindings.pc.skill[0])}／右鍵`;
+  const key = (code) => (short && code && code.startsWith('Numpad') ? t('key.numShort', { n: code.slice(6) }) : keyName(code));
+  if (!ctl) return t('skillkey.touchShort');
+  if (ctl.kind === 'mouse') return short ? key(bindings.pc.skill[0]) : t('skillkey.mouse', { key: key(bindings.pc.skill[0]) });
   if (ctl.kind === 'classic') return key(bindings[ctl.profile].skill[0]);
-  if (ctl.kind === 'pad') return short ? 'LB' : 'LB／Y';
-  return short ? '技' : '「技」掣';
+  if (ctl.kind === 'pad') return short ? 'LB' : t('skillkey.pad');
+  return short ? t('skillkey.touchShort') : t('skillkey.touch');
 }
 export function setBinding(profile, action, code) {
   bindings[profile][action] = [code];
@@ -78,17 +79,17 @@ export function resetBindings() {
 }
 
 const KEY_NAMES = {
-  Space: 'Space', Escape: 'Esc', Enter: 'Enter', ShiftLeft: '左 Shift', ShiftRight: '右 Shift',
+  Space: 'Space', Escape: 'Esc', Enter: 'Enter', ShiftLeft: t('key.lshift'), ShiftRight: t('key.rshift'),
   ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓',
   Period: '.', Slash: '/', Quote: "'", Comma: ',', Semicolon: ';',
-  ControlLeft: '左 Ctrl', ControlRight: '右 Ctrl', AltLeft: '左 Alt', AltRight: '右 Alt', Tab: 'Tab',
+  ControlLeft: t('key.lctrl'), ControlRight: t('key.rctrl'), AltLeft: t('key.lalt'), AltRight: t('key.ralt'), Tab: 'Tab',
 };
 export function keyName(code) {
   if (!code) return '—';
   if (KEY_NAMES[code]) return KEY_NAMES[code];
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);
-  if (code.startsWith('Numpad')) return '數字鍵 ' + code.slice(6);
+  if (code.startsWith('Numpad')) return t('key.num', { n: code.slice(6) });
   return code;
 }
 
@@ -133,12 +134,12 @@ export function bindingConflicts(profile) {
   for (const [action, codes] of Object.entries(mine)) {
     for (const code of codes) {
       for (const [a2, c2] of Object.entries(mine)) {
-        if (a2 !== action && c2.includes(code)) out[action] = `同「${ACTION_LABELS[a2]}」用咗同一個鍵`;
+        if (a2 !== action && c2.includes(code)) out[action] = t('clash.same', { a: ACTION_LABELS[a2] });
       }
       for (const other of PARTNERS[profile]) {
         for (const [a2, c2] of Object.entries(bindings[other])) {
           if (c2.includes(code) && !(action === 'pause' && a2 === 'pause')) {
-            out[action] = `同「${PROFILE_LABELS[other]}・${ACTION_LABELS[a2]}」撞鍵（${keyName(code)}）`;
+            out[action] = t('clash.other', { p: PROFILE_LABELS[other], a: ACTION_LABELS[a2], key: keyName(code) });
           }
         }
       }
@@ -249,7 +250,7 @@ class Ctl {
 const NEUTRAL = { mx: 0, down: false, up: false, aim: null, fire: false, jump: false, jumpHeld: false, dash: false, skill: false, lock: false, pause: false, assist: 0 };
 
 export class MouseKeyboardCtl extends Ctl {
-  constructor() { super(); this.kind = 'mouse'; this.label = '鍵盤＋滑鼠'; }
+  constructor() { super(); this.kind = 'mouse'; this.label = t('prof.pc'); }
   poll(p, cam) {
     const P = 'pc';
     const mx = (isDown(P, 'right') ? 1 : 0) - (isDown(P, 'left') ? 1 : 0);
@@ -326,7 +327,7 @@ export class GamepadCtl extends Ctl {
     super();
     this.index = index;
     this.kind = 'pad';
-    this.label = '手掣';
+    this.label = t('ctl.pad');
   }
   poll() {
     const gp = (navigator.getGamepads ? navigator.getGamepads() : [])[this.index];
@@ -370,7 +371,7 @@ export class GamepadCtl extends Ctl {
 }
 
 export class TouchCtl extends Ctl {
-  constructor() { super(); this.kind = 'touch'; this.label = '觸控'; }
+  constructor() { super(); this.kind = 'touch'; this.label = t('ctl.touch'); }
   poll() {
     const t = getTouchState();
     const aim = t.rActive && t.rm > 0.3 ? { x: t.rx / t.rm, y: t.ry / t.rm } : null;

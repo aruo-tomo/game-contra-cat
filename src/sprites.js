@@ -1,5 +1,6 @@
 // Frame-based sprites generated with Codex (assets/sprites/gen/manifest.json).
 // Every frame faces right and is anchored bottom-centre unless drawn with anchor 'center'.
+import { t } from './i18n.js';
 
 export const SPR = { frames: {}, layers: {}, ready: false };
 
@@ -9,7 +10,7 @@ function loadImage(src) {
   return new Promise((res, rej) => {
     const im = new Image();
     im.onload = () => res(im);
-    im.onerror = () => rej(new Error(`載入唔到 ${src}`));
+    im.onerror = () => rej(new Error(t('load.fail', { name: src })));
     im.src = src;
   });
 }

@@ -1,4 +1,6 @@
 import { C, rrect, ink, drawHeart, drawBadge, makePaperPattern } from './art.js';
+import { t, lang, setLang, applyStatic } from './i18n.js';
+import { playStory, storyOpen } from './story.js';
 import { initAudio, sfx, startMusic, stopMusic, setMuted, isMuted, setVolumes } from './audio.js';
 import {
   MouseKeyboardCtl, ClassicKeyboardCtl, GamepadCtl, TouchCtl, bindMouse, pollPads, connectedPads, endInputFrame,
@@ -18,6 +20,10 @@ const W = 640;
 const H = 360;
 const SCALE = 2;
 
+applyStatic();
+document.body.classList.toggle('lang-en', lang === 'en');
+document.querySelector('.logo-mark').setAttribute('aria-label', lang === 'en' ? 'Meow-Tra' : '喵斗羅');
+
 const canvas = document.getElementById('game');
 canvas.width = W * SCALE;
 canvas.height = H * SCALE;
@@ -28,7 +34,7 @@ const $ = (id) => document.getElementById(id);
 const isTouch = window.matchMedia('(pointer: coarse)').matches;
 if (isTouch) setupTouch($('touch'));
 
-const FREED_LINES = ['喵～', '多謝！', '醒返啦！', '我自由喇！'];
+const FREED_LINES = [t('freed.1'), t('freed.2'), t('freed.3'), t('freed.4')];
 
 // ---------------- game ----------------
 
@@ -68,8 +74,8 @@ class Game {
     this.bossTarget = null;
     this.banner = null;
     this.bannerQ = [];
-    this.say('第一關　後巷貓草叢', 2.0);
-    this.say('出發！', 1.0);
+    this.say(t('say.stage1'), 2.0);
+    this.say(t('say.go'), 1.0);
     this.hitStop = 0;
     this.look = 0;
     this.deaths = 0;
@@ -90,7 +96,7 @@ class Game {
     const chars = (this.opts && this.opts.chars) || [0, 1];
     const p = new Player(this, idx, ctl, chars[idx]);
     this.players[idx] = p;
-    if (this.state === 'play') this.text(p.cx, 120, `P${idx + 1} 加入！`, C.green);
+    if (this.state === 'play') this.text(p.cx, 120, t('say.join', { n: idx + 1 }), C.green);
     return p;
   }
 
@@ -213,7 +219,7 @@ class Game {
         this.addEnemy(e);
         this.bossTarget = e;
         this.say('WARNING', 1.6, 'warn');
-        this.say('中 Boss：三眼肥白貓', 1.6);
+        this.say(t('say.midboss'), 1.6);
         sfx.siren();
         startMusic('boss');
         break;
@@ -227,8 +233,8 @@ class Game {
         this.say('WARNING', 2.2, 'warn');
         sfx.siren();
         this.bossTarget = b.parts.find((p) => p.kind === 'core');
-        this.bossTarget.boss = '貓抓板要塞・鼠眼核心';
-        this.say('赤鼠軍 貓抓板要塞', 1.8);
+        this.bossTarget.boss = t('boss.fortress');
+        this.say(t('say.fortress'), 1.8);
         startMusic('boss');
         break;
       }
@@ -254,14 +260,14 @@ class Game {
       this.effects.push(new FxAnim('explosion', 'boom', e.cx, e.cy, e.kind === 'core' ? 0.8 : 0.55, e.kind === 'core' ? 1.4 : e.kind ? 0.85 : 0.5));
       this.freeze(e.kind === 'core' ? 0.3 : e.kind || e instanceof Turret ? 0.07 : 0);
       sfx.boom(e.kind != null);
-      if (e.villain && !e.kind) { this.text(e.cx, e.y - 6, '吱！', C.ink); sfx.squeak(); }
+      if (e.villain && !e.kind) { this.text(e.cx, e.y - 6, t('squeak'), C.ink); sfx.squeak(); }
       this.shake(e.kind ? 8 : 3);
     }
     if (e instanceof Elite) {
       this.lock = null;
       this.bossTarget = null;
       this.items.push(new Item(this, e.cx, e.y, 'F'));
-      this.say('解放咗三眼肥白貓！', 2);
+      this.say(t('say.eliteFreed'), 2);
       this.freeze(0.25);
       this.shake(10);
       startMusic('stage');
@@ -293,8 +299,8 @@ class Game {
     $('clearRank').textContent = rank;
     $('clearRank').dataset.rank = rank;
     $('clearBest').textContent = isBest
-      ? (prev ? `新紀錄！之前最高 ${String(prev.score).padStart(6, '0')}` : '第一次過關，已記錄成績')
-      : `最高紀錄 ${String(prev.score).padStart(6, '0')}（${prev.rank} 級）`;
+      ? (prev ? t('clear.newBest', { score: String(prev.score).padStart(6, '0') }) : t('clear.first'))
+      : t('clear.best', { score: String(prev.score).padStart(6, '0'), rank: prev.rank });
   }
 
   // the cats rescued this stage march across the screen
@@ -427,7 +433,7 @@ class Game {
         sfx.gameOver();
         $('overScore').textContent = String(this.score).padStart(6, '0');
         $('btnContinue').hidden = this.continues <= 0;
-        $('btnContinue').textContent = `接關（仲有 ${this.continues} 次）`;
+        $('btnContinue').textContent = t('over.continueN', { n: this.continues });
         showScreen('over');
       }
     }
@@ -544,7 +550,7 @@ class Game {
           ctx.font = '700 10px "Noto Sans HK", sans-serif';
           ctx.textAlign = 'center';
           const k = keyName((getBindings().classic2.jump || [])[0]);
-          ctx.fillText(`P2 加入：手掣撳 A，或者撳 ${k}`, x + 88, y + 19);
+          ctx.fillText(t('hud.p2join', { key: k }), x + 88, y + 19);
         }
         continue;
       }
@@ -578,7 +584,7 @@ class Game {
       // skill ready: the name line turns into which key to press
       const skillReady = p.energy >= SKILL_COST && p.state === 'alive';
       if (skillReady) ctx.fillStyle = C.redDk;
-      ctx.fillText(skillReady ? `P${i + 1} 撳 ${skillKeyLabel(p.ctl, true)} 必殺！` : `P${i + 1} ${p.char.name}`, x + 46, y + 15);
+      ctx.fillText(skillReady ? t('hud.skill', { n: i + 1, key: skillKeyLabel(p.ctl, true) }) : `P${i + 1} ${p.char.name}`, x + 46, y + 15);
       ctx.fillStyle = C.ink;
       for (let h = 0; h < p.maxHp; h++) drawHeart(ctx, x + 52 + h * 14, y + 26, 12, h < p.hp && p.state === 'alive' ? C.red : C.cream);
       ctx.font = '400 11px Bungee, sans-serif';
@@ -612,7 +618,7 @@ class Game {
         ctx.textAlign = 'center';
         ctx.fillText('LV2', x + 160, y + 38);
       }
-      const status = { dead: '復活中…', out: '已出局', down: '等隊友舔醒' }[p.state];
+      const status = { dead: t('hud.dead'), out: t('hud.out'), down: t('hud.down') }[p.state];
       if (status) {
         ctx.fillStyle = 'rgba(30,30,30,0.6)';
         rrect(ctx, x, y, 176, 46, 9);
@@ -629,7 +635,7 @@ class Game {
     ctx.font = '400 13px Bungee, sans-serif';
     ctx.fillText(String(this.score).padStart(6, '0'), W / 2, 22);
     ctx.font = '700 10px "Noto Sans HK", sans-serif';
-    ctx.fillText(`已解放 ${this.freed}／${this.catSpawned} 隻貓`, W / 2, 36);
+    ctx.fillText(t('hud.freed', { freed: this.freed, total: this.catSpawned }), W / 2, 36);
 
     const bt = this.bossTarget;
     if (bt && !bt.dead && bt.y > -100) {
@@ -717,7 +723,7 @@ function toast(text) {
   toast.timer = setTimeout(() => { t.hidden = true; }, 3200);
 }
 
-const MODE_LABELS = { pc: '滑鼠＋鍵盤', classic: '經典鍵盤', touch: '觸控' };
+const MODE_LABELS = { pc: t('mode.pc'), classic: t('mode.classic'), touch: t('mode.touch') };
 
 function renderPicks() {
   for (const b of document.querySelectorAll('.pick')) {
@@ -726,7 +732,7 @@ function renderPicks() {
     b.querySelector('.pick-badge').textContent = mine ? 'P1' : 'P2';
   }
   const best = loadBest();
-  $('titleBest').textContent = best ? `最高紀錄 ${String(best.score).padStart(6, '0')}・${best.rank} 級` : '';
+  $('titleBest').textContent = best ? t('title.best', { score: String(best.score).padStart(6, '0'), rank: best.rank }) : '';
 }
 document.querySelectorAll('.pick').forEach((b) => b.addEventListener('click', () => {
   prefs.char = Number(b.dataset.char);
@@ -741,7 +747,11 @@ function renderSegments() {
   for (const b of document.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b.dataset.mode === prefs.mode));
   for (const b of document.querySelectorAll('[data-diff]')) b.setAttribute('aria-pressed', String(b.dataset.diff === prefs.difficulty));
   for (const el of document.querySelectorAll('[data-legend]')) el.hidden = el.dataset.legend !== prefs.mode;
+  for (const b of document.querySelectorAll('[data-lang]')) b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
 }
+document.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => {
+  if (b.dataset.lang !== lang) setLang(b.dataset.lang);
+}));
 
 function startGame(players, padIndex = null) {
   initAudio();
@@ -765,7 +775,7 @@ function startGame(players, padIndex = null) {
   showScreen(null);
   // first game with keys or touch and auto-aim on: say what it does
   if (options.autoAim && prefs.mode !== 'pc' && !options.autoAimTipSeen) {
-    toast('自動瞄準已開：專心行同跳就得（設定入面可以關）');
+    toast(t('toast.autoaim'));
     options.autoAimTipSeen = true;
     saveOptions();
   }
@@ -819,23 +829,23 @@ function renderSettings() {
     const extra = codes.slice(1).map(keyName).join('、');
     return `<div class="bind-row"><span>${ACTION_LABELS[action]}</span>
       <button type="button" class="key" id="bind-${settingsProfile}-${action}" data-action="${action}">${keyName(codes[0])}</button>
-      <small>${extra ? '另有：' + extra : ''}</small></div>`;
+      <small>${extra ? t('set.also') + extra : ''}</small></div>`;
   });
   if (settingsProfile === 'pc') {
-    rows.splice(3, 0, '<div class="bind-row"><span>瞄準</span><span class="key fixed">滑鼠</span><small></small></div>',
-      '<div class="bind-row"><span>射擊</span><span class="key fixed">按住左鍵</span><small></small></div>');
-    rows.push('<div class="bind-row"><span>專屬技（另一個）</span><span class="key fixed">右鍵</span><small></small></div>');
+    rows.splice(3, 0, `<div class="bind-row"><span>${t('set.aim')}</span><span class="key fixed">${t('set.mouse')}</span><small></small></div>`,
+      `<div class="bind-row"><span>${t('set.fire')}</span><span class="key fixed">${t('set.holdLeft')}</span><small></small></div>`);
+    rows.push(`<div class="bind-row"><span>${t('set.skillAlt')}</span><span class="key fixed">${t('set.rightBtn')}</span><small></small></div>`);
   }
   $('bindList').innerHTML = rows.join('');
   $('bindTitle').textContent = PROFILE_LABELS[settingsProfile];
   // say when this key set is actually used, and flag clashes
   const scope = {
-    pc: ['pc', '「滑鼠＋鍵盤」模式嘅 P1 用'],
-    classic1: ['classic', '「經典鍵盤」模式嘅 P1 用'],
-    classic2: [null, '「經典鍵盤」模式嘅 P2 用；「滑鼠＋鍵盤」雙人而又冇第二個手掣時，P2 亦用呢組'],
+    pc: ['pc', t('scope.pc')],
+    classic1: ['classic', t('scope.classic1')],
+    classic2: [null, t('scope.classic2')],
   }[settingsProfile];
   const active = settingsProfile === 'classic2' ? prefs.mode !== 'touch' : prefs.mode === scope[0];
-  $('bindScope').innerHTML = `呢組鍵：${scope[1]}。${active ? '' : `<b>你而家揀咗「${MODE_LABELS[prefs.mode]}」，所以呢組鍵暫時唔會用到。</b>`}`;
+  $('bindScope').innerHTML = t('scope.line', { scope: scope[1] }) + (active ? '' : `<b>${t('scope.unused', { mode: MODE_LABELS[prefs.mode] })}</b>`);
   $('bindScope').classList.toggle('warn', !active);
   const clash = bindingConflicts(settingsProfile);
   for (const [action, msg] of Object.entries(clash)) {
@@ -851,7 +861,7 @@ function renderSettings() {
 $('bindList').addEventListener('click', (e) => {
   const btn = e.target.closest('button.key');
   if (!btn) return;
-  btn.textContent = '撳一個鍵…（Esc 取消）';
+  btn.textContent = t('set.pressKey');
   btn.classList.add('listening');
   captureNextKey((code) => {
     if (code) setBinding(settingsProfile, btn.dataset.action, code);
@@ -866,7 +876,7 @@ document.querySelectorAll('[data-profile]').forEach((t) => t.addEventListener('c
 $('btnReset').addEventListener('click', () => {
   resetBindings();
   renderSettings();
-  toast('鍵位已重設為預設');
+  toast(t('toast.reset'));
 });
 $('btnSettingsDone').addEventListener('click', () => showScreen(game.state === 'paused' ? 'pause' : 'title'));
 
@@ -882,8 +892,20 @@ document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('clic
   }
 }));
 document.querySelectorAll('[data-diff]').forEach((b) => b.addEventListener('click', () => { prefs.difficulty = b.dataset.diff; renderSegments(); }));
-$('btn1p').addEventListener('click', () => startGame(1));
-$('btn2p').addEventListener('click', () => startGame(2));
+// the first time a game starts the opening story plays (skippable); automated runs skip it unless ?story=1
+const storyParam = new URLSearchParams(location.search).get('story');
+const wantStory = () => (storyParam === '1' || (storyParam !== '0' && !navigator.webdriver)) && !options.storySeen;
+function startWithStory(players, padIndex = null) {
+  if (!wantStory()) return startGame(players, padIndex);
+  playStory(() => {
+    options.storySeen = true;
+    saveOptions();
+    startGame(players, padIndex);
+  });
+}
+$('btn1p').addEventListener('click', () => startWithStory(1));
+$('btn2p').addEventListener('click', () => startWithStory(2));
+$('btnStory').addEventListener('click', () => playStory(() => showScreen('title')));
 $('btnSettings').addEventListener('click', () => { renderSettings(); renderOptions(); showScreen('settings'); });
 $('btnResume').addEventListener('click', resumeGame);
 $('btnPauseSettings').addEventListener('click', () => { renderSettings(); renderOptions(); showScreen('settings'); });
@@ -897,7 +919,7 @@ $('btnMute').addEventListener('click', () => {
   initAudio();
   setMuted(!isMuted());
   $('btnMute').setAttribute('aria-pressed', String(isMuted()));
-  $('btnMute').textContent = isMuted() ? '靜音' : '聲音';
+  $('btnMute').textContent = isMuted() ? t('hud.muted') : t('hud.sound');
 });
 
 window.addEventListener('keydown', (e) => {
@@ -911,7 +933,7 @@ onKonami(() => {
   if (game.state !== 'title') return;
   prefs.konami = true;
   sfx.pickup();
-  toast('秘技成功：下一局 30 條命！');
+  toast(t('toast.konami'));
 });
 
 // ---------------- boot ----------------
@@ -923,7 +945,7 @@ function loadImages() {
   return Promise.all(names.map((n) => new Promise((res, rej) => {
     const im = new Image();
     im.onload = () => res([n, im]);
-    im.onerror = () => rej(new Error(`載入唔到 ${n}`));
+    im.onerror = () => rej(new Error(t('load.fail', { name: n })));
     im.src = `assets/sprites/${n}.png`;
   }))).then((list) => Object.fromEntries(list));
 }
@@ -935,7 +957,7 @@ function frame(now) {
   let joined = game.update(dt);
   // test hook: run extra simulation steps per frame (window.__fast = 4) for automated playthroughs
   for (let k = 1; k < (window.__fast || 1); k++) joined = joined.concat(game.update(dt));
-  if (game.state === 'title' && joined.length && $('settings').hidden) startGame(1, joined[0]);
+  if (game.state === 'title' && joined.length && $('settings').hidden && !storyOpen()) startWithStory(1, joined[0]);
   else if (game.state === 'paused' && joined.length) resumeGame();
   else if (game.state === 'play') {
     // pause from a pad's Start button
@@ -949,10 +971,7 @@ function frame(now) {
 
 // loading screen: progress over every sprite image, with a rotating tip while it fills
 const TIPS = [
-  '貼士：打敵人儲能量，能量條閃就可以放必殺！',
-  '貼士：射爆飛天罐頭，執武器字母換槍。',
-  '貼士：雙人模式，隊友倒地就企喺佢隔籬一秒，舔醒佢。',
-  '貼士：衝刺嗰一下係無敵嘅，用嚟穿過子彈。',
+  t('tip.1'), t('tip.2'), t('tip.3'), t('tip.4'),
 ];
 let tipI = 0;
 const tipTimer = setInterval(() => { $('loadTip').textContent = TIPS[++tipI % TIPS.length]; }, 2500);
@@ -960,7 +979,7 @@ function loadProgress(done, total) {
   const pct = total ? Math.round((done / total) * 100) : 0;
   $('loadFill').style.width = `${pct}%`;
   $('loadFill').parentElement.setAttribute('aria-valuenow', String(pct));
-  $('loadText').textContent = `載入緊… ${pct}%（${done}／${total}）`;
+  $('loadText').textContent = t('load.text', { pct, done, total });
 }
 
 Promise.all([loadImages(), loadSprites(loadProgress), document.fonts ? document.fonts.ready : null]).then(([img]) => {
@@ -973,5 +992,5 @@ Promise.all([loadImages(), loadSprites(loadProgress), document.fonts ? document.
   requestAnimationFrame(frame);
 }).catch((err) => {
   clearInterval(tipTimer);
-  $('loadText').textContent = err.message + '，請重新載入。';
+  $('loadText').textContent = err.message + t('load.reload');
 });

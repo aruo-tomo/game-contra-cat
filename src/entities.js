@@ -1,5 +1,6 @@
 // Players, bullets, enemies, pickups and effects.
 
+import { t } from './i18n.js';
 import { C, ink, ellipse, rrect, drawRat, drawGun, drawHeart, drawBadge, WEAPON_INFO } from './art.js';
 import { sfx } from './audio.js';
 import { SPR, frame, drawFrame, tintOf } from './sprites.js';
@@ -10,8 +11,8 @@ const RUN = 155;
 const HERO_SCALE = 60 / 128; // generated hero frames are 128px tall when standing
 
 export const CHARS = [
-  { id: 'blaze', name: '火斑 Blaze', sprite: 'cat01', gun: C.yellow, drawH: 54, size: 1, skill: '三眼光炮' },
-  { id: 'gulp', name: '大口 Gulp', sprite: 'cat02', gun: C.red, drawH: 60, size: 1.04, skill: '肚口吞彈' },
+  { id: 'blaze', name: t('blaze.name'), sprite: 'cat01', gun: C.yellow, drawH: 54, size: 1, skill: t('blaze.skill') },
+  { id: 'gulp', name: t('gulp.name'), sprite: 'cat02', gun: C.red, drawH: 60, size: 1.04, skill: t('gulp.skill') },
 ];
 
 export const SKILL_COST = 50;
@@ -264,7 +265,7 @@ export class Player {
     // tell the player the moment the skill becomes usable
     const ready = this.energy >= SKILL_COST;
     if (ready && !this.skillReady) {
-      g.text(this.cx, this.y - 30 - this.idx * 14, `必殺OK！撳 ${skillKeyLabel(this.ctl)}`, C.red);
+      g.text(this.cx, this.y - 30 - this.idx * 14, t('skill.ready', { key: skillKeyLabel(this.ctl) }), C.red);
       g.effects.push(new ReadyRing(this));
       sfx.ready();
     }
@@ -335,13 +336,13 @@ export class Player {
         .slice(0, 5);
       this.skillT = 5;
       sfx.lock();
-      g.text(this.cx, this.y - 14, '三眼光炮！', C.red);
+      g.text(this.cx, this.y - 14, t('skill.beam'), C.red);
     } else {
       this.skillT = 1.6;
       this.swallowed = 0;
       this.spitPending = true;
       sfx.swallow();
-      g.text(this.cx, this.y - 14, '啊——', C.red);
+      g.text(this.cx, this.y - 14, t('skill.gulp'), C.red);
     }
   }
 
@@ -417,7 +418,7 @@ export class Player {
       this.reviveP = 0;
       this.skillT = 0;
       this.spitPending = false;
-      this.game.text(this.cx, this.y - 10, '隊友！救我！', C.red);
+      this.game.text(this.cx, this.y - 10, t('down.help'), C.red);
     } else {
       this.loseLife();
     }
@@ -428,7 +429,7 @@ export class Player {
     this.hp = this.game.classic ? 1 : 2;
     this.inv = 2;
     sfx.revive();
-    this.game.text(this.cx, this.y - 16, '舔醒咗！', C.green);
+    this.game.text(this.cx, this.y - 16, t('revived'), C.green);
   }
 
   loseLife() {
@@ -1166,7 +1167,7 @@ export class Elite extends Enemy {
     this.hops = 0;
     this.score = 5000;
     this.cat = 'cat03';
-    this.boss = '三眼肥白貓（被洗腦）';
+    this.boss = t('boss.elite');
   }
   update(dt) {
     this.base(dt);
@@ -1215,7 +1216,7 @@ export class Elite extends Enemy {
       if (this.timer <= 0) {
         g.spawnRunner(1);
         g.spawnRunner(-1);
-        g.text(this.cx, this.y - 10, '喵嗚——！', C.red);
+        g.text(this.cx, this.y - 10, t('elite.roar'), C.red);
         this.state = 'hop';
         this.timer = 0.8;
       }
@@ -1418,7 +1419,7 @@ class BossPart extends Enemy {
       ctx.fillStyle = C.ink;
       ctx.font = '700 9px "Noto Sans HK", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('鼠眼核心', this.cx, this.y + this.h + 16);
+      ctx.fillText(t('boss.core'), this.cx, this.y + this.h + 16);
     }
   }
   // generated hatch + pivoting barrel, and the rat-eye porthole (cracked below half health)
@@ -1756,17 +1757,17 @@ export class KnockedOut {
     if (this.t > 2) this.dead = true;
   }
   draw(ctx) {
-    const t = this.t;
-    if (this.body && t < 1 && (t < 0.6 || Math.floor(t * 16) % 2)) {
+    const age = this.t;
+    if (this.body && age < 1 && (age < 0.6 || Math.floor(age * 16) % 2)) {
       drawFrame(ctx, this.body, this.x, this.y, this.scale, { flip: this.facing });
       // dizzy stars circling the head
       for (let i = 0; i < 3; i++) {
-        const a = t * 7 + (i * Math.PI * 2) / 3;
+        const a = age * 7 + (i * Math.PI * 2) / 3;
         drawStar(ctx, this.x + this.facing * 14 + Math.cos(a) * 12, this.y - 26 + Math.sin(a) * 4, 4);
       }
     }
-    if (this.soul && t > 0.25) {
-      const k = t - 0.25;
+    if (this.soul && age > 0.25) {
+      const k = age - 0.25;
       const alpha = Math.min(1, k * 3) * Math.max(0, 1 - k / 1.75);
       const sx = this.x + Math.sin(k * 4) * 8;
       const sy = this.y - 34 - k * 70;
@@ -1785,9 +1786,9 @@ export class KnockedOut {
         ctx.lineWidth = 5;
         ctx.lineJoin = 'round';
         ctx.strokeStyle = C.ink;
-        ctx.strokeText('-1 命', this.x + 34, this.y - 50 - k * 30);
+        ctx.strokeText(t('life.lost'), this.x + 34, this.y - 50 - k * 30);
         ctx.fillStyle = C.yellow;
-        ctx.fillText('-1 命', this.x + 34, this.y - 50 - k * 30);
+        ctx.fillText(t('life.lost'), this.x + 34, this.y - 50 - k * 30);
         ctx.globalAlpha = 1;
       }
     }
