@@ -195,7 +195,7 @@ const reset = (camy, x = 300, y = null) => {
   await page.evaluate(() => __k.damage(9999, __game.players[0]));
   await sleep(4700);
   r = await page.evaluate(() => ({ state: __game.state, title: document.getElementById('clearTitle').textContent, next: !document.getElementById('btnNext').hidden }));
-  check('sinking the koi clears stage 3 (last stage for now)', r.state === 'clear' && /3/.test(r.title) && !r.next, JSON.stringify(r));
+  check('sinking the koi clears stage 3 and offers stage 4', r.state === 'clear' && /3/.test(r.title) && r.next, JSON.stringify(r));
 
   check('no console errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();

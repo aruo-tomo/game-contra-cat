@@ -551,3 +551,71 @@ JOBS15 = [
          "5) a round silver tin of cat food with a red fish label, side view, like a wheel; "
          "6) a heavy black iron ship's anchor with a ring on top."),
 ]
+
+# --- pass 16: stage 4, the pet hospital basement (Dr. Rat's brainwashing lab) ---
+LAB = ("Setting: the secret basement lab under the pet hospital, where the Red Mouse army brainwashes cats: concrete walls, steam "
+       "pipes, riveted grey-green machines, glowing red brainwave antennas, specimen tanks. ")
+JOBS16 = [
+    dict(name="spider_mech", refs=["raw/koi_boss.png", "raw/surgeon.png", "raw/rat.png"], prompt=STYLE + BG + sheet(4, "LEFT") +
+         "Character: the stage 4 boss, DR. RAT's BRAINWAVE SPIDER MECH: a big round riveted grey-green metal body on six long jointed "
+         "spider legs with red claw tips, a clear glass dome cockpit on top with a small grey rat scientist inside (lab coat, round "
+         "goggles, wild white hair), a big red brainwave antenna dish on the front that glows with concentric red rings, a red rat-face "
+         "emblem on the body. The same machine at the same size in every frame. Frames: 1) walking forward on its six legs; "
+         "2) rearing up on its back legs, the antenna dish blasting glowing red concentric brainwave rings forward; 3) hanging UPSIDE "
+         "DOWN as if clinging to a ceiling, legs gripping above, the dish pointing down; 4) its legs blown off: only the round body and "
+         "the glass dome left, now flying on two small sputtering jet thrusters underneath, cracked, the rat scientist furious."),
+    dict(name="drill_boss", refs=["raw/headnurse.png", "raw/turret.png", "raw/rat.png"], prompt=STYLE + BG + sheet(3, "LEFT") +
+         "Character: the stage 4 mid-boss, a Red Mouse army DRILL DIGGER: a squat riveted grey-green digging machine with a huge "
+         "mustard-yellow cone drill on the front, two clamp arms, caterpillar tracks, a small grey rat engineer with a yellow hard hat "
+         "and goggles driving it from an open cab. It clings to walls. Frames: 1) idle, drill pointing forward, spinning lines; "
+         "2) lunging forward, the drill shoved out far on a long extending piston arm, sparks; 3) a clamp arm swung forward hurling "
+         "a round spinning saw-blade disc."),
+    dict(name="hypno_cat", refs=["refs/cat06.png", "raw/conecat.png"], prompt=STYLE + BG + sheet(3, "LEFT") +
+         "Character: a brainwashed cat from the lab: a fluffy cream cat like the first reference (small yellow paws, pink cheeks) wearing "
+         "a metal brainwashing headset with a tall antenna topped by a glowing red bulb, eyes turned to red hypnotised spirals, a "
+         "hospital-gown bib. It stands UPRIGHT on two legs, same size as the cat in the second reference, zombie-like. "
+         "Frames: 1) and 2) a slow sleepwalking shuffle, arms stretched forward, legs alternating; "
+         "3) head tilted back, the antenna bulb blazing and sending out glowing red concentric rings."),
+]
+
+# --- pass 17: the rest of stage 4's cast and scenery ---
+JOBS17 = [
+    dict(name="flame_rat", refs=["raw/rat.png", "raw/rat_spray.png"], prompt=STYLE + BG + sheet(2, "LEFT") + RAT_BASE +
+         "This one is a FLAMETHROWER trooper: a black welding mask pushed up on its head, thick red gloves, a round red fuel tank on its "
+         "back joined by a hose to a stubby grey-green flamethrower nozzle held forward at hip height. Frames: 1) braced, nozzle forward, "
+         "a tiny blue-yellow pilot flame at the tip; 2) firing: a short burst of orange-yellow flame just leaving the nozzle, body leaning back."),
+    dict(name="tesla_rat", refs=["raw/rat.png", "raw/rat_spray.png"], prompt=STYLE + BG + sheet(2, "LEFT") + RAT_BASE +
+         "This one is a TESLA trooper: rubber goggles, a backpack generator with a tall copper tesla coil sticking up above its head "
+         "topped by a round metal ball, a red bandana. Frames: 1) standing, one paw pointing forward; 2) zapping: yellow lightning "
+         "crackling round the coil ball and down its pointing arm, fur standing on end."),
+    dict(name="spiderbot", refs=["raw/spider_mech.png", "raw/puffer.png"], prompt=STYLE + BG + row(3) +
+         "A small Red Mouse army SPIDER-BOT, side view, all three at the same scale: a round riveted grey-green metal body the size of a "
+         "fist, one glowing red rat eye, six thin jointed legs with red tips. 1) walking, legs mid-step; 2) walking, legs the other way; "
+         "3) dropping down with all legs spread wide."),
+    dict(name="pod", refs=["raw/hypno_cat.png", "raw/surgeon.png"], prompt=STYLE + BG + row(2) +
+         "Lab SPECIMEN TANKS, both at the same scale, front view, much taller than wide: a tall glass cylinder with a riveted grey-green "
+         "metal base and cap, red cables, pale grey-green liquid inside with bubbles. 1) a sleeping cream cat curled up floating inside "
+         "the tank wearing a little brainwashing headset; 2) the same tank smashed open, glass shards, empty, liquid spilling."),
+    dict(name="freed_hypnocat", refs=["raw/hypno_cat.png", "raw/freed_runner.png"], prompt=STYLE + BG + sheet(2, "RIGHT") +
+         "Character: the fluffy cream cat from the first reference in its hospital gown, the brainwashing headset now broken and "
+         "falling off, eyes back to normal. " + FREED),
+    dict(name="lab_shots", refs=["raw/enemy_shots.png", "raw/aqua_shots.png"], prompt=STYLE + BG + row(3) +
+         "Three projectiles in the SAME style as the attached shots (thick ink outlines, no glow halo): "
+         "1) a round spinning circular saw blade, grey metal teeth, a yellow hub; "
+         "2) a puff of flame flying RIGHT, orange and yellow with a red edge and a black outline; "
+         "3) a set of three glowing red concentric hypnosis rings like a target, with a tiny black spiral in the centre."),
+    dict(name="bg4_far", refs=["raw/bg2_far.png", "refs/sheet.png"], prompt=STYLE + LAB +
+         "Wide side-scrolling game background, far layer, landscape canvas: the long back wall of the secret basement lab: rows of "
+         "glowing specimen tanks, big brainwave machines with red antenna dishes, thick pipes along the ceiling, grey concrete walls "
+         "with hazard stripes, a giant red rat-face emblem banner. Low contrast and soft so the foreground stays readable. No characters, no text."),
+    dict(name="bg4_mid", refs=["raw/bg2_mid.png", "refs/sheet.png"], prompt=STYLE + BG + LAB +
+         "Wide side-scrolling game background, middle layer, landscape canvas: a basement corridor wall running across the full width: "
+         "riveted steel panels, valves and pressure gauges, a big round vault door, a bank of blinking computer consoles, crates. "
+         "The wall occupies only the bottom 45% of the canvas and its bottom edge touches the bottom of the canvas; everything above is "
+         "the plain background. No text, no characters."),
+    dict(name="bg4_shaft", refs=["raw/bg4_far.png", "raw/bg3_air.png"], prompt=STYLE + LAB +
+         "Tall PORTRAIT canvas: a vertical game background: looking at the back wall of a deep freight-lift shaft going down into the "
+         "basement: riveted steel girders, cross braces, cables, hazard-striped beams, caged work lights, pipes, a painted floor number "
+         "'B2' style sign without letters (just stripes). The top edge and bottom edge look alike so it can repeat vertically. "
+         "Low contrast and soft. No characters, no text."),
+]

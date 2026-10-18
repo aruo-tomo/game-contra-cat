@@ -280,6 +280,16 @@ sheet("eel", 2, [("eel", "peek"), ("eel", "zap")], 0, 64, merge=14)
 sheet("can_rat", 2, [("canrat", "idle"), ("canrat", "roll")], 0, 92, merge=24, post=keep_largest)
 sheet("aqua_shots", 6, [("ashot", k) for k in ("bone", "harpoon", "water", "torpedo", "can", "anchor")], 4, 48, merge=14,
       min_area=200)
+# ---- stage 4: pet hospital basement ----
+sheet("spider_mech", 4, [("spider", k) for k in ("walk", "rear", "ceiling", "pod")], 0, 200, merge=16)
+sheet("drill_boss", 3, [("drill", k) for k in ("idle", "lunge", "throw")], 0, 200, merge=16, post=keep_largest)
+sheet("hypno_cat", 3, [("hypnocat", "walk"), ("hypnocat", "walk"), ("hypnocat", "emit")], "median", 112, merge=16)
+sheet("freed_hypnocat", 2, [("freed_hypnocat", "daze"), ("freed_hypnocat", "happy")], "median", 110, merge=16)
+sheet("flame_rat", 2, [("flamerat", "idle"), ("flamerat", "fire")], 0, 92, merge=24, post=keep_largest)
+sheet("tesla_rat", 2, [("teslarat", "idle"), ("teslarat", "zap")], 0, 92, merge=24)
+sheet("spiderbot", 3, [("spiderbot", "crawl"), ("spiderbot", "crawl"), ("spiderbot", "drop")], 0, 48, merge=12)
+sheet("pod", 2, [("pod", "tank"), ("pod", "broken")], 0, 128, merge=16)
+sheet("lab_shots", 3, [("lshot", k) for k in ("saw", "flame", "ring")], 0, 48, merge=14, min_area=200)
 # swimming with each gun (diving helmet, air tank), drawn at the held-gun resolution
 for hero in ("blaze", "gulp"):
     for w in ("N", "S", "M", "L", "F"):
@@ -328,6 +338,9 @@ layer("bg2_mid", "bg2_mid", 300, cut=True)
 layer("floor2", "floor2", 256)
 layer("bg3_far", "bg3_far", 1200)
 layer("bg3_air", "bg3_air", 1200)
+layer("bg4_far", "bg4_far", 720)
+layer("bg4_mid", "bg4_mid", 300, cut=True)
+layer("bg4_shaft", "bg4_shaft", 1200)
 layer("title", "title", 720)
 layer("cover_bg", "cover_bg", 720)
 # character-select portraits are plain cut-outs at a fixed height (not part of the manifest frames)

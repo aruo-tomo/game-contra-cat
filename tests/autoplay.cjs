@@ -148,7 +148,7 @@ const stage = Number(process.argv[5] || 1);
           log.bestT = g.time;
         }
       }
-      if (g.lock && lk === mid && !log.eliteStart) log.eliteStart = g.time;
+      if (g.bossTarget && g.bossTarget.midboss && !log.eliteStart) log.eliteStart = g.time;
       if (log.eliteStart && !g.lock && !log.elite) log.elite = +(g.time - log.eliteStart).toFixed(1);
       if (g.lock && lk === boss && !log.bossStart) log.bossStart = g.time;
       return { state: g.state, cam: Math.round(g.cam.x), camy: Math.round(g.cam.y), time: +g.time.toFixed(1), deaths: g.deaths, hurts: log.hurts, freed: g.freed, spawned: g.catSpawned, score: g.score };
