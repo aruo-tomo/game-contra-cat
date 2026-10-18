@@ -833,22 +833,12 @@ const BULLET_SIZE = { N: 13, S: 14, M: 10, L: 48, F: 21, spit: 15, enemy: 16 };
 const BULLET_HEAD = { N: 0.7, S: 0.7, M: 0.72, L: 0.88, F: 0.68, spit: 0.78, enemy: 0.55 };
 const BULLET_GLOW = { L: 'rgba(255,80,70,0.35)', F: 'rgba(255,170,40,0.35)', enemy: 'rgba(232,60,60,0.3)', S: 'rgba(232,86,75,0.18)' };
 
-// Enemy shots are dark, spiky and ringed with a flashing red danger circle: nothing like the heroes'
-// bright warm hairballs and beams, so they can be told apart at a glance in a busy fight.
+// Enemy shots are dark and spiky: nothing like the heroes' bright warm hairballs and beams,
+// so they can be told apart at a glance in a busy fight.
 function drawEnemyShot(ctx, b) {
   const bomb = b.r >= 6;
   const f = frame('eshot', bomb ? 'bomb' : 'pellet', b.t * 10);
   const size = bomb ? 28 : 19; // the bomb frame includes its fuse
-  // danger ring: pulses and flashes so the shot stands out on light and dark backgrounds alike
-  const pulse = 0.5 + 0.5 * Math.sin(b.t * 22);
-  ctx.beginPath();
-  ctx.arc(b.x, b.y, size * (bomb ? 0.44 : 0.62) + 2 * pulse, 0, Math.PI * 2);
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = C.ink;
-  ctx.stroke();
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = pulse > 0.5 ? '#FF3B30' : C.paper;
-  ctx.stroke();
   if (f) {
     // the bomb's round body sits in the lower part of its frame (fuse on top): centre the body on the shot
     drawFrame(ctx, f, b.x, b.y - (bomb ? size * 0.16 : 0), size / f.h, { anchor: 'center', rot: bomb ? Math.sin(b.t * 6) * 0.25 : b.t * 8 });
@@ -1028,10 +1018,17 @@ export class Runner extends Enemy {
     this.facing = dir;
     this.cat = 'cat05';
     this.score = 100;
+    this.pouncer = Math.random() < 0.35; // some leap at the hero instead of just running past
   }
   update(dt) {
     this.base(dt);
     this.vx = this.dir * 150;
+    const p = this.game.nearestPlayer(this);
+    if (this.pouncer && this.onGround && p && !this.pounced && Math.sign(p.cx - this.cx) === this.dir && Math.abs(p.cx - this.cx) < 120) {
+      this.pounced = true;
+      this.vy = -420;
+    }
+    if (this.pounced && !this.onGround) this.vx = this.dir * 230;
     moveBody(this, dt, this.game.level);
     if (this.onGround && (this.hitWall || Math.random() < 0.006)) this.vy = -480;
     if (this.y > 440 || this.x < this.game.cam.x - 120 || this.x > this.game.cam.x + this.game.W + 160) this.dead = true;
@@ -1086,6 +1083,206 @@ export class Rat extends Enemy {
   }
 }
 
+// ---- more Red Mouse soldier types: each looks and behaves differently, so the player has to read the field ----
+// muzzle / hand points on the generated frames (x from centre towards facing, y from the top of the hitbox)
+// (measured on the generated frames the same way as RAT_MUZZLE)
+const RAT_POINTS = { gunner: { x: 39, y: 21 }, grenadier: { x: 22, y: 9 }, sniper: { x: 48, y: 14 } };
+
+class RatSoldier extends Enemy {
+  constructor(game, x, groundY, w, h, hp, score) {
+    super(game, x, groundY - h, w, h, hp);
+    this.score = score;
+    this.villain = true;
+    this.fireT = 0;
+  }
+  // stand on the ground, face the nearest hero; returns that hero (or null)
+  stand(dt) {
+    this.base(dt);
+    this.fireT = Math.max(0, this.fireT - dt);
+    moveBody(this, dt, this.game.level);
+    if (this.y > 440) { this.dead = true; return null; }
+    const p = this.game.nearestPlayer(this);
+    if (p) this.facing = p.cx < this.cx ? -1 : 1;
+    return p;
+  }
+  point(key) {
+    const m = RAT_POINTS[key];
+    return { x: this.cx + this.facing * m.x, y: this.y + m.y };
+  }
+}
+
+// Heavy gunner (yellow helmet): long wind-up, then a three-round burst that sweeps across the hero
+export class Gunner extends RatSoldier {
+  constructor(game, x, groundY) {
+    super(game, x, groundY, 28, 42, 4, 400);
+    this.cool = 1.4 + Math.random();
+    this.burst = 0;
+    this.vx = 0;
+  }
+  update(dt) {
+    this.vx = 0;
+    const p = this.stand(dt);
+    if (!p || !this.game.onScreen(this)) return;
+    if (this.burst > 0) {
+      this.burstT -= dt;
+      if (this.burstT <= 0) {
+        this.burstT = 0.13;
+        const m = this.point('gunner');
+        const a = Math.atan2(p.cy - m.y, p.cx - m.x) + (2 - this.burst) * 0.12 * this.facing * -1;
+        enemyShot(this.game, m.x, m.y, a, 250);
+        this.fireT = 0.1;
+        this.burst--;
+      }
+      return;
+    }
+    this.cool -= dt;
+    if (this.cool <= 0) {
+      this.cool = 2.8 + Math.random() * 0.6;
+      this.burst = 3;
+      this.burstT = 0;
+    }
+  }
+  draw(ctx) {
+    const firing = this.burst > 0 || this.fireT > 0;
+    if (this.drawGen(ctx, 'gunner', firing ? 'fire' : 'idle', 0, 50 / 96, { flip: -this.facing, dy: 1 })) {
+      const m = this.point('gunner');
+      this.warn(ctx, m.x, m.y);
+      return;
+    }
+    drawRat(ctx, this.cx, this.y + this.h, this.facing, this.t, { flash: this.flash > 0 });
+  }
+}
+
+// Grenadier (bomb strap): keeps its distance and lobs bombs that land where the hero is standing
+export class Grenadier extends RatSoldier {
+  constructor(game, x, groundY) {
+    super(game, x, groundY, 24, 40, 3, 300);
+    this.cool = 1.2 + Math.random();
+    this.home = x;
+  }
+  update(dt) {
+    // backs away a little when a hero gets close, but never far from its post
+    const p0 = this.game.nearestPlayer(this);
+    this.vx = 0;
+    if (p0 && Math.abs(p0.cx - this.cx) < 120 && Math.abs(this.x - this.home) < 70) this.vx = (p0.cx < this.cx ? 1 : -1) * 55;
+    const p = this.stand(dt);
+    if (!p || !this.game.onScreen(this)) return;
+    this.cool -= dt;
+    if (this.cool <= 0) {
+      this.cool = 2.3 + Math.random() * 0.7;
+      const h = this.point('grenadier');
+      const T = 0.95; // flight time
+      const g = 520;
+      const tx = p.cx + p.vx * 0.4; // lead a running hero a little
+      const ty = p.y + p.h - 4;
+      this.game.ebullets.push({ x: h.x, y: h.y, vx: (tx - h.x) / T, vy: (ty - h.y - 0.5 * g * T * T) / T, gravity: g,
+        t: 0, kind: 'enemy', r: 6, bomb: true });
+      sfx.enemyShot();
+      this.fireT = 0.3;
+    }
+  }
+  draw(ctx) {
+    if (this.drawGen(ctx, 'grenadier', this.fireT > 0 ? 'throw' : 'idle', 0, 46 / 92, { flip: -this.facing, dy: 1 })) return;
+    drawRat(ctx, this.cx, this.y + this.h, this.facing, this.t, { flash: this.flash > 0 });
+  }
+}
+
+// Charger (goggles and fork): sprints at the hero, hops gaps and walls, and pounces when close
+export class Charger extends RatSoldier {
+  constructor(game, x, groundY, dir = -1) {
+    super(game, x, groundY, 24, 38, 2, 250);
+    this.facing = dir;
+    this.state = 'run';
+    this.stateT = 0;
+  }
+  update(dt) {
+    this.base(dt);
+    const g = this.game;
+    const p = g.nearestPlayer(this);
+    this.stateT += dt;
+    if (this.state === 'run') {
+      if (p && this.onGround && this.t > 0.6) this.facing = p.cx < this.cx ? -1 : 1;
+      this.vx = this.facing * 175;
+      const ahead = this.cx + this.facing * 30;
+      const gap = this.onGround && g.groundTopAt(ahead) == null && !g.level.platforms().some((q) => ahead > q.x && ahead < q.x + q.w && Math.abs(q.y - (this.y + this.h)) < 4);
+      if (this.onGround && (this.hitWall || gap)) this.vy = -470;
+      if (p && this.onGround && Math.abs(p.cx - this.cx) < 95 && Math.abs(p.cy - this.cy) < 60) {
+        this.state = 'crouch';
+        this.stateT = 0;
+        this.vx = 0;
+      }
+    } else if (this.state === 'crouch') {
+      this.vx = 0;
+      if (this.stateT > 0.28) { // telegraphed: a short crouch before the leap
+        this.state = 'leap';
+        this.stateT = 0;
+        this.vx = this.facing * 300;
+        this.vy = -360;
+      }
+    } else if (this.state === 'leap' && this.onGround && this.stateT > 0.1) {
+      this.state = 'run';
+      this.stateT = 0;
+    }
+    moveBody(this, dt, g.level);
+    if (this.y > 440 || this.x < g.cam.x - 160 || this.x > g.cam.x + g.W + 200) this.dead = true;
+  }
+  draw(ctx) {
+    const anim = this.state === 'leap' || !this.onGround ? 'leap' : this.state === 'crouch' ? 'crouch' : 'run';
+    if (this.drawGen(ctx, 'charger', anim, this.t * 12, 40 / 80, { flip: -this.facing, dy: 1 })) return;
+    drawRat(ctx, this.cx, this.y + this.h, this.facing, this.t, { flash: this.flash > 0 });
+  }
+}
+
+// Sniper (beret, long rifle): a red laser sight tracks the hero, holds still for a moment, then one fast shot
+export class Sniper extends RatSoldier {
+  constructor(game, x, groundY) {
+    super(game, x, groundY, 26, 32, 2, 400);
+    this.phase = 'wait';
+    this.phaseT = -0.6 - Math.random();
+    this.aim = null;
+  }
+  update(dt) {
+    this.vx = 0;
+    const p = this.stand(dt);
+    if (!p || !this.game.onScreen(this)) { this.phase = 'wait'; this.phaseT = 0; return; }
+    this.phaseT += dt;
+    const m = this.point('sniper');
+    if (this.phase === 'wait' && this.phaseT > 1.2) {
+      this.phase = 'aim';
+      this.phaseT = 0;
+    }
+    if (this.phase === 'aim') {
+      // tracks for 0.75 s, then locks for 0.35 s so the hero has a fair chance to step out of the line
+      if (this.phaseT < 0.75) this.aim = Math.atan2(p.cy - m.y, p.cx - m.x);
+      if (this.phaseT > 1.1) {
+        enemyShot(this.game, m.x, m.y, this.aim, 440, 4);
+        this.fireT = 0.2;
+        this.phase = 'wait';
+        this.phaseT = 0;
+      }
+    }
+  }
+  draw(ctx) {
+    const m = this.point('sniper');
+    if (this.phase === 'aim' && this.aim != null && this.game.onScreen(this)) {
+      const locked = this.phaseT >= 0.75;
+      if (!locked || Math.floor(this.phaseT * 16) % 2) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(m.x, m.y);
+        ctx.lineTo(m.x + Math.cos(this.aim) * 700, m.y + Math.sin(this.aim) * 700);
+        ctx.lineWidth = locked ? 2.2 : 1.2;
+        ctx.strokeStyle = locked ? 'rgba(255,40,30,0.95)' : 'rgba(232,60,50,0.55)';
+        ctx.setLineDash(locked ? [] : [6, 5]);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    if (this.drawGen(ctx, 'sniper', this.fireT > 0 ? 'fire' : 'aim', 0, 37 / 74, { flip: -this.facing, dy: 1 })) return;
+    drawRat(ctx, this.cx, this.y + this.h, this.facing, this.t, { flash: this.flash > 0 });
+  }
+}
+
 // Red Mouse can turret
 export class Turret extends Enemy {
   constructor(game, x, groundY) {
@@ -1135,6 +1332,7 @@ export class Bat extends Enemy {
     this.mode = 'fly';
     this.score = 200;
     this.cat = 'cat04';
+    this.dropper = Math.random() < 0.4; // some hover over the hero and drop straight down
   }
   update(dt) {
     this.base(dt);
@@ -1142,12 +1340,26 @@ export class Bat extends Enemy {
     if (this.mode === 'fly') {
       this.x -= 105 * dt;
       this.y = this.baseY + Math.sin(this.t * 3) * 36;
-      if (p && Math.abs(p.cx - this.cx) < 150 && this.t > 1) {
+      if (this.dropper && p && Math.abs(p.cx - this.cx) < 220 && this.t > 0.8) {
+        this.mode = 'hover';
+        this.hoverT = 0;
+      } else if (p && Math.abs(p.cx - this.cx) < 150 && this.t > 1) {
         this.mode = 'dive';
         const a = Math.atan2(p.cy - this.cy, p.cx - this.cx);
         this.vx = Math.cos(a) * 280;
         this.vy = Math.sin(a) * 280;
       }
+    } else if (this.mode === 'hover') {
+      // shadow the hero from above for a moment (a little shake warns of the drop), then plunge
+      this.hoverT += dt;
+      if (p) this.x += Math.max(-140 * dt, Math.min(140 * dt, p.cx - this.cx));
+      this.y += (Math.max(40, (p ? p.y : 200) - 120) - this.y) * Math.min(1, dt * 3);
+      this.shakeX = this.hoverT > 0.7 ? Math.sin(this.t * 60) * 2 : 0;
+      if (this.hoverT > 1.0) { this.mode = 'drop'; this.vx = 0; this.vy = 120; }
+    } else if (this.mode === 'drop') {
+      this.vy += 900 * dt;
+      this.y += this.vy * dt;
+      this.shakeX = 0;
     } else {
       this.x += this.vx * dt;
       this.y += this.vy * dt;
@@ -1156,7 +1368,11 @@ export class Bat extends Enemy {
     if (this.x < this.game.cam.x - 100 || this.y < -120 || this.y > 440) this.dead = true;
   }
   draw(ctx) {
-    if (this.drawGen(ctx, 'bat', 'fly', this.t * 9, 46 / 96, { flip: this.vx > 0 ? -1 : 1, dy: 8 })) return;
+    ctx.save();
+    if (this.shakeX) ctx.translate(this.shakeX, 0);
+    const drew = this.drawGen(ctx, 'bat', 'fly', this.t * (this.mode === 'hover' ? 16 : 9), 46 / 96, { flip: this.vx > 0 ? -1 : 1, dy: 8 });
+    ctx.restore();
+    if (drew) return;
     this.drawSprite(ctx, 'cat04', 46, { flip: this.vx > 0 ? -1 : 1, bob: Math.sin(this.t * 20) * 2 });
   }
 }

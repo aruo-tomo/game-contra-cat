@@ -3485,6 +3485,92 @@
    }
   ]
  },
+ "gunner": {
+  "idle": [
+   {
+    "file": "gunner_idle_0.png",
+    "w": 138,
+    "h": 96,
+    "ax": 0.539
+   }
+  ],
+  "fire": [
+   {
+    "file": "gunner_fire_0.png",
+    "w": 176,
+    "h": 96,
+    "ax": 0.663
+   }
+  ]
+ },
+ "grenadier": {
+  "idle": [
+   {
+    "file": "grenadier_idle_0.png",
+    "w": 123,
+    "h": 92,
+    "ax": 0.531
+   }
+  ],
+  "throw": [
+   {
+    "file": "grenadier_throw_0.png",
+    "w": 127,
+    "h": 92,
+    "ax": 0.531
+   }
+  ]
+ },
+ "sniper": {
+  "aim": [
+   {
+    "file": "sniper_aim_0.png",
+    "w": 144,
+    "h": 74,
+    "ax": 0.663
+   }
+  ],
+  "fire": [
+   {
+    "file": "sniper_fire_0.png",
+    "w": 146,
+    "h": 74,
+    "ax": 0.668
+   }
+  ]
+ },
+ "charger": {
+  "run": [
+   {
+    "file": "charger_run_0.png",
+    "w": 136,
+    "h": 80,
+    "ax": 0.55
+   },
+   {
+    "file": "charger_run_1.png",
+    "w": 130,
+    "h": 77,
+    "ax": 0.519
+   }
+  ],
+  "crouch": [
+   {
+    "file": "charger_crouch_0.png",
+    "w": 137,
+    "h": 64,
+    "ax": 0.484
+   }
+  ],
+  "leap": [
+   {
+    "file": "charger_leap_0.png",
+    "w": 151,
+    "h": 76,
+    "ax": 0.645
+   }
+  ]
+ },
  "turret": {
   "body": [
    {
