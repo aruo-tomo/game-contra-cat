@@ -39,7 +39,7 @@ export function syringe(game, x, y, vx, vy, gravity = 0) {
     x, y, vx, vy, gravity, t: 0, kind: 'syringe', r: 4, draw: drawSyringe,
     // a thrown syringe sticks in the floor and breaks instead of sinking through it
     update(b) {
-      const top = b.vy > 0 ? game.groundTopAt(b.x) : null;
+      const top = b.vy > 0 ? game.groundTopAt(b.x, b.y - 10) : null;
       if (top != null && b.y >= top - 2 && b.y - b.vy / 60 < top + 6) {
         b.dead = true;
         game.effects.push(new FxAnim('impact', 'hit', b.x, top - 3, 0.14, 0.25, { rot: Math.random() * 6 }));
@@ -122,7 +122,7 @@ export function floorWave(game, x, floorY, dir) {
   game.ebullets.push({
     x, y: floorY - 10, vx: dir * 230, vy: 0, t: 0, kind: 'wave', r: 10, linger: true, draw: drawWave,
     update(b) {
-      const top = g.groundTopAt(b.x);
+      const top = g.groundTopAt(b.x, b.y);
       if (top == null || Math.abs(top - (b.y + 10)) > 4 || b.t > 1.6) b.dead = true;
     },
   });
@@ -146,7 +146,7 @@ class HospRat extends RatSoldier {
     if (Math.abs(dx) <= near) return;
     const dir = Math.sign(dx);
     const ahead = this.cx + dir * 20;
-    const top = this.game.groundTopAt(ahead);
+    const top = this.game.groundTopAt(ahead, this.y + this.h - 6);
     const plank = this.game.level.platforms().some((q) => ahead > q.x && ahead < q.x + q.w && Math.abs(q.y - (this.y + this.h)) < 4);
     if ((top != null && Math.abs(top - (this.y + this.h)) < 4) || plank) this.vx = dir * speed;
   }
@@ -336,7 +336,7 @@ export class ConeCat extends Enemy {
       this.yowlT -= dt;
       if (this.yowlT <= 0.25 && !this.waved) {
         this.waved = true;
-        const top = g.groundTopAt(this.cx);
+        const top = g.groundTopAt(this.cx, this.y + this.h - 6);
         if (top != null) floorWave(g, this.cx + this.facing * 16, top, this.facing);
         g.shake(2);
       }
@@ -353,7 +353,7 @@ export class ConeCat extends Enemy {
     }
     moveBody(this, dt, g.level);
     if (this.onGround && this.hitWall) this.vy = -440;
-    if (this.y > 440 || this.x < g.cam.x - 160 || this.x > g.cam.x + g.W + 220) this.dead = true;
+    if (this.y > g.cam.y + 440 || this.x < g.cam.x - 160 || this.x > g.cam.x + g.W + 220) this.dead = true;
   }
   draw(ctx) {
     const yowling = this.yowlT > 0;

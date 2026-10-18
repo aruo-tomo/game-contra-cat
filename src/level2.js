@@ -102,12 +102,12 @@ export function buildLevel2() {
 }
 
 // gurneys roll back and forth; the lift waits at each end. Riders move with them.
-function updateMovers(level, game, dt) {
+export function updateMovers(level, game, dt) {
   const riders = [...game.players.filter(Boolean), ...game.enemies, ...game.items];
   for (const m of level.movers) {
     const ox = m.x;
     const oy = m.y;
-    if (m.kind === 'gurney') {
+    if (m.x0 != null) { // rolls side to side (gurneys, logs)
       m.x += m.vx * dt;
       if (m.x < m.x0) { m.x = m.x0; m.vx = Math.abs(m.vx); }
       if (m.x > m.x1) { m.x = m.x1; m.vx = -Math.abs(m.vx); }

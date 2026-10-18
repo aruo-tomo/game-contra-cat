@@ -80,7 +80,7 @@ export class Player {
     this.w = 26;
     this.h = 46;
     this.x = game.cam.x + 80 + idx * 40;
-    this.y = -60 - idx * 30; // drop in from the sky at the start
+    this.y = game.cam.y - 60 - idx * 30; // drop in from the sky at the start
     this.vx = 0;
     this.vy = 0;
     this.facing = 1;
@@ -141,7 +141,7 @@ export class Player {
       this.downT -= dt;
       this.vx = 0;
       moveBody(this, dt, g.level);
-      if (this.y > 440) this.loseLife();
+      if (this.y > g.cam.y + 440) this.loseLife();
       else if (this.downT <= 0) this.loseLife();
       return;
     }
@@ -159,7 +159,11 @@ export class Player {
 
     let mx = c.lock ? 0 : c.mx;
     const swallowing = this.char.id === 'gulp' && this.skillT > 0;
-    const wantCrouch = c.down && this.onGround && Math.abs(c.mx) < 0.3 && this.dashT <= 0 && !swallowing;
+    // under water (stage 3's dives): swim strokes instead of jumps, slow sinking, an air supply
+    const wasWater = this.inWater;
+    this.inWater = !!(g.waterAt && g.waterAt(this.cx, this.y + this.h * 0.35));
+    this.updateAir(dt, wasWater);
+    const wantCrouch = c.down && this.onGround && Math.abs(c.mx) < 0.3 && this.dashT <= 0 && !swallowing && !this.inWater;
     this.setCrouch(wantCrouch);
     if (this.crouch) mx = 0;
 
@@ -178,7 +182,7 @@ export class Player {
       this.vy = 0;
       this.trail.push({ x: this.x, y: this.y, a: 0.45 });
     } else {
-      const target = mx * RUN * (swallowing ? 0.5 : 1);
+      const target = mx * RUN * (swallowing ? 0.5 : 1) * (this.inWater ? 0.75 : 1);
       this.vx += (target - this.vx) * Math.min(1, dt * 16);
     }
     for (const tr of this.trail) tr.a -= dt * 2.5;
@@ -186,7 +190,12 @@ export class Player {
 
     // jump buffering: a press shortly before landing still jumps once we touch down
     this.jumpBuf = c.jump ? 0.12 : Math.max(0, this.jumpBuf - dt);
-    if (this.jumpBuf > 0) {
+    if (this.inWater) {
+      // each press is a swim stroke upward; any number of them
+      if (c.jump) { this.vy = Math.min(this.vy * 0.3, 0) - 240; this.jumpBuf = 0; this.stroke = 0.35; sfx.jump(false); }
+      this.jumps = 1;
+      this.spin = 0;
+    } else if (this.jumpBuf > 0) {
       const onPlatform = this.onGround && this.groundRef && this.groundRef.kind !== 'ground';
       // coyote time: still allowed to ground-jump for a moment after running off a ledge
       const canGroundJump = this.onGround || (this.airT < 0.1 && !this.jumped);
@@ -216,7 +225,14 @@ export class Player {
     if (!c.jumpHeld && this.jumps === 1 && this.jumpT > 0.1 && this.vy < -260) this.vy = -260;
     this.dropping = this.dropT > 0;
 
-    moveBody(this, dt, g.level, this.dashT <= 0);
+    if (this.inWater && this.dashT <= 0) {
+      // buoyant: sink slowly (faster holding down), strokes slow down as they glide
+      this.vy = Math.max(-300, Math.min(c.down ? 190 : 110, this.vy + (c.down ? 700 : 420) * dt));
+      moveBody(this, dt, g.level, false);
+    } else moveBody(this, dt, g.level, this.dashT <= 0);
+    // breaking the surface on a stroke pops the hero up out of the water, high enough to reach a ledge
+    if (wasWater && !(g.waterAt && g.waterAt(this.cx, this.y + this.h * 0.35)) && this.vy < -60) this.vy = -540;
+    this.stroke = Math.max(0, (this.stroke || 0) - dt);
     if (this.onGround) { this.jumps = 0; this.spin = 0; this.airT = 0; this.jumped = false; }
     else {
       this.airT += dt;
@@ -273,7 +289,7 @@ export class Player {
     }
     this.skillReady = ready;
 
-    if (this.y > 440) this.die(true);
+    if (this.y > g.cam.y + 440) this.die(true);
   }
 
   fire() {
@@ -399,6 +415,27 @@ export class Player {
     return true;
   }
 
+  // air: runs down under water, refills in the air or in a bubble vent; out of air = hurt every 1.5 s
+  updateAir(dt, wasWater) {
+    if (this.air == null) this.air = 1;
+    const g = this.game;
+    const vent = g.inAirVent && g.inAirVent(this);
+    if (!this.inWater || vent) {
+      this.air = Math.min(1, this.air + dt * (vent ? 1.2 : 0.8));
+      this.chokeT = 0;
+      return;
+    }
+    this.air = Math.max(0, this.air - dt / 20);
+    if (this.air <= 0) {
+      this.chokeT = (this.chokeT || 0) - dt;
+      if (this.chokeT <= 0) { this.chokeT = 1.5; this.inv = 0; this.hurt(); g.text(this.cx, this.y - 12, t('air.out'), C.red); }
+    } else if (this.air < 0.3 && !this.airWarned) {
+      this.airWarned = true;
+      g.text(this.cx, this.y - 12, t('air.low'), C.red);
+    }
+    if (this.air > 0.5) this.airWarned = false;
+  }
+
   hurt() {
     if (this.state !== 'alive' || this.inv > 0 || this.catnip > 0 || this.dashT > 0) return;
     this.hp--;
@@ -436,7 +473,7 @@ export class Player {
 
   loseLife() {
     const g = this.game;
-    g.effects.push(new KnockedOut(g, this.char.id, this.cx, Math.min(300, this.y + this.h), this.facing, HERO_SCALE * this.char.size));
+    g.effects.push(new KnockedOut(g, this.char.id, this.cx, Math.min(g.cam.y + 300, this.y + this.h), this.facing, HERO_SCALE * this.char.size));
     g.deaths = (g.deaths || 0) + 1;
     this.lives--;
     if (this.weapon.lvl > 1) this.weapon.lvl = 1;
@@ -460,11 +497,13 @@ export class Player {
     const g = this.game;
     this.state = 'alive';
     this.hp = this.maxHp;
-    this.x = g.cam.x + 90 + this.idx * 36;
-    this.y = -50;
+    const at = g.respawnPoint && g.respawnPoint(this);
+    this.x = at ? at.x : g.cam.x + 90 + this.idx * 36;
+    this.y = at ? at.y : g.cam.y - 50;
     this.vx = 0;
     this.vy = 0;
     this.inv = 2.5;
+    this.air = 1;
     this.h = 46;
     this.crouch = false;
   }
@@ -516,6 +555,11 @@ export class Player {
     const la = this.localAim();
     let [slot] = GRIP_DIRS.reduce((best, d) => (Math.abs(d[1] - la) < Math.abs(best[1] - la) ? d : best));
     slot = slot.slice(4); // gripfwd -> fwd
+    if (this.inWater && !this.onGround) {
+      // swimming poses: level (a 2-frame kick, faster on a stroke), or tilted up / down
+      const swim = { fwd: 'swim', diag: 'swimup', up: 'swimup', down: 'swimdown' }[slot];
+      return { slot: swim, i: this.anim * (this.stroke > 0 ? 9 : 4), breathe: false, fallback: slot === 'fwd' ? 'jump' : slot };
+    }
     if (!this.onGround) return { slot: slot === 'fwd' ? 'jump' : slot, i: 0, breathe: false };
     if (this.crouch) return { slot: 'crouch', i: 0, breathe: false };
     if (Math.abs(this.vx) > 20) {
@@ -583,6 +627,35 @@ export class Player {
       x: paw.x + this.facing * (mx * Math.cos(la) - my * Math.sin(la)),
       y: paw.y + mx * Math.sin(la) + my * Math.cos(la),
     };
+  }
+
+  // under water: a glass helmet when the swim art isn't there, and the air meter over the head
+  drawDiveGear(ctx, pose) {
+    const g = this.game;
+    const swimArt = pose.f && pose.f.file && pose.f.file.includes('swim');
+    if (this.inWater && !swimArt) {
+      ctx.beginPath();
+      ctx.arc(this.cx + this.facing * 3, this.y + 9, 14, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(214,232,226,0.35)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = C.ink;
+      ctx.stroke();
+    }
+    if (this.air >= 1) return;
+    const w = 30;
+    const x = this.cx - w / 2;
+    const y = this.y - 12;
+    rrect(ctx, x, y, w, 5, 2.5);
+    ctx.fillStyle = C.cream;
+    ctx.fill();
+    rrect(ctx, x, y, w * this.air, 5, 2.5);
+    ctx.fillStyle = this.air < 0.3 ? (Math.floor(g.t * 8) % 2 ? C.red : C.yellow) : '#6FB3A0';
+    ctx.fill();
+    rrect(ctx, x, y, w, 5, 2.5);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = C.ink;
+    ctx.stroke();
   }
 
   // Redraw just the clenched paws over the gun handle: the same frame, clipped to a disc round the paw point
@@ -686,6 +759,7 @@ export class Player {
     }
     if (showGun && !gunBehind) this.drawGunArm(ctx, gun, ang);
     ctx.restore();
+    if (this.inWater || this.air < 1) this.drawDiveGear(ctx, pose);
 
     if (this.char.id === 'gulp' && this.skillT > 0) {
       if (!frame('skill', 'vortex')) {
@@ -963,6 +1037,8 @@ export class Enemy {
       this.game.onKill(this, by);
     }
   }
+  // the white hit flash flickers, so a big enemy under constant fire still shows its colours
+  flashOn() { return this.flash > 0 && Math.floor(this.t * 24) % 2 === 0; }
   base(dt) {
     this.t += dt;
     this.flash = Math.max(0, this.flash - dt);
@@ -972,7 +1048,7 @@ export class Enemy {
   drawGen(ctx, key, anim, i, scale, o = {}) {
     const f = frame(key, anim, i);
     if (!f) return false;
-    drawFrame(ctx, f, this.cx, this.y + this.h + (o.dy || 0), scale, { ...o, flash: this.flash > 0 });
+    drawFrame(ctx, f, this.cx, this.y + this.h + (o.dy || 0), scale, { ...o, flash: this.flashOn() });
     return true;
   }
   // small glint at the muzzle tip shortly before this enemy fires: grows and flickers, ink outlined
@@ -1036,7 +1112,7 @@ export class Runner extends Enemy {
     if (this.pounced && !this.onGround) this.vx = this.dir * 230;
     moveBody(this, dt, this.game.level);
     if (this.onGround && (this.hitWall || Math.random() < 0.006)) this.vy = -480;
-    if (this.y > 440 || this.x < this.game.cam.x - 120 || this.x > this.game.cam.x + this.game.W + 160) this.dead = true;
+    if (this.y > this.game.cam.y + 440 || this.x < this.game.cam.x - 120 || this.x > this.game.cam.x + this.game.W + 160) this.dead = true;
   }
   draw(ctx) {
     // generated runner frames face left
@@ -1060,7 +1136,7 @@ export class Rat extends Enemy {
     this.fireT = Math.max(0, (this.fireT || 0) - dt);
     this.vx = 0;
     moveBody(this, dt, this.game.level);
-    if (this.y > 440) { this.dead = true; return; }
+    if (this.y > this.game.cam.y + 440) { this.dead = true; return; }
     const p = this.game.nearestPlayer(this);
     if (!p) return;
     this.facing = p.cx < this.cx ? -1 : 1;
@@ -1105,7 +1181,7 @@ export class RatSoldier extends Enemy {
     this.base(dt);
     this.fireT = Math.max(0, this.fireT - dt);
     moveBody(this, dt, this.game.level);
-    if (this.y > 440) { this.dead = true; return null; }
+    if (this.y > this.game.cam.y + 440) { this.dead = true; return null; }
     const p = this.game.nearestPlayer(this);
     if (p) this.facing = p.cx < this.cx ? -1 : 1;
     return p;
@@ -1209,7 +1285,8 @@ export class Charger extends RatSoldier {
       if (p && this.onGround && this.t > 0.6) this.facing = p.cx < this.cx ? -1 : 1;
       this.vx = this.facing * 175;
       const ahead = this.cx + this.facing * 30;
-      const gap = this.onGround && g.groundTopAt(ahead) == null && !g.level.platforms().some((q) => ahead > q.x && ahead < q.x + q.w && Math.abs(q.y - (this.y + this.h)) < 4);
+      const below = g.groundTopAt(ahead, this.y + this.h - 6);
+      const gap = this.onGround && (below == null || below > this.y + this.h + 4) && !g.level.platforms().some((q) => ahead > q.x && ahead < q.x + q.w && Math.abs(q.y - (this.y + this.h)) < 4);
       if (this.onGround && (this.hitWall || gap)) this.vy = -470;
       if (p && this.onGround && Math.abs(p.cx - this.cx) < 95 && Math.abs(p.cy - this.cy) < 60) {
         this.state = 'crouch';
@@ -1229,7 +1306,7 @@ export class Charger extends RatSoldier {
       this.stateT = 0;
     }
     moveBody(this, dt, g.level);
-    if (this.y > 440 || this.x < g.cam.x - 160 || this.x > g.cam.x + g.W + 200) this.dead = true;
+    if (this.y > g.cam.y + 440 || this.x < g.cam.x - 160 || this.x > g.cam.x + g.W + 200) this.dead = true;
   }
   draw(ctx) {
     const anim = this.state === 'leap' || !this.onGround ? 'leap' : this.state === 'crouch' ? 'crouch' : 'run';
@@ -1370,7 +1447,7 @@ export class Bat extends Enemy {
       this.y += this.vy * dt;
       this.vy -= 260 * dt; // pulls up after the dive
     }
-    if (this.x < this.game.cam.x - 100 || this.y < -120 || this.y > 440) this.dead = true;
+    if (this.x < this.game.cam.x - 100 || this.y < this.game.cam.y - 120 || this.y > this.game.cam.y + 440) this.dead = true;
   }
   draw(ctx) {
     ctx.save();
@@ -1715,7 +1792,7 @@ class BossPart extends Enemy {
 // Flying can: shoot it to release a weapon letter
 export class Capsule extends Enemy {
   constructor(game, item) {
-    super(game, game.cam.x - 30, 100, 30, 20, 1);
+    super(game, game.cam.x - 30, game.cam.y + 100, 30, 20, 1);
     this.item = item;
     this.score = 0;
   }
@@ -1723,7 +1800,7 @@ export class Capsule extends Enemy {
   update(dt) {
     this.base(dt);
     this.x += 120 * dt;
-    this.y = 100 + Math.sin(this.t * 2.4) * 40;
+    this.y = this.game.cam.y + 100 + Math.sin(this.t * 2.4) * 40;
     if (this.x > this.game.cam.x + this.game.W + 40) this.dead = true;
   }
   draw(ctx) {
@@ -1761,7 +1838,7 @@ export class Item {
     this.t += dt;
     moveBody(this, dt, this.game.level);
     if (this.onGround) this.vx *= 0.8;
-    if (this.y > 440 || this.x < this.game.cam.x - 60) this.dead = true;
+    if (this.y > this.game.cam.y + 440 || this.x < this.game.cam.x - 60) this.dead = true;
   }
   draw(ctx) {
     const bob = this.onGround ? Math.sin(this.t * 4) * 2 : 0;
@@ -1818,7 +1895,7 @@ export class FloatText {
   }
 }
 
-const FREED_ART = { cat05: 'freed_runner', cat04: 'freed_bat', cat06: 'freed_ghost', cat03: 'freed_elite', cone: 'freed_conecat' };
+const FREED_ART = { cat05: 'freed_runner', cat04: 'freed_bat', cat06: 'freed_ghost', cat03: 'freed_elite', cone: 'freed_conecat', bowl: 'freed_bowlcat', pirate: 'freed_pirate' };
 
 // A rescued cat: shakes off the mind control in a puff of smoke, then hops away happily.
 export class FreedCat {
@@ -1852,7 +1929,7 @@ export class FreedCat {
     const alpha = Math.min(1, (this.life - this.t) * 1.5);
     if (f) {
       const jitter = this.t < this.daze ? Math.sin(this.t * 70) * 1.5 : 0;
-      const ref = this.key === 'freed_elite' ? 220 : 110;
+      const ref = this.key === 'freed_elite' || this.key === 'freed_pirate' ? 220 : 110;
       drawFrame(ctx, f, this.x + jitter, this.y, this.h / ref, { flip: this.dir, alpha });
     } else {
       const img = this.game.img[this.sprite] || this.game.img.cat05;

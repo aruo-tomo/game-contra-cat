@@ -12,6 +12,7 @@ import { loadSprites } from './sprites.js';
 import { options, saveOptions, ASSIST_MULT, rankFor, saveBest, loadBest } from './options.js';
 import { STAGE1 } from './level1.js';
 import { STAGE2 } from './level2.js';
+import { STAGE3 } from './level3.js';
 import {
   Player, Runner, Rat, Turret, Bat, Ghost, Elite, BossWall, Capsule, Item, Gunner, Grenadier, Charger, Sniper,
   Particle, FloatText, FreedCat, Debris, FxAnim, overlap, updateBullet, drawBullet, SKILL_COST,
@@ -36,7 +37,7 @@ const isTouch = window.matchMedia('(pointer: coarse)').matches;
 if (isTouch) setupTouch($('touch'));
 
 const FREED_LINES = [t('freed.1'), t('freed.2'), t('freed.3'), t('freed.4')];
-const STAGES = [STAGE1, STAGE2];
+const STAGES = [STAGE1, STAGE2, STAGE3];
 
 // ---------------- game ----------------
 
@@ -48,7 +49,7 @@ class Game {
     this.paper = makePaperPattern(ctx);
     this.state = 'title';
     this.t = 0;
-    this.cam = { x: 0 };
+    this.cam = { x: 0, y: 0 };
     this.players = [];
     this.enemies = [];
     this.bullets = [];
@@ -79,7 +80,9 @@ class Game {
     this.stageIdx = i;
     this.stage = STAGES[i];
     this.level = this.stage.build();
-    this.cam = { x: 0 };
+    // vertical stages climb: the camera starts at the bottom and only scrolls up
+    this.vertical = !!this.stage.vertical;
+    this.cam = { x: 0, y: this.stage.startCamY || 0 };
     this.enemies = [];
     this.bullets = [];
     this.ebullets = [];
@@ -115,8 +118,8 @@ class Game {
       if (p.state === 'out') p.lives = 1;
       p.state = 'alive';
       p.hp = p.maxHp;
-      p.x = 80 + p.idx * 40;
-      p.y = -60 - p.idx * 30;
+      p.x = this.cam.x + 80 + p.idx * 40;
+      p.y = this.cam.y - 60 - p.idx * 30;
       p.vx = 0;
       p.vy = 0;
       p.inv = 2;
@@ -130,8 +133,8 @@ class Game {
   }
 
   // mid-boss arena: camera locks, WARNING, boss music; onKill unlocks when it falls
-  startMidBoss(e, camx, title) {
-    this.lock = { x: camx };
+  startMidBoss(e, camx, title, lockY) {
+    this.lock = lockY != null ? { y: lockY } : { x: camx };
     e.delay = 1.6;
     e.midboss = true;
     this.addEnemy(e);
@@ -181,7 +184,7 @@ class Game {
     return best;
   }
 
-  onScreen(e) { return e.x + e.w > this.cam.x && e.x < this.cam.x + W && e.y < H && e.y + e.h > 0; }
+  onScreen(e) { return e.x + e.w > this.cam.x && e.x < this.cam.x + W && e.y < this.cam.y + H && e.y + e.h > this.cam.y; }
 
   enemiesOnScreen() { return this.enemies.some((e) => e.hittable() && this.onScreen(e)); }
 
@@ -222,13 +225,18 @@ class Game {
     return best;
   }
 
-  groundTopAt(x) {
+  // top of the highest ground under x, at or below fromY (vertical stages stack floors above each other)
+  groundTopAt(x, fromY = -Infinity) {
     let top = null;
     for (const s of this.level.solids) {
-      if (s.kind === 'ground' && x >= s.x && x <= s.x + s.w && (top == null || s.y < top)) top = s.y;
+      if (s.kind === 'ground' && x >= s.x && x <= s.x + s.w && s.y >= fromY && (top == null || s.y < top)) top = s.y;
     }
     return top;
   }
+
+  // stage 3's water: which pool (if any) a point is in, and whether a hero is in a rising stream of air bubbles
+  waterAt(x, y) { return (this.level.water || []).find((w) => x >= w.x && x <= w.x + w.w && y >= w.y && y <= w.y + w.h) || null; }
+  inAirVent(p) { return (this.level.vents || []).some((v) => Math.abs(p.cx - v.x) < 22 && p.y + p.h > v.y1 && p.y < v.y0); }
 
   // ---- effects ----
   text(x, y, s, color) { this.effects.push(new FloatText(x, y, s, color)); }
@@ -262,9 +270,9 @@ class Game {
   // ---- spawning ----
   spawnRunner(dir) {
     const x = dir < 0 ? this.cam.x + W + 10 : this.cam.x - 36;
-    const top = this.groundTopAt(x + 13);
+    const top = this.groundTopAt(x + 13, this.cam.y);
     // never drop a runner right at a pit edge, where it would fall in at once
-    if (top == null || this.groundTopAt(x + 13 + dir * 70) == null) return;
+    if (top == null || this.groundTopAt(x + 13 + dir * 70, this.cam.y) == null) return;
     this.addEnemy(new Runner(this, x, top - 45, dir));
   }
 
@@ -279,7 +287,7 @@ class Game {
       case 'sniper': this.addEnemy(new Sniper(this, s.at, s.y)); break;
       case 'charger': {
         const x = this.cam.x + W + 20;
-        const top = this.groundTopAt(x + 12);
+        const top = this.groundTopAt(x + 12, this.cam.y);
         if (top != null) this.addEnemy(new Charger(this, x, top, -1));
         break;
       }
@@ -363,11 +371,29 @@ class Game {
     const sprites = ['cat05', 'cat04', 'cat06', 'cat03'];
     const n = Math.min(14, Math.max(4, this.freed));
     for (let i = 0; i < n; i++) {
-      const f = new FreedCat(this, sprites[i % sprites.length], this.cam.x - 30 - i * 40, 300, i % 4 === 3 ? 80 : 44, { happy: true, dir: 1, life: 6 });
+      const f = new FreedCat(this, sprites[i % sprites.length], this.cam.x - 30 - i * 40, this.paradeY(), i % 4 === 3 ? 80 : 44, { happy: true, dir: 1, life: 6 });
       f.t = -i * 0.05;
       this.effects.push(f);
     }
   }
+
+  // climbing stages: come back on a ledge in the middle of the view rather than dropping in from the top
+  respawnPoint(p) {
+    if (!this.vertical) return null;
+    const lo = this.cam.y + 110;
+    const hi = this.cam.y + 330;
+    const spots = [];
+    for (const s of this.level.solids) if (s.kind === 'ground' && s.y > lo && s.y < hi) spots.push({ x: s.x, w: s.w, y: s.y });
+    for (const q of this.level.platforms()) if (q.y > lo && q.y < hi && q.w >= 40) spots.push({ x: q.x, w: q.w, y: q.y });
+    if (!spots.length) return null;
+    const mid = this.cam.y + 220;
+    const s = spots.reduce((a, b) => (Math.abs(b.y - mid) < Math.abs(a.y - mid) ? b : a));
+    const x = Math.max(s.x + 4, Math.min(s.x + s.w - p.w - 4, s.x + s.w / 2 - p.w / 2 + p.idx * 20));
+    return { x, y: s.y - p.h - 30 };
+  }
+
+  // the floor the rescued cats march along after a clear
+  paradeY() { return this.groundTopAt(this.cam.x + W / 2, this.cam.y + 60) ?? this.cam.y + 300; }
 
   continueGame() {
     this.continues--;
@@ -422,8 +448,21 @@ class Game {
 
     // camera only scrolls forward, and stops at boss arenas
     const alive = this.alivePlayers();
-    const maxCam = this.lock ? this.lock.x : this.level.width - W;
-    if (alive.length) {
+    const maxCam = this.lock && this.lock.x != null ? this.lock.x : this.level.width - W;
+    if (alive.length && this.vertical) {
+      // climbing: follow the highest hero upward, never back down; a boss arena stops it
+      const leader = alive.reduce((a, b) => (b.y < a.y ? b : a));
+      const minCam = this.lock && this.lock.y != null ? this.lock.y : 0;
+      const target = Math.max(leader.y + leader.h - 280, minCam); // the leader's feet stay ~280px down the view
+      if (target < this.cam.y) this.cam.y -= Math.min(this.cam.y - target, 420 * dt);
+      // under water the heroes sink between strokes, so there the view follows them back down too
+      // (never below the bottom of the stage, never further down than the lowest hero in the water)
+      else if (alive.every((p) => p.inWater)) {
+        const low = alive.reduce((a, b) => (b.y > a.y ? b : a));
+        const down = Math.min(low.y + low.h - 280, this.stage.startCamY ?? 0);
+        if (down > this.cam.y) this.cam.y += Math.min(down - this.cam.y, 300 * dt);
+      }
+    } else if (alive.length) {
       const leader = alive.reduce((a, b) => (b.x > a.x ? b : a));
       // look ahead in the direction the leader faces
       this.look += (leader.facing * 48 - this.look) * Math.min(1, dt * 1.5);
@@ -435,7 +474,8 @@ class Game {
     const sp = this.level.spawns;
     while (this.spawnIdx < sp.length) {
       const s = sp[this.spawnIdx];
-      const ready = s.camx != null ? this.cam.x >= s.camx - 1 : this.cam.x + W + 30 >= s.x;
+      // x: right edge of the view reaches it; camx: camera reaches it; yt: (climbing) top of the view reaches it; camy: camera climbs to it
+      const ready = s.camy != null ? this.cam.y <= s.camy + 1 : s.yt != null ? this.cam.y - 30 <= s.yt : s.camx != null ? this.cam.x >= s.camx - 1 : this.cam.x + W + 30 >= s.x;
       if (!ready) break;
       this.spawn(s);
       this.spawnIdx++;
@@ -466,7 +506,7 @@ class Game {
     // grenadier bombs burst when they reach the ground or a plank: a small blast that hurts heroes nearby
     for (const b of this.ebullets) {
       if (!b.bomb || b.dead || b.vy <= 0) continue;
-      const top = this.groundTopAt(b.x);
+      const top = this.groundTopAt(b.x, b.y - 14);
       const plank = this.level.platforms().some((q) => b.x > q.x && b.x < q.x + q.w && b.y + b.r >= q.y && b.y + b.r - b.vy * dt <= q.y + 2);
       if (!plank && (top == null || b.y + b.r < top)) continue;
       b.dead = true;
@@ -483,7 +523,7 @@ class Game {
 
     this.collide();
 
-    const off = (b) => b.dead || b.x < this.cam.x - 50 || b.x > this.cam.x + W + 50 || b.y < -80 || b.y > 420 || b.t > 3;
+    const off = (b) => b.dead || b.x < this.cam.x - 50 || b.x > this.cam.x + W + 50 || b.y < this.cam.y - 80 || b.y > this.cam.y + 420 || b.t > (b.life || 3);
     this.bullets = this.bullets.filter((b) => !off(b));
     this.ebullets = this.ebullets.filter((b) => !off(b));
     this.enemies = this.enemies.filter((e) => !e.dead || (e.isWall && e.dying > 0));
@@ -512,6 +552,13 @@ class Game {
 
   collide() {
     for (const b of this.bullets) {
+      const pop = this.ebullets.find((e) => e.shootable && !e.dead && Math.hypot(e.x - b.x, e.y - b.y) < e.r + b.r);
+      if (pop) {
+        pop.dead = true;
+        if (!b.pierce) b.dead = true;
+        this.effects.push(new FxAnim('impact', 'hit', pop.x, pop.y, 0.14, 0.3, { rot: Math.random() * 6 }));
+        if (b.dead) continue;
+      }
       for (const e of this.enemies) {
         if (!e.hittable() || !circleHit(b, e)) continue;
         // shields: the shot bounces off with a spark and does nothing
@@ -563,11 +610,12 @@ class Game {
     const sx = (Math.random() - 0.5) * this.shakeAmt;
     const sy = (Math.random() - 0.5) * this.shakeAmt;
     const camx = Math.round(this.cam.x);
-    this.stage.drawScenery(ctx, camx, this.t, W, H);
+    const camy = Math.round(this.cam.y);
+    this.stage.drawScenery(ctx, camx, this.t, W, H, camy);
 
     ctx.save();
-    ctx.translate(-camx + sx, sy);
-    this.stage.drawLevel(ctx, this.level, camx, W, this.t);
+    ctx.translate(-camx + sx, -camy + sy);
+    this.stage.drawLevel(ctx, this.level, camx, W, this.t, camy);
     for (const e of this.enemies) if (e.isWall) e.draw(ctx);
     for (const it of this.items) it.draw(ctx);
     for (const e of this.enemies) if (!e.isWall && !e.dead) e.draw(ctx);
@@ -575,7 +623,7 @@ class Game {
     for (const b of this.bullets) drawBullet(ctx, b);
     for (const b of this.ebullets) drawBullet(ctx, b);
     for (const f of this.effects) f.draw(ctx);
-    if (this.stage.drawFront) this.stage.drawFront(ctx, this.level, camx, W, this.t);
+    if (this.stage.drawFront) this.stage.drawFront(ctx, this.level, camx, W, this.t, camy);
     this.drawLockMarks();
     ctx.restore();
 
