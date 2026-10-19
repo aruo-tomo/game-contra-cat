@@ -181,7 +181,7 @@ function splash(game, x, y, big) {
     game.effects.push(new Droplet(x + (Math.random() - 0.5) * 14, y, Math.cos(a) * sp, Math.sin(a) * sp));
   }
   game.level.ripples.push({ x, y, t: 0, life: 0.9 });
-  if (big) sfx.hiss();
+  sfx.splash(big);
 }
 
 // Everything that moves under water leaves a trail of bubbles behind it (more on a swim stroke)
@@ -281,7 +281,7 @@ function spawn(game, s) {
       game.say('WARNING', 2.2, 'warn');
       game.say(t('say.koi'), 1.8);
       sfx.siren();
-      startMusic('boss');
+      startMusic('final');
       break;
     }
   }
@@ -376,16 +376,37 @@ function rockPattern(ctx) {
   return ctx.createPattern(c, 'repeat');
 }
 
-// a rocky coral ledge: the generated piece nearest in width, stretched to fit; its flat top is the platform
+// a rocky coral ledge from the generated piece nearest in width, always at its true proportions:
+// scaled evenly to a set depth, then made wider by repeating its middle between the two ends
+// (never stretched); its flat top is the platform
+const LEDGE_DEPTH = 52;
 function drawLedge(ctx, x, y, w, seed) {
   const long = frame('plat3', 'long');
   const short = frame('plat3', 'short');
-  const f = long && short ? (w > 125 ? long : short) : null;
+  const f = long && short ? (w >= 80 ? long : short) : null;
   if (f) {
     const lw = w + 16;
-    const hk = Math.min(lw / f.w, 0.5); // stretched to the ledge's width, but never deeper than this
-    const top = f.top ?? 0.3; // how far down the art its flat walkable top is
-    ctx.drawImage(f.img, x - 8, y - f.h * hk * top, lw, f.h * hk);
+    const x0 = x - 8;
+    const k = Math.min(lw / f.w, LEDGE_DEPTH / f.h);
+    const dh = f.h * k;
+    const dy = y - dh * (f.top ?? 0.3); // how far down the art its flat walkable top is
+    const dw = f.w * k;
+    if (dw >= lw - 0.5) {
+      ctx.drawImage(f.img, x0, dy, lw, dh);
+      return;
+    }
+    const cap = Math.round(f.w * 0.32); // source px kept whole at each end
+    const capD = cap * k;
+    ctx.drawImage(f.img, 0, 0, cap, f.h, x0, dy, capD, dh);
+    ctx.drawImage(f.img, f.w - cap, 0, cap, f.h, x0 + lw - capD, dy, capD, dh);
+    const midS = f.w - cap * 2;
+    const end = x0 + lw - capD;
+    // middle tiles overlap a pixel so no seams show
+    for (let px = x0 + capD - 0.5; px < end; px += midS * k - 1) {
+      const wD = Math.min(midS * k, end - px + 0.5);
+      if (wD <= 0.5) break;
+      ctx.drawImage(f.img, cap, 0, wD / k, f.h, px, dy, wD, dh);
+    }
     return;
   }
   rrect(ctx, x, y, w, 12, 5);
@@ -572,10 +593,52 @@ function drawRaft(ctx, m, tm) {
   ctx.stroke();
 }
 
+// little schools of tank fish drifting across the water in the background, turning at the glass
+const SCHOOLS = Array.from({ length: 6 }, (_, i) => {
+  const r = mulberry32(70 + i);
+  return { y: r(), sp: 25 + r() * 25, ph: r() * 40, n: 4 + Math.floor(r() * 4), col: ['#F2B33D', '#E8564B', '#CFE1E8'][i % 3] };
+});
+function drawFishSchools(ctx, level, tm, camy, H) {
+  for (const w of level.water) {
+    if (w.y > camy + H || w.y + w.h < camy) continue;
+    SCHOOLS.forEach((s, si) => {
+      const y = w.y + 40 + s.y * (w.h - 80);
+      if (y < camy - 20 || y > camy + H + 20) return;
+      // swim back and forth across the tank
+      const span = 640 + 80;
+      const d = (tm * s.sp + s.ph * 20) % (span * 2);
+      const dir = d < span ? 1 : -1;
+      const x0 = dir > 0 ? d - 40 : span * 2 - d - 40;
+      ctx.globalAlpha = 0.45;
+      for (let k = 0; k < s.n; k++) {
+        const fx = x0 - dir * (k % 3) * 12 - dir * Math.floor(k / 3) * 6;
+        const fy = y + Math.sin(tm * 2 + k * 1.7 + si) * 4 + (k % 2 ? 7 : -3) + Math.floor(k / 3) * 6;
+        ctx.save();
+        ctx.translate(fx, fy);
+        ctx.scale(dir, 1);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 6, 3, 0, 0, Math.PI * 2);
+        ctx.moveTo(-5, 0);
+        ctx.lineTo(-10, -3.5 + Math.sin(tm * 12 + k) * 1.2);
+        ctx.lineTo(-10, 3.5 + Math.sin(tm * 12 + k) * 1.2);
+        ctx.closePath();
+        ctx.fillStyle = s.col;
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(30,30,30,0.6)';
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    });
+  }
+}
+
 export function drawLevel(ctx, level, camx, W, tm = 0, camy = 0) {
   const H = 360;
   const vis = (y, h = 20) => y + h > camy - 20 && y < camy + H + 20;
   for (const c of level.currents) if (vis(c.y, c.h)) drawCurrent(ctx, c, level, tm, camy, H);
+  drawFishSchools(ctx, level, tm, camy, H);
   const pat = rockPattern(ctx);
   for (const s of level.solids) {
     if (s.kind !== 'ground' || !vis(s.y, s.h)) continue;

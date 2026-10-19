@@ -139,7 +139,7 @@ const reset = (camx, camy, x, floorY) => {
     const d = __d; const L = __game.level.lift;
     const stand = { x: 2700, y: L.y - 46 + 4, w: 18, h: 40 };
     const duck = { x: 2700, y: L.y - 28 + 4, w: 18, h: 22 };
-    d.side = -1; d.x = d.wallX();
+    d.side = -1; d.x = d.wallX(); d.y = L.y - 200; // body well above the heroes, so only the drill can touch them
     d.drill = { h: 12, ext: 1 }; const lowStand = d.touches(stand);
     d.drill = { h: 38, ext: 1 }; const highStand = d.touches(stand); const highDuck = d.touches(duck);
     d.drill = null;

@@ -203,9 +203,25 @@ export function drawLevel(ctx, level, camx, W, tm = 0) {
   ctx.strokeStyle = C.ink;
   ctx.stroke();
   for (const x of scenery.lamps) {
-    if (x < camx - 40 || x > camx + W + 40) continue;
+    if (x < camx - 80 || x > camx + W + 80) continue;
+    // every few lamps one is failing and flickers
+    const bad = (x / 210) % 5 === 3;
+    const on = !bad || Math.sin(tm * 23 + x) + Math.sin(tm * 7.3) > -0.6;
+    if (on) {
+      const g = ctx.createLinearGradient(0, CEIL, 0, 300);
+      g.addColorStop(0, 'rgba(255,244,200,0.32)');
+      g.addColorStop(1, 'rgba(255,244,200,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(x - 20, CEIL + 4);
+      ctx.lineTo(x + 20, CEIL + 4);
+      ctx.lineTo(x + 70, 300);
+      ctx.lineTo(x - 70, 300);
+      ctx.closePath();
+      ctx.fill();
+    }
     rrect(ctx, x - 22, CEIL - 2, 44, 7, 3);
-    ink(ctx, '#F7E7B8', 2);
+    ink(ctx, on ? '#FFF6D2' : '#B8B29C', 2);
   }
   for (const x of scenery.vents) {
     if (x < camx - 40 || x > camx + W + 40) continue;
@@ -226,6 +242,19 @@ export function drawLevel(ctx, level, camx, W, tm = 0) {
     if (s.kind !== 'ground' || s.x > camx + W || s.x + s.w < camx) continue;
     ctx.fillStyle = pat || '#C7D2C9';
     ctx.fillRect(s.x, s.y, s.w, s.h);
+    // a polished shine on the tiles just under the edge, and the tile seams
+    const a = Math.max(s.x, camx - 10);
+    const b = Math.min(s.x + s.w, camx + W + 10);
+    const g = ctx.createLinearGradient(0, s.y + 9, 0, s.y + 40);
+    g.addColorStop(0, 'rgba(255,255,255,0.35)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(a, s.y + 9, b - a, 31);
+    ctx.strokeStyle = 'rgba(30,30,30,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = s.x + 32 - ((s.x % 32) + 32) % 32; x < b; x += 32) { if (x < a) continue; ctx.moveTo(x, s.y + 9); ctx.lineTo(x - 6, s.y + 40); }
+    ctx.stroke();
     // skirting strip along the top edge
     ctx.fillStyle = '#E9E4D6';
     ctx.fillRect(s.x, s.y, s.w, 7);
@@ -246,15 +275,58 @@ export function drawLevel(ctx, level, camx, W, tm = 0) {
   }
 }
 
-// a metal hospital shelf on brackets
+// a metal hospital shelf on brackets, with supplies standing at the back
 function drawShelf(ctx, x, y, w) {
+  const seed = Math.floor(x * 7 + y);
+  // supplies: medicine bottles and boxes (drawn first so feet stand in front of them)
+  for (let i = 0, px = x + 8; px < x + w - 14; i++) {
+    const k = (seed + i * 37) % 7;
+    if (k < 3) {
+      const h = 10 + k * 2;
+      rrect(ctx, px, y - h, 8, h, 2);
+      ink(ctx, ['#F2E4C4', '#CFE1E8', '#E9C6C0'][k], 1.4);
+      ctx.fillStyle = C.ink;
+      ctx.fillRect(px + 2, y - h - 2, 4, 2);
+      px += 12;
+    } else if (k < 5) {
+      rrect(ctx, px, y - 9, 14, 9, 1);
+      ink(ctx, '#EFEADF', 1.4);
+      ctx.fillStyle = C.red;
+      ctx.fillRect(px + 6, y - 7.5, 2, 6);
+      ctx.fillRect(px + 4, y - 5.5, 6, 2);
+      px += 18;
+    } else px += 14;
+  }
   rrect(ctx, x, y, w, 9, 2);
   ink(ctx, '#B7C6BD', 2.5);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillRect(x + 3, y + 2, w - 6, 1.5);
   ctx.beginPath();
   for (const bx of [x + 10, x + w - 10]) { ctx.moveTo(bx, y + 9); ctx.lineTo(bx - 6, y + 18); }
   ctx.lineWidth = 2;
   ctx.strokeStyle = C.ink;
   ctx.stroke();
+  ctx.fillStyle = C.ink;
+  for (const bx of [x + 10, x + w - 10]) ctx.fillRect(bx - 1, y + 3, 2, 2);
+}
+
+// dust motes drifting slowly through the lamp light (stateless)
+const MOTES = Array.from({ length: 22 }, (_, i) => {
+  const r = mulberry32(300 + i);
+  return { x: r(), y: r(), sp: 4 + r() * 8, ph: r() * 6, s: 0.8 + r() * 1.2 };
+});
+function drawFront(ctx, level, camx, W, tm) {
+  ctx.fillStyle = 'rgba(255,250,225,0.75)';
+  for (const m of MOTES) {
+    const span = W + 40;
+    const x = camx - 20 + ((((m.x * span + tm * m.sp) % span) + span) % span);
+    const y = CEIL + 20 + ((m.y * 240 + Math.sin(tm * 0.6 + m.ph) * 14 + tm * 3) % 250);
+    ctx.globalAlpha = 0.35 + 0.35 * Math.sin(tm * 1.5 + m.ph);
+    ctx.beginPath();
+    ctx.arc(x, y, m.s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawGurney(ctx, m, tm) {
@@ -297,6 +369,7 @@ export const STAGE2 = {
   spawn,
   drawScenery,
   drawLevel,
+  drawFront,
   midbossCamx: 3000,
   bossCamx: 7040,
 };

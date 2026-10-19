@@ -155,6 +155,7 @@ export class SteamVent extends Enemy {
   constructor(game, x, y, dir = -1, phase = 0) {
     // dir -1: from a floor pipe straight up; 1: from a ceiling pipe straight down
     super(game, x - 8, y, 16, 10, 1);
+    this.noStomp = true;
     this.dir = dir;
     this.phase = phase;
     this.len = 120;
@@ -173,25 +174,55 @@ export class SteamVent extends Enemy {
     if (!was && this.jetting && this.game.onScreen(this)) sfx.hiss();
   }
   draw(ctx) {
-    // the pipe nozzle
-    rrect(ctx, this.x - 2, this.y, this.w + 4, this.h, 3);
-    ink(ctx, '#7A6E62', 2);
     const b = this.jetBox();
+    const up = this.dir < 0;
+    const mouth = up ? this.y : this.y + this.h; // where the steam leaves the nozzle
+    const sgn = up ? -1 : 1;
     if (this.jetting || this.hissing) {
-      const n = this.jetting ? 9 : 2;
-      for (let i = 0; i < n; i++) {
-        const k = ((this.t * 3 + i / n) % 1);
-        const y = this.dir < 0 ? this.y - k * (this.jetting ? b.h : 20) : this.y + this.h + k * (this.jetting ? b.h : 20);
-        const r = (this.jetting ? 8 : 4) + k * 8;
+      ctx.save();
+      // a hot, fast core right out of the nozzle
+      if (this.jetting) {
+        const g = ctx.createLinearGradient(0, mouth, 0, mouth + sgn * b.h * 0.7);
+        g.addColorStop(0, 'rgba(255,255,255,0.85)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(this.cx + Math.sin(i * 2.3 + this.t * 9) * 4, y, r, 0, TAU);
-        ctx.fillStyle = `rgba(239,234,223,${this.jetting ? 0.85 - k * 0.5 : 0.5})`;
+        ctx.moveTo(this.cx - 4, mouth);
+        ctx.lineTo(this.cx + 4, mouth);
+        ctx.lineTo(this.cx + 13, mouth + sgn * b.h * 0.7);
+        ctx.lineTo(this.cx - 13, mouth + sgn * b.h * 0.7);
+        ctx.closePath();
         ctx.fill();
-        ctx.lineWidth = 1.5;
-        ctx.strokeStyle = 'rgba(30,30,30,0.5)';
-        ctx.stroke();
       }
+      // billows: soft puffs that widen, drift and fade as they travel, no outlines
+      const n = this.jetting ? 14 : 4;
+      const reach = this.jetting ? b.h : 26;
+      for (let i = 0; i < n; i++) {
+        const k = (this.t * (this.jetting ? 2.6 : 1.4) + i / n) % 1;
+        const wob = Math.sin(i * 2.7 + this.t * 5) * (2 + k * 9);
+        const px = this.cx + wob;
+        const py = mouth + sgn * k * reach;
+        const r = (this.jetting ? 8 : 4) + k * (this.jetting ? 22 : 8);
+        const a = (this.jetting ? 0.9 : 0.45) * (1 - k * 0.85) * Math.min(1, k * 6 + 0.3);
+        const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, `rgba(255,255,252,${a})`);
+        g.addColorStop(0.55, `rgba(232,229,220,${a * 0.75})`);
+        g.addColorStop(1, 'rgba(180,176,168,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, TAU);
+        ctx.fill();
+      }
+      ctx.restore();
     }
+    // the pipe nozzle: a short pipe stub with a flange, drawn over the base of the plume
+    const ny = up ? this.y : this.y;
+    rrect(ctx, this.x + 1, ny, this.w - 2, this.h, 2);
+    ink(ctx, '#8C8174', 2);
+    rrect(ctx, this.x - 3, up ? ny - 2 : ny + this.h - 3, this.w + 6, 5, 2);
+    ink(ctx, '#6E655B', 2);
+    ctx.fillStyle = 'rgba(30,30,30,0.6)';
+    ctx.fillRect(this.cx - 3, up ? ny - 1 : ny + this.h - 2, 6, 2);
   }
 }
 
@@ -547,6 +578,10 @@ export class DrillBoss extends Enemy {
         if (plan === 'saw') this.timer = 0.5;
         if (plan === 'swap') { this.timer = 0; this.vx = this.side < 0 ? 520 : -520; this.vy = -300; }
       }
+    } else if (this.state === 'drill' && !this.drill) {
+      // the drill went away mid-strike: just hang on the wall again
+      this.state = 'cling';
+      this.timer = 0.5;
     } else if (this.state === 'drill') {
       const d = this.drill;
       this.x = this.wallX();
