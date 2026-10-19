@@ -1,8 +1,8 @@
 // Stage 1: 後巷貓草叢 (back-alley catnip jungle). Geometry, spawn script and scenery.
 
-import { t } from './i18n.js';
-import { C, mulberry32, rrect, ink } from './art.js';
-import { SPR, drawTiled } from './sprites.js';
+import { t } from './i18n.js?v=bad6619';
+import { C, mulberry32, rrect, ink } from './art.js?v=bad6619';
+import { SPR, drawTiled } from './sprites.js?v=bad6619';
 
 export const LEVEL_W = 7040;
 export const WALL_X = 6880;

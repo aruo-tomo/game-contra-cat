@@ -1,6 +1,6 @@
 // Frame-based sprites generated with Codex (assets/sprites/gen/manifest.json).
 // Every frame faces right and is anchored bottom-centre unless drawn with anchor 'center'.
-import { t } from './i18n.js';
+import { t } from './i18n.js?v=bad6619';
 
 export const SPR = { frames: {}, layers: {}, ready: false };
 
@@ -20,7 +20,7 @@ function loadImage(src) {
 export async function loadSprites(onProgress = () => {}) {
   let manifest;
   try {
-    const r = await fetch(BASE + 'manifest.json');
+    const r = await fetch(BASE + 'manifest.json?v=bad6619');
     if (!r.ok) return SPR;
     manifest = await r.json();
   } catch {

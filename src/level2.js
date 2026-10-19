@@ -2,12 +2,12 @@
 // gurneys roll over lift shafts, a lift carries you to the upper ward, laser gates and wall lasers
 // guard the halls, rats hang out of the vents. Mid-boss: the Head Nurse. Boss: the surgery machine.
 
-import { t } from './i18n.js';
-import { C, mulberry32, rrect, ink } from './art.js';
-import { SPR, frame, drawTiled } from './sprites.js';
+import { t } from './i18n.js?v=bad6619';
+import { C, mulberry32, rrect, ink } from './art.js?v=bad6619';
+import { SPR, frame, drawTiled } from './sprites.js?v=bad6619';
 import {
   CEIL, Nurse, ShieldRat, Sprayer, ConeCat, VentRat, LaserGate, BeamTurret, HeadNurse, SurgeonWall,
-} from './enemies2.js';
+} from './enemies2.js?v=bad6619';
 
 export const LEVEL_W = 7680;
 export const WALL_X = 7520;

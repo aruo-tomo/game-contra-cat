@@ -2,12 +2,12 @@
 // box, a sunken chest, a locker). Shoot it a few times and it bursts open; the can inside is worth a life.
 // Finding all four (remembered per browser) unlocks the jukebox on the title screen.
 
-import { t } from './i18n.js';
-import { C, ink, rrect } from './art.js';
-import { sfx } from './audio.js';
-import { frame, drawFrame } from './sprites.js';
-import { FxAnim, Item, Debris } from './entities.js';
-import { options, saveOptions } from './options.js';
+import { t } from './i18n.js?v=bad6619';
+import { C, ink, rrect } from './art.js?v=bad6619';
+import { sfx } from './audio.js?v=bad6619';
+import { frame, drawFrame } from './sprites.js?v=bad6619';
+import { FxAnim, Item, Debris } from './entities.js?v=bad6619';
+import { options, saveOptions } from './options.js?v=bad6619';
 
 // where each stage hides its can; (x, y) is the middle of the bottom of the hiding place
 export const SECRETS = {

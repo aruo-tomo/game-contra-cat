@@ -1,7 +1,7 @@
 // Phone controls. The left part of the screen moves, the right part aims and auto-fires:
 // a stick appears wherever the thumb lands, so there is no fixed spot to hit.
 // Jump / dash / skill are fixed buttons at the bottom centre.
-import { t } from './i18n.js';
+import { t } from './i18n.js?v=bad6619';
 
 const state = { lx: 0, ly: 0, rx: 0, ry: 0, rm: 0, rActive: false, jump: false, dash: false, skill: false };
 export const getTouchState = () => state;

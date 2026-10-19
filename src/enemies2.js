@@ -3,11 +3,11 @@
 // that rolls along the floor, bombs from the ceiling, laser gates and beams, a lance charge, and a
 // surgery machine that marks the floor, stabs and lobs.
 
-import { t } from './i18n.js';
-import { C, ink, rrect, drawRat } from './art.js';
-import { sfx } from './audio.js';
-import { frame, drawFrame, tintOf } from './sprites.js';
-import { Enemy, RatSoldier, Rat, enemyShot, moveBody, overlap, FxAnim } from './entities.js';
+import { t } from './i18n.js?v=bad6619';
+import { C, ink, rrect, drawRat } from './art.js?v=bad6619';
+import { sfx } from './audio.js?v=bad6619';
+import { frame, drawFrame, tintOf } from './sprites.js?v=bad6619';
+import { Enemy, RatSoldier, Rat, enemyShot, moveBody, overlap, FxAnim } from './entities.js?v=bad6619';
 
 export const CEIL = 44; // underside of the corridor ceiling
 

@@ -1,11 +1,11 @@
 // Players, bullets, enemies, pickups and effects.
 
-import { t } from './i18n.js';
-import { C, ink, ellipse, rrect, drawRat, drawGun, drawHeart, drawBadge, WEAPON_INFO } from './art.js';
-import { sfx } from './audio.js';
-import { SPR, frame, drawFrame, tintOf } from './sprites.js';
-import { skillKeyLabel } from './input.js';
-import { drawGoldCan, collectGold } from './secrets.js';
+import { t } from './i18n.js?v=bad6619';
+import { C, ink, ellipse, rrect, drawRat, drawGun, drawHeart, drawBadge, WEAPON_INFO } from './art.js?v=bad6619';
+import { sfx } from './audio.js?v=bad6619';
+import { SPR, frame, drawFrame, tintOf } from './sprites.js?v=bad6619';
+import { skillKeyLabel } from './input.js?v=bad6619';
+import { drawGoldCan, collectGold } from './secrets.js?v=bad6619';
 
 export const GRAVITY = 1500;
 const RUN = 155;

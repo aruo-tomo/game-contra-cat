@@ -3,12 +3,12 @@
 // beside the filter's waterfall (which pushes you down), fights the pirate captain on the shipwreck
 // deck, dives up through the filter chamber, and meets the robot koi on top.
 
-import { t } from './i18n.js';
-import { C, mulberry32, rrect, ink } from './art.js';
-import { SPR, frame } from './sprites.js';
-import { sfx, startMusic } from './audio.js';
-import { updateMovers } from './level2.js';
-import { BowlCat, Puffer, ScubaRat, Eel, CanRat, PirateCat, RoboKoi } from './enemies3.js';
+import { t } from './i18n.js?v=bad6619';
+import { C, mulberry32, rrect, ink } from './art.js?v=bad6619';
+import { SPR, frame } from './sprites.js?v=bad6619';
+import { sfx, startMusic } from './audio.js?v=bad6619';
+import { updateMovers } from './level2.js?v=bad6619';
+import { BowlCat, Puffer, ScubaRat, Eel, CanRat, PirateCat, RoboKoi } from './enemies3.js?v=bad6619';
 
 export const LEVEL_W = 640;
 const BOTTOM = 5100; // the tank floor

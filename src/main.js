@@ -1,27 +1,27 @@
-import { C, rrect, ink, drawHeart, drawBadge, makePaperPattern } from './art.js';
-import { t, lang, setLang, applyStatic } from './i18n.js';
-import { playStory, storyOpen } from './story.js';
+import { C, rrect, ink, drawHeart, drawBadge, makePaperPattern } from './art.js?v=bad6619';
+import { t, lang, setLang, applyStatic } from './i18n.js?v=bad6619';
+import { playStory, storyOpen } from './story.js?v=bad6619';
 import {
   initAudio, sfx, startMusic, stopMusic, setMuted, isMuted, setVolumes, currentMusic, setMusicRate, setMuffle, setMeowGun,
   SONG_LIST, songName, audioReady,
-} from './audio.js';
-import { SECRETS, Secret, secretsFound } from './secrets.js';
+} from './audio.js?v=bad6619';
+import { SECRETS, Secret, secretsFound } from './secrets.js?v=bad6619';
 import {
   MouseKeyboardCtl, ClassicKeyboardCtl, GamepadCtl, TouchCtl, bindMouse, pollPads, connectedPads, endInputFrame,
   onKonami, getBindings, setBinding, resetBindings, captureNextKey, keyName, ACTION_LABELS, PROFILE_LABELS,
   tappedAction, bindingConflicts, skillKeyLabel,
-} from './input.js';
-import { setupTouch } from './touch.js';
-import { loadSprites } from './sprites.js';
-import { options, saveOptions, ASSIST_MULT, rankFor, saveBest, loadBest } from './options.js';
-import { STAGE1 } from './level1.js';
-import { STAGE2 } from './level2.js';
-import { STAGE3 } from './level3.js';
-import { STAGE4 } from './level4.js';
+} from './input.js?v=bad6619';
+import { setupTouch } from './touch.js?v=bad6619';
+import { loadSprites } from './sprites.js?v=bad6619';
+import { options, saveOptions, ASSIST_MULT, rankFor, saveBest, loadBest } from './options.js?v=bad6619';
+import { STAGE1 } from './level1.js?v=bad6619';
+import { STAGE2 } from './level2.js?v=bad6619';
+import { STAGE3 } from './level3.js?v=bad6619';
+import { STAGE4 } from './level4.js?v=bad6619';
 import {
   Player, Runner, Rat, Turret, Bat, Ghost, Elite, BossWall, Capsule, Item, Gunner, Grenadier, Charger, Sniper,
   Particle, FloatText, FreedCat, Debris, FxAnim, Dust, overlap, updateBullet, drawBullet, SKILL_COST,
-} from './entities.js';
+} from './entities.js?v=bad6619';
 
 const W = 640;
 const LIFE_EVERY = 50000; // points for an extra life

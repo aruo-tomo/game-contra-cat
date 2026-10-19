@@ -2,9 +2,9 @@
 // { mx, down, up, aim, fire, jump, jumpHeld, dash, skill, lock, pause, assist }
 // Game code reads only these actions, never key codes.
 
-import { t } from './i18n.js';
-import { getTouchState } from './touch.js';
-import { options } from './options.js';
+import { t } from './i18n.js?v=bad6619';
+import { getTouchState } from './touch.js?v=bad6619';
+import { options } from './options.js?v=bad6619';
 
 const STORE_KEY = 'contracat.bindings.v1';
 

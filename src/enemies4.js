@@ -4,12 +4,12 @@
 // specimen pods with cats to break free, a drill digger that clings to the lift shaft walls, and a
 // spider mech that walks, climbs onto the ceiling, and finally flies as a lone cockpit.
 
-import { t } from './i18n.js';
-import { C, ink, rrect, drawRat } from './art.js';
-import { sfx } from './audio.js';
-import { frame, drawFrame } from './sprites.js';
-import { Enemy, RatSoldier, enemyShot, moveBody, overlap, FxAnim } from './entities.js';
-import { floorWave } from './enemies2.js';
+import { t } from './i18n.js?v=bad6619';
+import { C, ink, rrect, drawRat } from './art.js?v=bad6619';
+import { sfx } from './audio.js?v=bad6619';
+import { frame, drawFrame } from './sprites.js?v=bad6619';
+import { Enemy, RatSoldier, enemyShot, moveBody, overlap, FxAnim } from './entities.js?v=bad6619';
+import { floorWave } from './enemies2.js?v=bad6619';
 
 const TAU = Math.PI * 2;
 

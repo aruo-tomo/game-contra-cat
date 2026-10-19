@@ -1,7 +1,7 @@
 // Opening story: six American-comic panels (generated art, no text in the images) with translated
 // caption boxes and speech bubbles laid over them. Click / tap / key / gamepad A turns the page.
 
-import { t } from './i18n.js';
+import { t } from './i18n.js?v=bad6619';
 
 // positions are % of the panel: caption 'top' or 'bottom'; bubble box (x, y, w) and the point its tail aims at (tx, ty)
 const PANELS = [

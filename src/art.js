@@ -1,5 +1,5 @@
 // Palette and procedural drawing helpers shared by the level and entities.
-import { t } from './i18n.js';
+import { t } from './i18n.js?v=bad6619';
 // Colours follow the reference sheet: thick ink outline, aged-paper ground, red / yellow / grey-green.
 
 export const C = {

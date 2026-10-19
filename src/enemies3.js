@@ -1,12 +1,12 @@
 // Stage 3 (fish-tank waterfall, a climb) enemies and bosses. The bosses are creatures that move
 // round the arena and change their attacks as they get hurt — no more walls to shoot at.
 
-import { t } from './i18n.js';
-import { C, ink, rrect, drawRat } from './art.js';
-import { sfx } from './audio.js';
-import { frame, drawFrame } from './sprites.js';
-import { Enemy, RatSoldier, enemyShot, moveBody, overlap, FxAnim } from './entities.js';
-import { floorWave } from './enemies2.js';
+import { t } from './i18n.js?v=bad6619';
+import { C, ink, rrect, drawRat } from './art.js?v=bad6619';
+import { sfx } from './audio.js?v=bad6619';
+import { frame, drawFrame } from './sprites.js?v=bad6619';
+import { Enemy, RatSoldier, enemyShot, moveBody, overlap, FxAnim } from './entities.js?v=bad6619';
+import { floorWave } from './enemies2.js?v=bad6619';
 
 const TAU = Math.PI * 2;
 const angTo = (a, b) => Math.atan2(b.cy - a.cy, b.cx - a.cx);

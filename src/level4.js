@@ -2,11 +2,11 @@
 // down a deep shaft (the drill digger attacks from the shaft walls on the way), then Dr. Rat's lab
 // with its specimen pods, and the brainwave spider mech at the end.
 
-import { t } from './i18n.js';
-import { C, mulberry32, rrect, ink } from './art.js';
-import { SPR, drawTiled } from './sprites.js';
-import { sfx, startMusic } from './audio.js';
-import { SteamVent, Pod, HypnoCat, FlameRat, TeslaRat, SpiderBot, DrillBoss, SpiderMech } from './enemies4.js';
+import { t } from './i18n.js?v=bad6619';
+import { C, mulberry32, rrect, ink } from './art.js?v=bad6619';
+import { SPR, drawTiled } from './sprites.js?v=bad6619';
+import { sfx, startMusic } from './audio.js?v=bad6619';
+import { SteamVent, Pod, HypnoCat, FlameRat, TeslaRat, SpiderBot, DrillBoss, SpiderMech } from './enemies4.js?v=bad6619';
 
 export const LEVEL_W = 7400;
 const SHAFT_X = 2600; // left edge of the lift shaft
