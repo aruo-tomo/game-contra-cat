@@ -1,7 +1,11 @@
 import { C, rrect, ink, drawHeart, drawBadge, makePaperPattern } from './art.js';
 import { t, lang, setLang, applyStatic } from './i18n.js';
 import { playStory, storyOpen } from './story.js';
-import { initAudio, sfx, startMusic, stopMusic, setMuted, isMuted, setVolumes } from './audio.js';
+import {
+  initAudio, sfx, startMusic, stopMusic, setMuted, isMuted, setVolumes, currentMusic, setMusicRate, setMuffle, setMeowGun,
+  SONG_LIST, songName, audioReady,
+} from './audio.js';
+import { SECRETS, Secret, secretsFound } from './secrets.js';
 import {
   MouseKeyboardCtl, ClassicKeyboardCtl, GamepadCtl, TouchCtl, bindMouse, pollPads, connectedPads, endInputFrame,
   onKonami, getBindings, setBinding, resetBindings, captureNextKey, keyName, ACTION_LABELS, PROFILE_LABELS,
@@ -16,10 +20,11 @@ import { STAGE3 } from './level3.js';
 import { STAGE4 } from './level4.js';
 import {
   Player, Runner, Rat, Turret, Bat, Ghost, Elite, BossWall, Capsule, Item, Gunner, Grenadier, Charger, Sniper,
-  Particle, FloatText, FreedCat, Debris, FxAnim, overlap, updateBullet, drawBullet, SKILL_COST,
+  Particle, FloatText, FreedCat, Debris, FxAnim, Dust, overlap, updateBullet, drawBullet, SKILL_COST,
 } from './entities.js';
 
 const W = 640;
+const LIFE_EVERY = 50000; // points for an extra life
 const H = 360;
 const SCALE = 2;
 
@@ -68,12 +73,14 @@ class Game {
     this.startLives = opts.konami ? 30 : this.classic ? 3 : 9;
     this.players = [];
     this.score = 0;
+    this.nextLife = LIFE_EVERY;
     this.continues = 3;
+    stopMusic();
+    setMeowGun(!!opts.meow);
     this.enterStage(opts.stage || 0);
     opts.ctls.forEach((ctl, i) => this.addPlayer(i, ctl));
     this.state = 'play';
     sfx.start();
-    setTimeout(() => { if (this.state === 'play' && !this.bossTarget) startMusic('stage'); }, 900);
   }
 
   // reset the world for stage i; players (lives, weapons) carry over when they already exist
@@ -106,6 +113,20 @@ class Game {
     this.shakeAmt = 0;
     this.time = 0;
     this.overT = 0;
+    // excitement: kill chains, slow motion and a white flash when a boss falls
+    this.combo = 0;
+    this.comboT = 0;
+    this.comboPop = 0;
+    this.slowT = 0;
+    this.flashT = 0;
+    this.bossDown = false;
+    this.bossPhase = 1;
+    this.stageHits = 0;
+    this.muffled = false;
+    setMuffle(false);
+    // this stage's hidden golden can
+    const sec = SECRETS[this.stage.n];
+    if (sec) this.enemies.push(new Secret(this, this.stage.n, sec));
   }
 
   hasNextStage() { return this.stageIdx + 1 < STAGES.length; }
@@ -130,7 +151,6 @@ class Game {
     }
     this.state = 'play';
     sfx.start();
-    setTimeout(() => { if (this.state === 'play' && !this.bossTarget) startMusic('stage'); }, 900);
   }
 
   // mid-boss arena: camera locks, WARNING, boss music; onKill unlocks when it falls
@@ -144,6 +164,7 @@ class Game {
     this.say(title, 1.6);
     sfx.siren();
     startMusic('boss');
+    this.bossPhase = 1;
   }
 
   // stage boss built into the right wall: its parts carry the hit points; bossTarget is its core
@@ -157,7 +178,7 @@ class Game {
     this.bossTarget = wall.parts.find((p) => p.kind === 'core');
     this.bossTarget.boss = coreName;
     this.say(title, 1.8);
-    startMusic('boss');
+    startMusic('final');
   }
 
   addPlayer(idx, ctl) {
@@ -187,7 +208,7 @@ class Game {
 
   onScreen(e) { return e.x + e.w > this.cam.x && e.x < this.cam.x + W && e.y < this.cam.y + H && e.y + e.h > this.cam.y; }
 
-  enemiesOnScreen() { return this.enemies.some((e) => e.hittable() && this.onScreen(e)); }
+  enemiesOnScreen() { return this.enemies.some((e) => e.hittable() && !e.secret && this.onScreen(e)); }
 
   // nudge the aim toward the nearest enemy within `deg` degrees
   assistAim(p, aim, deg) {
@@ -197,7 +218,7 @@ class Game {
     let best = null;
     let bestD = lim;
     for (const e of this.enemies) {
-      if (!e.hittable() || !this.onScreen(e)) continue;
+      if (!e.hittable() || e.secret || !this.onScreen(e)) continue;
       const dx = e.cx - p.cx;
       const dy = e.cy - p.cy;
       if (Math.hypot(dx, dy) > 420) continue;
@@ -214,7 +235,7 @@ class Game {
     let best = null;
     let bestScore = Infinity;
     for (const e of this.enemies) {
-      if (!e.hittable() || !this.onScreen(e)) continue;
+      if (!e.hittable() || e.secret || !this.onScreen(e)) continue;
       const dx = e.cx - p.cx;
       const d = Math.hypot(dx, e.cy - p.cy);
       if (d > 420) continue;
@@ -303,6 +324,7 @@ class Game {
   onKill(e, by) {
     this.score += e.score || 0;
     if (by && by.energy != null) by.energy = Math.min(100, by.energy + 8);
+    if (!(e instanceof Capsule)) this.addCombo(e);
     if (e instanceof Capsule) {
       this.items.push(new Item(this, e.cx - 11, e.cy - 11, e.item));
       this.effects.push(new FxAnim('explosion', 'boom', e.cx, e.cy, 0.4, 0.35));
@@ -329,8 +351,59 @@ class Game {
       this.say(e.freedLine || t('say.eliteFreed'), 2);
       this.freeze(0.25);
       this.shake(10);
-      startMusic('stage');
+      this.slowT = 0.5;
+      this.flashT = 0.2;
     }
+  }
+
+  // kill chain: kills less than 2s apart build a combo worth extra points; every 10 is a cheer and energy
+  addCombo(e) {
+    this.combo = this.comboT > 0 ? this.combo + 1 : 1;
+    this.comboT = 2;
+    this.comboPop = 1;
+    if (this.combo < 2) return;
+    const bonus = Math.min(this.combo, 20) * 20;
+    this.score += bonus;
+    if (this.combo % 10 === 0) {
+      sfx.comboBig();
+      this.effects.push(new FloatText(e.cx, e.y - 24, t('combo.big', { n: this.combo }), C.red, 20));
+      for (const p of this.alivePlayers()) p.energy = Math.min(100, p.energy + 20);
+    } else sfx.combo(this.combo);
+  }
+
+  // which song should be playing right now
+  musicWanted() {
+    if (this.bossDown) return null;
+    const bt = this.bossTarget;
+    if (bt && !bt.dead) return bt.midboss ? 'boss' : 'final';
+    if (this.alivePlayers().some((p) => p.catnip > 0.3)) return 'catnip';
+    return `stage${this.stage.n}`;
+  }
+
+  // boss phase changes roar and flash; the killing blow on a stage boss goes slow-motion and white
+  watchBoss() {
+    const bt = this.bossTarget;
+    if (!bt) return;
+    const ph = bt.phase || 1;
+    if (typeof ph === 'number' && ph > this.bossPhase) {
+      sfx.roar();
+      this.flashT = 0.25;
+      this.shake(10);
+      this.freeze(0.15);
+    }
+    if (typeof ph === 'number') this.bossPhase = ph;
+    if (!bt.midboss && !this.bossDown && (bt.dead || bt.dying > 0)) {
+      this.bossDown = true;
+      stopMusic();
+      sfx.bossDown();
+      this.slowT = 1.4;
+      this.flashT = 0.6;
+      this.shake(16);
+      this.say(t('say.bossDown'), 1.6);
+    }
+    // the last stretch of a fight speeds the music up
+    const low = !bt.dead && bt.hp != null && bt.maxHp && bt.hp < bt.maxHp * 0.3;
+    if (low !== !!this.musicFast) { this.musicFast = low; setMusicRate(low ? 1.14 : 1); }
   }
 
   checkGameOver() {
@@ -342,6 +415,10 @@ class Game {
     this.state = 'clear';
     stopMusic();
     sfx.clear();
+    if (!this.stageHits && !this.deaths) {
+      this.score += 10000;
+      this.effects.push(new FloatText(this.cam.x + W / 2, this.cam.y + 120, t('clear.perfect'), C.red, 22));
+    }
     this.parade();
     setTimeout(() => showScreen('clear'), 1600);
     const s = Math.round(this.time);
@@ -406,7 +483,6 @@ class Game {
     }
     this.overT = 0;
     this.state = 'play';
-    startMusic(this.bossTarget ? 'boss' : 'stage');
   }
 
   // ---- update ----
@@ -423,7 +499,34 @@ class Game {
       this.hitStop -= dt;
       return joined;
     }
+    this.flashT = Math.max(0, this.flashT - dt);
+    if (this.slowT > 0) {
+      this.slowT -= dt;
+      dt *= 0.35;
+    }
     this.time += dt;
+    this.comboT = Math.max(0, this.comboT - dt);
+    this.comboPop = Math.max(0, this.comboPop - dt * 4);
+    if (this.comboT <= 0) this.combo = 0;
+    this.watchBoss();
+    // music follows the action: stage theme, boss themes, the catnip sprint; muffled under water
+    if (this.time > 0.9) {
+      const want = this.musicWanted();
+      if (want !== currentMusic()) { if (want) startMusic(want); else stopMusic(); this.musicFast = false; }
+      const alive = this.alivePlayers();
+      const wet = alive.length > 0 && alive.every((p) => p.inWater);
+      if (wet !== this.muffled) { this.muffled = wet; setMuffle(wet); }
+    }
+    // an extra life every LIFE_EVERY points
+    while (this.score >= this.nextLife) {
+      this.nextLife += LIFE_EVERY;
+      for (const p of this.players) {
+        if (!p || p.state === 'out') continue;
+        p.lives++;
+        this.effects.push(new FloatText(p.cx, p.y - 20, '1UP', C.green, 18));
+      }
+      sfx.oneUp();
+    }
 
     // a second player can drop in at any time: a free gamepad, or (mouse mode) the P2 keyboard keys
     if (!this.players[1]) {
@@ -601,12 +704,38 @@ class Game {
       }
       for (const e of this.enemies) {
         if (!e.touches(box)) continue;
+        if (this.canStomp(p, e)) { this.stomp(p, e); continue; }
         if (p.catnip > 0 && e.hittable()) e.damage(5, p);
         else p.hurt();
       }
       for (const it of this.items) {
         if (!it.dead && overlap(it, p)) { it.dead = true; p.pickup(it.type); }
       }
+    }
+  }
+
+  // secret move: dropping onto a small enemy's head squashes it and bounces you up
+  canStomp(p, e) {
+    if (p.vy < 60 || p.onGround || p.inWater || !e.hittable() || e.noStomp || e.midboss || e.isWall || e.kind || e === this.bossTarget) return false;
+    if (e.maxHp > 12 || e.h > 100) return false;
+    return p.y + p.h - p.vy / 60 <= e.y + 10;
+  }
+
+  stomp(p, e) {
+    e.damage(4, p);
+    p.vy = -430;
+    p.jumps = 1;
+    p.jumped = true;
+    p.inv = Math.max(p.inv, 0.2);
+    sfx.stomp();
+    this.shake(3);
+    for (let i = 0; i < 5; i++) this.effects.push(new Dust(p.cx + (i - 2) * 5, p.y + p.h, (i - 2) * 50, -30));
+    this.text(p.cx, p.y - 10, t('stomp'), C.redDk);
+    if (!options.stompFound) {
+      options.stompFound = true;
+      saveOptions();
+      this.say(t('secret.stomp'), 2);
+      sfx.secret();
     }
   }
 
@@ -635,6 +764,10 @@ class Game {
 
     ctx.fillStyle = this.paper;
     ctx.fillRect(0, 0, W, H);
+    if (this.flashT > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${Math.min(0.7, this.flashT * 1.6)})`;
+      ctx.fillRect(0, 0, W, H);
+    }
     if (this.state !== 'title') this.drawHud();
   }
 
@@ -769,6 +902,27 @@ class Game {
     ctx.fillText(String(this.score).padStart(6, '0'), W / 2, 22);
     ctx.font = '700 10px "Noto Sans HK", sans-serif';
     ctx.fillText(t('hud.freed', { freed: this.freed, total: this.catSpawned }), W / 2, 36);
+    if (this.combo >= 2 && !this.bossTarget) {
+      const k = 1 + this.comboPop * 0.35;
+      ctx.save();
+      ctx.translate(W / 2, 54);
+      ctx.scale(k, k);
+      ctx.globalAlpha = Math.min(1, this.comboT * 2);
+      ctx.font = '400 13px Bungee, sans-serif';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = C.ink;
+      const s = t('hud.combo', { n: this.combo });
+      ctx.strokeText(s, 0, 0);
+      ctx.fillStyle = this.combo >= 10 ? C.red : C.yellow;
+      ctx.fillText(s, 0, 0);
+      ctx.restore();
+      // the chain timer as a thin bar under it
+      ctx.fillStyle = C.ink;
+      ctx.fillRect(W / 2 - 30, 60, 60, 3);
+      ctx.fillStyle = C.yellow;
+      ctx.fillRect(W / 2 - 30, 60, 60 * (this.comboT / 2), 3);
+    }
 
     const bt = this.bossTarget;
     if (bt && !bt.dead && bt.y > -100) {
@@ -875,6 +1029,7 @@ function renderPicks() {
     b.setAttribute('aria-pressed', String(Number(b.dataset.stage) === prefs.stage));
     b.disabled = Number(b.dataset.stage) + 1 > Math.max(options.unlocked, stageParam || 1);
   }
+  $('btnJukebox').hidden = !(jukeboxOpen || secretsFound() >= 4);
   $('titleBest').textContent = best ? t('title.best', { score: String(best.score).padStart(6, '0'), rank: best.rank }) : '';
 }
 document.querySelectorAll('.pick').forEach((b) => b.addEventListener('click', () => {
@@ -913,7 +1068,7 @@ function startGame(players, padIndex = null) {
   }
   // P1 plays the chosen cat; P2 always gets the other one
   const chars = [prefs.char, 1 - prefs.char];
-  game.start({ ctls, chars, mode: prefs.mode, difficulty: prefs.difficulty, konami: prefs.konami, stage: prefs.stage });
+  game.start({ ctls, chars, mode: prefs.mode, difficulty: prefs.difficulty, konami: prefs.konami, meow: prefs.meow, stage: prefs.stage });
   prefs.konami = false;
   showScreen(null);
   // first game with keys or touch and auto-aim on: say what it does
@@ -928,19 +1083,21 @@ function pauseGame() {
   if (game.state !== 'play') return;
   game.state = 'paused';
   stopMusic();
+  sfx.pause();
   showScreen('pause');
 }
 function resumeGame() {
   if (game.state !== 'paused') return;
   game.state = 'play';
-  startMusic(game.bossTarget ? 'boss' : 'stage');
+  const want = game.musicWanted();
+  if (want) startMusic(want);
   showScreen(null);
 }
 function toTitle() {
-  stopMusic();
   game.state = 'title';
   renderPicks();
   showScreen('title');
+  startMusic('title');
 }
 
 // settings: options
@@ -1079,9 +1236,69 @@ window.addEventListener('keydown', (e) => {
 onKonami(() => {
   if (game.state !== 'title') return;
   prefs.konami = true;
-  sfx.pickup();
+  sfx.secret();
   toast(t('toast.konami'));
 });
+
+// more title-screen codes, typed on the keyboard: MEOW (meow gun), MUSIC (jukebox)
+let typed = '';
+window.addEventListener('keydown', (e) => {
+  if (!game || game.state !== 'title' || !$('settings').hidden || e.key.length !== 1) return;
+  typed = (typed + e.key.toUpperCase()).slice(-8);
+  if (typed.endsWith('MEOW')) {
+    prefs.meow = !prefs.meow;
+    initAudio();
+    sfx.meow();
+    toast(t(prefs.meow ? 'toast.meowOn' : 'toast.meowOff'));
+    typed = '';
+  } else if (typed.endsWith('MUSIC')) {
+    jukeboxOpen = true;
+    renderPicks();
+    initAudio();
+    sfx.secret();
+    toast(t('toast.jukebox'));
+    typed = '';
+  }
+});
+// touch players: tap the logo seven times for the 30-lives code
+let logoTaps = 0;
+let logoTimer = null;
+document.querySelector('.logo-mark').addEventListener('click', () => {
+  logoTaps++;
+  clearTimeout(logoTimer);
+  logoTimer = setTimeout(() => { logoTaps = 0; }, 1500);
+  if (logoTaps >= 7 && game && game.state === 'title') {
+    logoTaps = 0;
+    prefs.konami = true;
+    initAudio();
+    sfx.secret();
+    toast(t('toast.konami'));
+  }
+});
+
+// jukebox: unlocked by finding all four golden cans (or the MUSIC code); each press plays the next song
+let jukeboxOpen = false;
+let jukeI = -1;
+$('btnJukebox').addEventListener('click', () => {
+  initAudio();
+  setVolumes(options.music, options.sfx);
+  jukeI = (jukeI + 1) % SONG_LIST.length;
+  startMusic(SONG_LIST[jukeI]);
+  $('btnJukebox').textContent = `♪ ${jukeI + 1}/${SONG_LIST.length} ${songName(SONG_LIST[jukeI])}`;
+});
+
+// title music starts with the first click or key press (browsers block sound before that)
+const wakeAudio = () => {
+  if (!game || game.state !== 'title') return;
+  const fresh = !audioReady();
+  initAudio();
+  setVolumes(options.music, options.sfx);
+  if (fresh && !currentMusic()) startMusic('title');
+};
+window.addEventListener('pointerdown', wakeAudio, { once: true });
+window.addEventListener('keydown', wakeAudio, { once: true });
+// a soft blip on menu buttons
+document.addEventListener('click', (e) => { if (audioReady() && e.target.closest('.screen button')) sfx.select(); });
 
 // ---------------- boot ----------------
 

@@ -275,20 +275,40 @@ export function drawLevel(ctx, level, camx, W) {
       ctx.ellipse(x, y, 2 + rnd() * 4, 1.5 + rnd() * 2, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+    drawSoilDetail(ctx, s, camx, W);
     ctx.lineWidth = 3;
     ctx.strokeStyle = C.ink;
     ctx.strokeRect(s.x, s.y, s.w, s.h + 10);
-    // catnip grass along the top
-    ctx.beginPath();
-    ctx.moveTo(s.x, s.y + 7);
-    for (let x = s.x; x < s.x + s.w; x += 10) {
-      const tip = 6 + ((x * 13) % 5);
-      ctx.lineTo(x + 5, s.y - tip + 3);
-      ctx.lineTo(Math.min(x + 10, s.x + s.w), s.y + 1);
+    // catnip grass along the top: a dark back row, a light front row, the odd catnip flower
+    for (const [col, dy, step] of [[C.greenDk, -3, 7], [C.green, 0, 10]]) {
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y + 7);
+      for (let x = s.x; x < s.x + s.w; x += step) {
+        const tip = 6 + ((x * 13) % 5) - dy;
+        ctx.lineTo(x + step / 2, s.y - tip + 3);
+        ctx.lineTo(Math.min(x + step, s.x + s.w), s.y + 1);
+      }
+      ctx.lineTo(s.x + s.w, s.y + 7);
+      ctx.closePath();
+      if (col === C.green) ink(ctx, col, 2);
+      else { ctx.fillStyle = 'rgba(92,120,106,0.75)'; ctx.fill(); }
     }
-    ctx.lineTo(s.x + s.w, s.y + 7);
-    ctx.closePath();
-    ink(ctx, C.green, 2);
+    const frnd = mulberry32(Math.floor(s.x) * 7 + 3);
+    for (let x = s.x + 20; x < s.x + s.w - 10; x += 60 + frnd() * 90) {
+      const h = 12 + frnd() * 8;
+      if (x < camx - 20 || x > camx + W + 20) continue;
+      ctx.beginPath();
+      ctx.moveTo(x, s.y + 2);
+      ctx.quadraticCurveTo(x + 3, s.y - h * 0.5, x + 1, s.y - h);
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = C.greenDk;
+      ctx.stroke();
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath();
+        ctx.arc(x + 1 + (k - 1) * 3, s.y - h - 2 + Math.abs(k - 1) * 2, 2.4, 0, Math.PI * 2);
+        ink(ctx, '#B79AD6', 1);
+      }
+    }
   }
   for (const p of level.oneways) {
     if (p.x > camx + W || p.x + p.w < camx) continue;
@@ -319,9 +339,60 @@ function groundPattern(ctx) {
   return dirtPattern;
 }
 
+// soil: a dark band under the grass, buried pebbles and fish bones, a strata line
+function drawSoilDetail(ctx, s, camx, W) {
+  const a = Math.max(s.x, camx - 10);
+  const b = Math.min(s.x + s.w, camx + W + 10);
+  if (b <= a) return;
+  const g = ctx.createLinearGradient(0, s.y, 0, s.y + 18);
+  g.addColorStop(0, 'rgba(92,120,106,0.45)');
+  g.addColorStop(1, 'rgba(92,120,106,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(a, s.y, b - a, 18);
+  ctx.strokeStyle = 'rgba(30,30,30,0.18)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let x = a - ((a - s.x) % 8); x < b; x += 8) {
+    const y = s.y + 62 + Math.sin(x * 0.03) * 4;
+    if (x === a - ((a - s.x) % 8)) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  const rnd = mulberry32(Math.floor(s.x) * 13 + s.y);
+  for (let i = 0; i < s.w / 45; i++) {
+    const x = s.x + rnd() * s.w;
+    const y = s.y + 22 + rnd() * Math.max(10, s.h - 60);
+    const kind = rnd();
+    if (x < a - 10 || x > b + 10) continue;
+    if (kind < 0.12) {
+      // a fish bone
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate((rnd() - 0.5) * 0.8);
+      ctx.strokeStyle = 'rgba(239,234,223,0.8)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-8, 0); ctx.lineTo(7, 0);
+      for (let k = -5; k <= 4; k += 3) { ctx.moveTo(k, -3); ctx.lineTo(k, 3); }
+      ctx.moveTo(7, 0); ctx.lineTo(11, -3); ctx.moveTo(7, 0); ctx.lineTo(11, 3);
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.beginPath();
+      ctx.ellipse(x, y, 2.5 + rnd() * 3.5, 1.8 + rnd() * 2, rnd() * 3, 0, Math.PI * 2);
+      ctx.fillStyle = kind < 0.6 ? 'rgba(30,30,30,0.16)' : 'rgba(255,255,255,0.28)';
+      ctx.fill();
+    }
+  }
+}
+
+// a weathered plank: grain, nail heads, a shadow underneath, rope lashings at the ends
 function drawPlank(ctx, x, y, w) {
+  ctx.fillStyle = 'rgba(30,30,30,0.18)';
+  ctx.fillRect(x + 3, y + 10, w - 6, 3);
   rrect(ctx, x, y, w, 10, 2);
   ink(ctx, C.plank, 2.5);
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillRect(x + 2, y + 2, w - 4, 2);
   ctx.beginPath();
   for (let px = x + 20; px < x + w - 4; px += 20) {
     ctx.moveTo(px, y + 1);
@@ -330,6 +401,66 @@ function drawPlank(ctx, x, y, w) {
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = C.plankDk;
   ctx.stroke();
+  // grain
+  ctx.beginPath();
+  for (let px = x + 4; px < x + w - 10; px += 20) {
+    const o = (px * 7) % 5;
+    ctx.moveTo(px + 2, y + 5 + (o % 2));
+    ctx.quadraticCurveTo(px + 8, y + 3 + o * 0.5, px + 14, y + 6);
+  }
+  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = 'rgba(30,30,30,0.3)';
+  ctx.stroke();
+  ctx.fillStyle = C.ink;
+  for (let px = x + 20; px < x + w - 4; px += 20) {
+    ctx.fillRect(px - 3.5, y + 3, 1.6, 1.6);
+    ctx.fillRect(px + 2, y + 3, 1.6, 1.6);
+  }
+  if (w >= 60) {
+    ctx.strokeStyle = '#C98F22';
+    ctx.lineWidth = 1.6;
+    for (const rx of [x + 6, x + w - 9]) {
+      ctx.beginPath();
+      ctx.moveTo(rx, y - 1); ctx.lineTo(rx + 3, y + 11);
+      ctx.moveTo(rx + 3, y - 1); ctx.lineTo(rx, y + 11);
+      ctx.stroke();
+    }
+  }
+}
+
+// drifting catnip leaves and dandelion fluff in front of everything (stateless: positions come from the clock)
+const FLOAT = Array.from({ length: 16 }, (_, i) => {
+  const r = mulberry32(900 + i);
+  return { x: r(), y: r(), sp: 18 + r() * 30, fall: 10 + r() * 16, ph: r() * 6, leaf: r() < 0.55, s: 0.7 + r() * 0.6 };
+});
+function drawFront(ctx, level, camx, W, tm) {
+  for (const f of FLOAT) {
+    const span = W + 60;
+    const x = camx - 30 + ((((f.x * span - tm * f.sp) % span) + span) % span);
+    const y = ((f.y * 330 + tm * f.fall) % 330) + Math.sin(tm * 1.3 + f.ph) * 10;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(tm * 2 + f.ph) * 0.8);
+    ctx.scale(f.s, f.s);
+    if (f.leaf) {
+      ctx.beginPath();
+      ctx.moveTo(-5, 0);
+      ctx.quadraticCurveTo(0, -4, 5, 0);
+      ctx.quadraticCurveTo(0, 4, -5, 0);
+      ctx.fillStyle = 'rgba(126,154,140,0.85)';
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(30,30,30,0.5)';
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2; ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 3.5, Math.sin(a) * 3.5); }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 }
 
 // Stage description used by the game loop (see level2.js for the same shape).
@@ -340,6 +471,7 @@ export const STAGE1 = {
   update(level, game, dt, onCrumble) { updateBridges(level, game.alivePlayers(), dt, onCrumble); },
   drawScenery,
   drawLevel,
+  drawFront,
   // the arena where the mid-boss fight locks the camera (used by the autoplay bot)
   midbossCamx: 3300,
   bossCamx: 6400,

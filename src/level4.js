@@ -196,7 +196,7 @@ function spawn(game, s) {
       game.say('WARNING', 2.2, 'warn');
       game.say(t('say.spider'), 1.8);
       sfx.siren();
-      startMusic('boss');
+      startMusic('final');
       break;
     }
   }
@@ -283,6 +283,7 @@ export function drawLevel(ctx, level, camx, W, tm = 0, camy = 0) {
     if ((s.kind !== 'ground' && s.kind !== 'shaftwall') || !vis(s)) continue;
     ctx.fillStyle = s.kind === 'shaftwall' ? '#7E7B72' : pat;
     ctx.fillRect(s.x, s.y, s.w, s.h);
+    drawSlabDetail(ctx, s, camx, W, camy);
     ctx.lineWidth = 3;
     ctx.strokeStyle = C.ink;
     ctx.strokeRect(s.x, s.y, s.w, s.h);
@@ -324,14 +325,8 @@ export function drawLevel(ctx, level, camx, W, tm = 0, camy = 0) {
     }
   }
   for (const p of level.oneways) {
-    if (!vis({ x: p.x, y: p.y, w: p.w, h: 10 })) continue;
-    rrect(ctx, p.x, p.y, p.w, 9, 2);
-    ink(ctx, '#B9B6AA', 2.5);
-    ctx.beginPath();
-    for (let x = p.x + 8; x < p.x + p.w - 4; x += 12) { ctx.moveTo(x, p.y + 2); ctx.lineTo(x + 6, p.y + 7); }
-    ctx.lineWidth = 1.2;
-    ctx.strokeStyle = 'rgba(30,30,30,0.5)';
-    ctx.stroke();
+    if (!vis({ x: p.x, y: p.y, w: p.w, h: 30 })) continue;
+    drawCatwalk(ctx, p);
   }
   // the freight lift: a hazard-striped steel deck on cables
   const L = level.lift;
@@ -355,6 +350,139 @@ export function drawLevel(ctx, level, camx, W, tm = 0, camy = 0) {
   }
 }
 
+// concrete slabs: panel seams, bolts, a crack or two, a grime line along the bottom of the edge stripe
+function drawSlabDetail(ctx, s, camx, W, camy) {
+  if (s.kind !== 'ground' || s.belt) return;
+  const a = Math.max(s.x, camx - 10);
+  const b = Math.min(s.x + s.w, camx + W + 10);
+  if (b <= a) return;
+  const g = ctx.createLinearGradient(0, s.y + 6, 0, s.y + 30);
+  g.addColorStop(0, 'rgba(30,30,30,0.22)');
+  g.addColorStop(1, 'rgba(30,30,30,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(a, s.y + 6, b - a, 24);
+  ctx.strokeStyle = 'rgba(30,30,30,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  const x0 = s.x + 80;
+  for (let x = x0 + Math.max(0, Math.floor((a - x0) / 80)) * 80; x < b; x += 80) { ctx.moveTo(x, s.y + 8); ctx.lineTo(x, s.y + s.h); }
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(30,30,30,0.45)';
+  for (let x = x0 + Math.max(0, Math.floor((a - x0) / 80)) * 80; x < b; x += 80) {
+    for (const dx of [-6, 4]) { ctx.beginPath(); ctx.arc(x + dx + 1, s.y + 16, 1.6, 0, Math.PI * 2); ctx.fill(); }
+  }
+  const rnd = mulberry32(Math.floor(s.x) + s.y * 3);
+  ctx.strokeStyle = 'rgba(30,30,30,0.35)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < s.w / 160; i++) {
+    let x = s.x + 20 + rnd() * (s.w - 40);
+    let y = s.y + 12 + rnd() * 20;
+    if (x < a - 30 || x > b + 30) continue;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let k = 0; k < 4; k++) { x += (rnd() - 0.3) * 10; y += 4 + rnd() * 6; ctx.lineTo(x, y); }
+    ctx.stroke();
+  }
+}
+
+// steel catwalk: a grated deck with a rail lip and a strut down to the wall
+function drawCatwalk(ctx, p) {
+  ctx.strokeStyle = C.ink;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (const bx of [p.x + 12, p.x + p.w - 12]) { ctx.moveTo(bx, p.y + 9); ctx.lineTo(bx + (bx < p.x + p.w / 2 ? -8 : 8), p.y + 24); }
+  ctx.stroke();
+  rrect(ctx, p.x, p.y, p.w, 9, 2);
+  ink(ctx, '#B9B6AA', 2.5);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(p.x + 2, p.y + 2, p.w - 4, 5);
+  ctx.clip();
+  ctx.fillStyle = 'rgba(30,30,30,0.5)';
+  for (let x = p.x + 4; x < p.x + p.w - 4; x += 6) ctx.fillRect(x, p.y + 3, 3, 3);
+  ctx.restore();
+  ctx.fillStyle = C.yellow;
+  ctx.fillRect(p.x + 2, p.y + 7, p.w - 4, 1.5);
+}
+
+// ceiling warning lamps that sweep red light, sparks dripping from a broken cable, and steam wisps
+function drawFront(ctx, level, camx, W, tm, camy) {
+  const H = 360;
+  const ceilings = [[0, SHAFT_X, CEIL_A], [SHAFT_R, LEVEL_W, CEIL_C]];
+  for (const [x0, x1, cy] of ceilings) {
+    if (cy < camy - 40 || cy > camy + H) continue;
+    for (let x = x0 + 230; x < x1; x += 460) {
+      if (x < camx - 120 || x > camx + W + 120) continue;
+      const a = tm * 4 + x;
+      const k = (Math.sin(a) + 1) / 2;
+      // the sweeping beam
+      ctx.save();
+      ctx.translate(x, cy + 6);
+      ctx.rotate(Math.sin(a) * 0.9);
+      const g = ctx.createLinearGradient(0, 0, 0, 200);
+      g.addColorStop(0, 'rgba(232,86,75,0.28)');
+      g.addColorStop(1, 'rgba(232,86,75,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.lineTo(50, 200); ctx.lineTo(-50, 200);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(x, cy + 4, 6, 0, Math.PI);
+      ink(ctx, k > 0.5 ? '#FF7A6E' : C.red, 2);
+    }
+    // sparks: a burst every couple of seconds from a frayed cable
+    for (let x = x0 + 610; x < x1; x += 900) {
+      if (x < camx - 60 || x > camx + W + 60) continue;
+      ctx.strokeStyle = C.ink;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, cy);
+      ctx.quadraticCurveTo(x + 6, cy + 12, x + 2, cy + 20);
+      ctx.stroke();
+      const ph = (tm + x * 0.013) % 2.6;
+      if (ph > 0.7) continue;
+      const rnd = mulberry32(Math.floor((tm + x * 0.013) / 2.6) * 31 + x);
+      for (let i = 0; i < 8; i++) {
+        const vx = (rnd() - 0.5) * 140;
+        const vy = -40 - rnd() * 60;
+        const t = ph * (0.8 + rnd() * 0.4);
+        const sx = x + 2 + vx * t;
+        const sy = cy + 20 + vy * t + 450 * t * t;
+        ctx.globalAlpha = Math.max(0, 1 - ph / 0.7);
+        ctx.fillStyle = rnd() < 0.5 ? '#FFE48A' : '#FFFFFF';
+        ctx.fillRect(sx - 1, sy - 1, 2.5, 2.5);
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+  // steam wisps rising from floor grates along the corridors
+  const floors = [[0, SHAFT_X, TOP], [SHAFT_R, LEVEL_W, BOTTOM]];
+  for (const [x0, x1, fy] of floors) {
+    if (fy < camy - 20 || fy > camy + H + 40) continue;
+    for (let x = x0 + 360; x < x1; x += 700) {
+      if (x < camx - 60 || x > camx + W + 60) continue;
+      ctx.fillStyle = C.ink;
+      ctx.fillRect(x - 12, fy - 2, 24, 3);
+      for (let i = 0; i < 4; i++) {
+        const ph = ((tm * 0.5 + i / 4) % 1);
+        const r = 6 + ph * 16;
+        const px = x + Math.sin(tm * 1.5 + i * 2) * 8;
+        const py = fy - 6 - ph * 70;
+        const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, `rgba(244,241,232,${0.4 * (1 - ph)})`);
+        g.addColorStop(1, 'rgba(244,241,232,0)');
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
 export const STAGE4 = {
   n: 4,
   build: buildLevel4,
@@ -364,6 +492,7 @@ export const STAGE4 = {
   spawn,
   drawScenery,
   drawLevel,
+  drawFront,
   midbossCamx: SHAFT_X,
   bossCamx: BOSS_CAMX,
 };

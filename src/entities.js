@@ -5,6 +5,7 @@ import { C, ink, ellipse, rrect, drawRat, drawGun, drawHeart, drawBadge, WEAPON_
 import { sfx } from './audio.js';
 import { SPR, frame, drawFrame, tintOf } from './sprites.js';
 import { skillKeyLabel } from './input.js';
+import { drawGoldCan, collectGold } from './secrets.js';
 
 export const GRAVITY = 1500;
 const RUN = 155;
@@ -201,7 +202,7 @@ export class Player {
     this.jumpBuf = c.jump ? 0.12 : Math.max(0, this.jumpBuf - dt);
     if (this.inWater) {
       // each press is a swim stroke upward; any number of them
-      if (c.jump) { this.vy = Math.min(this.vy * 0.3, 0) - 240; this.jumpBuf = 0; this.stroke = 0.35; sfx.jump(false); }
+      if (c.jump) { this.vy = Math.min(this.vy * 0.3, 0) - 240; this.jumpBuf = 0; this.stroke = 0.35; sfx.stroke(); }
       this.jumps = 1;
       this.spin = 0;
     } else if (this.jumpBuf > 0) {
@@ -234,6 +235,8 @@ export class Player {
     if (!c.jumpHeld && this.jumps === 1 && this.jumpT > 0.1 && this.vy < -260) this.vy = -260;
     this.dropping = this.dropT > 0;
 
+    const wasGround = this.onGround;
+    const fallV = this.vy;
     if (this.inWater && this.dashT <= 0) {
       // buoyant: sink slowly (faster holding down), strokes slow down as they glide
       this.vy = Math.max(-300, Math.min(c.down ? 190 : 110, this.vy + (c.down ? 700 : 420) * dt));
@@ -241,6 +244,8 @@ export class Player {
     } else moveBody(this, dt, g.level, this.dashT <= 0);
     // swimming: a long, low body, so a flat hitbox
     this.setSwim(this.inWater);
+    // a hard landing kicks up dust and thuds
+    if (!wasGround && this.onGround && fallV > 430 && !this.inWater) this.landDust(fallV);
     // breaking the surface on a stroke pops the hero up out of the water, high enough to reach a ledge
     if (wasWater && !(g.waterAt && g.waterAt(this.cx, this.y + this.h * 0.35)) && this.vy < -60) this.vy = -540;
     this.stroke = Math.max(0, (this.stroke || 0) - dt);
@@ -360,7 +365,7 @@ export class Player {
       this.eyeBeam();
       // then the third eye marks up to 5 enemies on screen; shots home in on them
       this.locks = g.enemies
-        .filter((e) => e.hittable() && e.x + e.w > g.cam.x && e.x < g.cam.x + g.W)
+        .filter((e) => e.hittable() && !e.secret && e.x + e.w > g.cam.x && e.x < g.cam.x + g.W)
         .sort((a, b) => Math.hypot(a.x - this.x, a.y - this.y) - Math.hypot(b.x - this.x, b.y - this.y))
         .slice(0, 5);
       this.skillT = 5;
@@ -447,8 +452,20 @@ export class Player {
     if (this.air > 0.5) this.airWarned = false;
   }
 
+  landDust(v) {
+    const g = this.game;
+    sfx.land();
+    const n = v > 650 ? 7 : 4;
+    for (let i = 0; i < n; i++) {
+      const dir = i % 2 ? 1 : -1;
+      g.effects.push(new Dust(this.cx + dir * (4 + Math.random() * 8), this.y + this.h - 2, dir * (50 + Math.random() * 90), -20 - Math.random() * 40));
+    }
+    if (v > 700) g.shake(2);
+  }
+
   hurt() {
     if (this.state !== 'alive' || this.inv > 0 || this.catnip > 0 || this.dashT > 0) return;
+    this.game.stageHits = (this.game.stageHits || 0) + 1;
     this.hp--;
     this.inv = 1.3;
     this.hurtT = 0.3;
@@ -523,6 +540,7 @@ export class Player {
 
   pickup(item) {
     const g = this.game;
+    if (item === 'G') return collectGold(g, this);
     sfx.pickup();
     if (item === 'R') {
       this.rate = Math.max(0.6, this.rate * 0.8);
@@ -1881,6 +1899,7 @@ export class Item {
   }
   draw(ctx) {
     const bob = this.onGround ? Math.sin(this.t * 4) * 2 : 0;
+    if (this.type === 'G') return drawGoldCan(ctx, this.x + 11, this.y + 11 - bob, this.t);
     const f = frame('item', this.type);
     if (f) drawFrame(ctx, f, this.x + 11, this.y + 11 - bob, 24 / f.h, { anchor: 'center' });
     else drawBadge(ctx, this.x + 11, this.y + 11 - bob, 11, this.type);
@@ -1911,9 +1930,37 @@ export class Particle {
   }
 }
 
+// a soft puff of dust: drifts, grows and fades, no outline
+export class Dust {
+  constructor(x, y, vx, vy) {
+    Object.assign(this, { x, y, vx, vy, r: 3 + Math.random() * 3, life: 0.45 + Math.random() * 0.2, dead: false });
+    this.max = this.life;
+  }
+  update(dt) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.vx *= 0.9;
+    this.vy *= 0.9;
+    this.life -= dt;
+    if (this.life <= 0) this.dead = true;
+  }
+  draw(ctx) {
+    const k = this.life / this.max;
+    ctx.globalAlpha = k * 0.7;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r * (1 + (1 - k) * 1.6), 0, Math.PI * 2);
+    ctx.fillStyle = '#E9DFC9';
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(30,30,30,0.25)';
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
 export class FloatText {
-  constructor(x, y, text, color) {
-    Object.assign(this, { x, y, text, color, life: 1.1, dead: false });
+  constructor(x, y, text, color, size = 13) {
+    Object.assign(this, { x, y, text, color, size, life: size > 13 ? 1.4 : 1.1, dead: false });
   }
   update(dt) {
     this.y -= 30 * dt;
@@ -1922,11 +1969,11 @@ export class FloatText {
   }
   draw(ctx) {
     ctx.globalAlpha = Math.min(1, this.life * 2);
-    ctx.font = '900 13px "Noto Sans HK", sans-serif';
+    ctx.font = `900 ${this.size}px "Noto Sans HK", sans-serif`;
     ctx.textAlign = 'center';
     ctx.lineJoin = 'round';
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = C.cream;
+    ctx.lineWidth = this.size > 13 ? 5 : 4;
+    ctx.strokeStyle = this.size > 13 ? C.ink : C.cream;
     ctx.strokeText(this.text, this.x, this.y);
     ctx.fillStyle = this.color;
     ctx.fillText(this.text, this.x, this.y);
